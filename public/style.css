@@ -41,9 +41,9 @@ kbd{font:700 10px var(--mono);background:var(--panel2);border:1px solid var(--ed
 .brand small{display:block;color:var(--faint);font-size:11px}
 .cube{width:30px;height:30px;position:relative;transform-style:preserve-3d;transform:rotateX(-24deg) rotateY(35deg);animation:spin 9s linear infinite;margin:4px 8px 4px 4px}
 .cube i{position:absolute;inset:0;border:2px solid #0006;background:var(--accent)}
-.cube i:nth-child(1){transform:translateZ(15px);background:#a78bfa}
-.cube i:nth-child(2){transform:rotateY(180deg) translateZ(15px);background:#6d3df0}
-.cube i:nth-child(3){transform:rotateY(90deg) translateZ(15px);background:#8b5cf6}
+.cube i:nth-child(1){transform:translateZ(15px);background:#ffb03c}
+.cube i:nth-child(2){transform:rotateY(180deg) translateZ(15px);background:#c45200}
+.cube i:nth-child(3){transform:rotateY(90deg) translateZ(15px);background:#ff7e00}
 .cube i:nth-child(4){transform:rotateY(-90deg) translateZ(15px);background:#7c4cf0}
 .cube i:nth-child(5){transform:rotateX(90deg) translateZ(15px);background:#3ad7ff}
 .cube i:nth-child(6){transform:rotateX(-90deg) translateZ(15px);background:#4a2bb8}

@@ -40,10 +40,10 @@
     const date = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     const modes = [['tarefa', '✅ Tarefa'], ['nota', '📝 Nota'], ['prompt', '✨ Prompt'], ['link', '🔗 Link']];
     const ph = { tarefa: 'Nova tarefa… (termine com “hoje” ou “amanhã”)', nota: 'Anote uma ideia rápida…', prompt: 'Cole um prompt para guardar…', link: 'Cole um link…' };
-    v.innerHTML = `<div class="home">
-      <div class="hero wide"><div class="pix">🎒</div>
+    v.innerHTML = `<div class="home-wrap"><div class="home">
+      <div class="hero wide"><img class="pix" src="/bau.png" alt="">
         <div class="grow"><h1>${hi}! 👋</h1><p style="text-transform:capitalize">${date}</p><p>${sum}</p>
-          <div class="mini" style="margin-top:12px">${s.gamify ? `<div>Nv ${M.levelOf(g.xp)}<small>${esc(M.levelName(M.levelOf(g.xp)))}</small></div><div>🔥 ${$('#hudStreak b').textContent}<small>dias seguidos</small></div>` : ''}<div>${M.db.items.length}<small>itens na mochila</small></div><div>${open.length}<small>tarefas abertas</small></div></div>
+          <div class="mini" style="margin-top:12px">${s.gamify ? `<div>Nv ${M.levelOf(g.xp)}<small>${esc(M.levelName(M.levelOf(g.xp)))}</small></div><div>🔥 ${$('#hudStreak b').textContent}<small>dias seguidos</small></div>` : ''}<div>${M.db.items.length}<small>itens no loot</small></div><div>${open.length}<small>tarefas abertas</small></div></div>
         </div>
         ${s.gamify ? `<div class="ring" style="--p:${pct}" title="Meta de hoje: ${dayXp} / ${s.dailyGoal} XP"><span>${pct}%<small>META</small></span></div>` : ''}
       </div>
@@ -52,8 +52,9 @@
       <div class="panel">${s.gamify ? `<h4>🎯 Missões do dia ${M.hint('Complete as três para ganhar um bônus de XP. Zera todo dia.')}</h4>${M.quests().map((q) => `<div class="quest ${q.v >= q.max ? 'ok' : ''}"><span>${q.em} ${q.t}</span><div class="bar"><i style="width:${Math.min(100, (q.v / q.max) * 100)}%"></i></div><small>${q.v >= q.max ? '✔' : q.v + '/' + q.max}</small></div>`).join('')}<div style="height:10px"></div>` : ''}
         <h4>⛏️ Em andamento</h4>${doing.map(rowItem).join('') || '<small style="color:var(--faint)">Nada em andamento.</small>'}</div>
       <div class="panel"><h4>⭐ Favoritos</h4>${favs.map(rowItem).join('') || '<small style="color:var(--faint)">Marque um item com a estrela.</small>'}</div>
-      <div class="panel"><h4>🕘 Mexidos por último <a data-go="lib">biblioteca →</a></h4>${recent.map(rowItem).join('') || '<small style="color:var(--faint)">Sua mochila está vazia.</small>'}</div>
-    </div>`;
+      <div class="panel"><h4>🕘 Mexidos por último <a data-go="lib">biblioteca →</a></h4>${recent.map(rowItem).join('') || '<small style="color:var(--faint)">Seu loot está vazio.</small>'}</div>
+    </div><aside class="panel g-side" id="gSide"></aside></div>`;
+    M.graphPanel($('#gSide'));
 
     const input = $('#qcIn');
     const save = () => {
@@ -64,7 +65,7 @@
       else {
         const title = mode === 'link' ? val.replace(/^https?:\/\/(www\.)?/i, '').split(/[/?#]/)[0] : val.split('\n')[0].slice(0, 60);
         M.createItem({ type: mode, title, content: mode === 'nota' && val.length <= 60 ? '' : (isUrl && !/^https?:/i.test(val) ? 'https://' + val : val), cat: '' });
-        M.toast(`${M.type(mode).em} Guardado na mochila`);
+        M.toast(`${M.type(mode).em} Guardado no loot`);
       }
       M.render(); $('#qcIn').focus();
     };
@@ -99,10 +100,10 @@
   }
   function paint() {
     const el = $('#focus');
-    if (!end) { el.classList.remove('run'); $('#focusT').textContent = String(min).padStart(2, '0') + ':00'; document.title = 'Mochila'; return; }
+    if (!end) { el.classList.remove('run'); $('#focusT').textContent = String(min).padStart(2, '0') + ':00'; document.title = 'MyLoot'; return; }
     const left = end - Date.now();
     if (left <= 0) { end = 0; paint(); setTimeout(claim, 1200); return; }
-    el.classList.add('run'); $('#focusT').textContent = fmt(left); document.title = fmt(left) + ' · Mochila';
+    el.classList.add('run'); $('#focusT').textContent = fmt(left); document.title = fmt(left) + ' · MyLoot';
   }
   async function sync() {
     try {
@@ -125,7 +126,7 @@
       await M.api('/api/focus/stop', { method: 'POST' }).catch(() => {});
       end = 0; SFX.play('click'); paint(); return;
     }
-    const m = M.modal(`<div class="modal-h"><h2>⏱ Modo foco</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div>Quanto tempo? ${M.hint('O relógio roda no servidor da Mochila. Você pode fechar o navegador: quando acabar, aparece um aviso do Windows. Só para se você desligar a Mochila ou o computador.')}</div><div class="row">${[15, 25, 45, 60].map((n) => `<button class="btn ${n === 25 ? '' : 'ghost'}" data-m="${n}">${n} min</button>`).join('')}</div><button class="btn ghost sm" id="nt" style="align-self:flex-start">🔔 Testar o aviso do Windows</button></div>`, { small: true });
+    const m = M.modal(`<div class="modal-h"><h2>⏱ Modo foco</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div>Quanto tempo? ${M.hint('O relógio roda no servidor do MyLoot. Você pode fechar o navegador: quando acabar, aparece um aviso do Windows. Só para se você desligar o MyLoot ou o computador.')}</div><div class="row">${[15, 25, 45, 60].map((n) => `<button class="btn ${n === 25 ? '' : 'ghost'}" data-m="${n}">${n} min</button>`).join('')}</div><button class="btn ghost sm" id="nt" style="align-self:flex-start">🔔 Testar o aviso do Windows</button></div>`, { small: true });
     $('#x', m).onclick = M.closeModal;
     $('#nt', m).onclick = () => M.api('/api/notify-test', { method: 'POST' }).then(() => M.toast('Aviso enviado. Olhe o canto da tela.'));
     m.onclick = (e) => { const b = e.target.closest('[data-m]'); if (b) { M.closeModal(); M.focusStart(+b.dataset.m); } };

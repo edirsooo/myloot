@@ -41,7 +41,7 @@
   };
 
   // ----- API -----
-  const H = { 'X-Mochila': '1' };
+  const H = { 'X-MyLoot': '1' };
   M.api = async (path, opt) => {
     const r = await fetch(path, Object.assign({ headers: H }, opt));
     const j = await r.json().catch(() => ({}));
@@ -70,7 +70,7 @@
   };
 
   // ----- gamificação -----
-  const LEVELS = ['Novato Pixel', 'Aprendiz de Bloco', 'Coletor de Cubos', 'Minerador', 'Artesão', 'Construtor', 'Explorador de Cavernas', 'Engenheiro Redstone', 'Mestre dos Blocos', 'Arquiteto Voxel', 'Domador de Creepers', 'Lenda da Mochila'];
+  const LEVELS = ['Novato Pixel', 'Aprendiz de Bloco', 'Coletor de Cubos', 'Minerador', 'Artesão', 'Construtor', 'Explorador de Cavernas', 'Engenheiro Redstone', 'Mestre dos Blocos', 'Arquiteto Voxel', 'Domador de Creepers', 'Lenda do Loot'];
   M.levelOf = (xp) => Math.floor(Math.sqrt(xp / 40)) + 1;
   M.levelXp = (l) => 40 * (l - 1) * (l - 1);
   M.levelName = (l) => LEVELS[Math.min(l - 1, LEVELS.length - 1)];

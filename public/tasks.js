@@ -114,7 +114,7 @@
       if (chip && chip.dataset.t) { const t = M.db.tasks.find((x) => x.id === chip.dataset.t); return editTask(t); }
       const day = e.target.closest('.day'); if (day) quickAdd(day.dataset.d);
     };
-    v.ondragstart = (e) => { const c = e.target.closest('[data-t]'); if (c) { drag = c.dataset.t; e.dataTransfer.setData('text/x-mochila', drag); } };
+    v.ondragstart = (e) => { const c = e.target.closest('[data-t]'); if (c) { drag = c.dataset.t; e.dataTransfer.setData('text/x-myloot', drag); } };
     v.ondragover = (e) => { const d = e.target.closest('.day'); if (d && drag) { e.preventDefault(); $$('.day.over').forEach((x) => x.classList.remove('over')); d.classList.add('over'); } };
     v.ondrop = (e) => {
       const d = e.target.closest('.day'); if (!d || !drag) return;

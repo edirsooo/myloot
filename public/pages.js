@@ -56,11 +56,14 @@
         <div class="cfg-row"><span class="l">Meta do dia (XP) ${M.hint('Quantos pontos você quer fazer por dia.')}</span><input type="number" id="cGoal" min="10" max="500" step="10" value="${s.dailyGoal}" style="width:90px"></div>
       </section>
       <section class="stat"><div class="cfg-h">Categorias</div><div id="cCats"></div><button class="btn ghost sm" id="cCatAdd" style="margin-top:6px">＋ Nova categoria</button></section>
+      ${M.intSection()}
       <section class="stat"><div class="cfg-h">Claude (IA)</div>
+        <div class="cfg-row"><span class="l">Como falar com o Claude ${M.hint('Claude Code: usa a assinatura do Claude que já está logada neste computador, sem chave e sem pagar à parte (precisa do Claude Code instalado). Chave da API: cobra por uso na sua conta da Anthropic. Automático: usa o Claude Code se ele estiver instalado.')}</span><select id="aiVia" style="width:auto"><option value="auto">Automático</option><option value="code">Claude Code (sua assinatura)</option><option value="api">Chave da API</option></select></div>
+        <div class="cfg-row"><span class="l">Claude Code neste computador</span><span id="aiCode" style="font:700 12px var(--mono)">…</span></div>
         <div class="cfg-row"><span class="l">Chave da API ${M.hint('Crie em console.anthropic.com → API Keys. Fica guardada só neste computador, em data/segredos.json, fora do backup e do Drive.')}</span><span id="aiSt" style="font:700 12px var(--mono)"></span></div>
         <div class="row" style="align-items:center"><input type="password" id="aiKey" placeholder="Cole aqui a sua chave (sk-ant-…)" autocomplete="off" style="flex:3"><button class="btn" id="aiSave" style="flex:none">Guardar</button><button class="btn ghost" id="aiDel" style="flex:none">Remover</button></div>
         <div class="cfg-row" style="margin-top:8px"><span class="l">Modelo ${M.hint('Opus: o mais caprichado. Sonnet: rápido e bom. Haiku: o mais barato.')}</span><select id="aiModel" style="width:auto"><option value="claude-opus-5-5">Claude Opus 5.5</option><option value="claude-sonnet-5-5">Claude Sonnet 5.5</option><option value="claude-haiku-5-5">Claude Haiku 5.5</option></select></div>
-        <small style="color:var(--dim);display:block;margin-top:6px">Use o botão <b>🤖 Pedir ao Claude</b> dentro de qualquer item para melhorar, corrigir, resumir ou reescrever o texto. Cada pedido gasta créditos da sua conta da Anthropic.</small>
+        <small style="color:var(--dim);display:block;margin-top:6px">Use o botão <span style="font-weight:700">🤖 Pedir ao Claude</span> dentro de qualquer item para melhorar, corrigir, resumir ou reescrever o texto. Com o Claude Code, usa a sua assinatura; com a chave, cada pedido gasta créditos da sua conta da Anthropic.</small>
       </section>
       <section class="stat"><div class="cfg-h">Google Drive</div>
         <div class="cfg-row"><span class="l">Copiar para o Drive ${M.hint('Precisa do app “Google Drive para computador”. Cada item vira um arquivo .md numa pasta por tipo, com os anexos junto.')}</span>${M.sw('cDrive', s.drive.on)}</div>
@@ -68,12 +71,12 @@
         <small id="cDriveMsg" style="color:var(--dim);display:block;margin-top:8px"></small>
       </section>
       <section class="stat"><div class="cfg-h">Dados</div>
-        <div class="row" style="align-items:center"><a class="btn ghost" id="cBak" href="/api/backup" download="mochila-backup.json" style="flex:none">⬇️ Baixar backup (.json)</a><button class="btn ghost" id="cRes" style="flex:none">⬆️ Restaurar backup</button><input type="file" id="cResF" accept=".json,application/json" hidden></div>
+        <div class="row" style="align-items:center"><a class="btn ghost" id="cBak" href="/api/backup" download="myloot-backup.json" style="flex:none">⬇️ Baixar backup (.json)</a><button class="btn ghost" id="cRes" style="flex:none">⬆️ Restaurar backup</button><input type="file" id="cResF" accept=".json,application/json" hidden></div>
         <small style="color:var(--dim);display:block;margin-top:8px">Cópia automática todo dia em <code>data/backups</code> (guarda as 20 mais novas).</small>
       </section>
       <section class="stat"><div class="cfg-h">Atalhos</div><div class="sc">
         <kbd>Ctrl K</kbd><span>Busca global (ou a tecla <kbd>/</kbd>)</span><kbd>N</kbd><span>Novo item</span><kbd>H</kbd><span>Início</span><kbd>B</kbd><span>Biblioteca</span><kbd>T</kbd><span>Tarefas</span><kbd>C</kbd><span>Calendário</span><kbd>F</kbd><span>Começar ou parar o foco</span><kbd>Esc</kbd><span>Fechar janela</span><kbd>Clique direito</kbd><span>Menu do cartão</span></div></section>
-      <section class="stat"><div class="cfg-h">Servidor</div><button class="btn danger" id="cOff">⏻ Desligar a Mochila</button> ${M.hint('Desliga o servidor. Para abrir de novo, use o atalho da área de trabalho.')}</section>
+      <section class="stat"><div class="cfg-h">Servidor</div><button class="btn danger" id="cOff">⏻ Desligar o MyLoot</button> ${M.hint('Desliga o servidor. Para abrir de novo, use o atalho da área de trabalho.')}</section>
     </div>`;
     const set = (k, val) => { s[k] = val; M.save(); M.applySettings(); };
     $('#cAuto').onchange = (e) => { set('themeAuto', e.target.checked); SFX.play('click'); M.render(); };
@@ -86,7 +89,11 @@
     $('#cGoal').onchange = (e) => { set('dailyGoal', Math.max(10, Math.min(500, +e.target.value || 50))); M.renderHud(); };
 
     const aiSt = (on) => { const e = $('#aiSt'); if (!e) return; e.textContent = on ? '● conectada' : '○ sem chave'; e.style.color = on ? 'var(--green)' : 'var(--faint)'; };
-    M.api('/api/ai/status').then((r) => aiSt(r.temChave)).catch(() => {});
+    const codeSt = (c) => { const e = $('#aiCode'); if (!e) return; e.textContent = c && c.ok ? '● encontrado' + (c.versao ? ' (v' + c.versao + ')' : '') : '○ não instalado'; e.style.color = c && c.ok ? 'var(--green)' : 'var(--faint)'; };
+    M.api('/api/ai/status?checar=1').then((r) => { aiSt(r.temChave); codeSt(r.code); }).catch(() => {});
+    M.intBind();
+    $('#aiVia').value = s.aiVia || 'auto';
+    $('#aiVia').onchange = () => { s.aiVia = $('#aiVia').value; M.save(); M.toast('🤖 Pronto'); };
     $('#aiModel').value = s.aiModel || 'claude-opus-5-5';
     $('#aiModel').onchange = (e) => set('aiModel', e.target.value);
     const putKey = async (key) => { try { const r = await M.api('/api/ai/key', { method: 'POST', body: JSON.stringify({ key }) }); $('#aiKey').value = ''; aiSt(r.temChave); SFX.play(r.temChave ? 'coin' : 'click'); M.toast(r.temChave ? '🔑 Chave guardada' : 'Chave removida'); } catch (e) { M.toast('⚠️ ' + e.message); } };
@@ -136,9 +143,9 @@
       try { await M.api('/api/restore', { method: 'POST', body: await f.text() }); await M.load(); M.applySettings(); M.toast('✅ Backup restaurado'); M.go('lib'); } catch (er) { M.toast('⚠️ ' + er.message); }
     };
     $('#cOff').onclick = async () => {
-      if (!(await M.confirm('Desligar o servidor da Mochila?', 'Desligar'))) return;
+      if (!(await M.confirm('Desligar o servidor do MyLoot?', 'Desligar'))) return;
       try { await M.api('/api/shutdown', { method: 'POST' }); } catch (_) {}
-      document.body.innerHTML = '<div style="display:grid;place-items:center;height:100vh;font:700 20px monospace;color:#aaa;background:#070b18">Mochila desligada. Pode fechar esta aba. 👋</div>';
+      document.body.innerHTML = '<div style="display:grid;place-items:center;height:100vh;font:700 20px monospace;color:#aaa;background:#070b18">MyLoot desligado. Pode fechar esta aba. 👋</div>';
     };
   };
 })();

@@ -1,15 +1,15 @@
-// Mochila - servidor local (só módulos nativos do Node).
+// MyLoot - servidor local (só módulos nativos do Node).
 'use strict';
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
 
-const PORT = Number(process.env.MOCHILA_PORT) || 4321;
+const PORT = Number(process.env.MYLOOT_PORT || process.env.MOCHILA_PORT) || 4321;
 const HOST = '127.0.0.1';
 const ROOT = __dirname;
 const PUB = path.join(ROOT, 'public');
-const DATA = process.env.MOCHILA_DATA || path.join(ROOT, 'data');
+const DATA = process.env.MYLOOT_DATA || process.env.MOCHILA_DATA || path.join(ROOT, 'data');
 const DB = path.join(DATA, 'db.json');
 const BAK = path.join(DATA, 'backups');
 const ANX = path.join(DATA, 'anexos');
@@ -61,7 +61,7 @@ function seed() {
     mk(6, { type: 'instrucao', title: 'Passo a passo: publicar um site', cat: 'c-dev', status: 'and', tags: ['deploy'], desc: 'Checklist para publicar sem esquecer nada.', content: '1) Testar tudo localmente\n2) Conferir variáveis secretas\n3) Publicar\n4) Abrir o site e clicar em tudo', checklist: [{ id: 'k4', t: 'Testar localmente', done: true }, { id: 'k5', t: 'Conferir segredos', done: true }, { id: 'k6', t: 'Publicar', done: false }, { id: 'k7', t: 'Teste final', done: false }] }),
     mk(7, { type: 'link', title: 'Documentação do Node.js', cat: 'c-dev', tags: ['docs', 'node'], content: 'https://nodejs.org/docs/latest/api/', links: [{ id: 'l1', url: 'https://developer.mozilla.org', label: 'developer.mozilla.org' }] }),
     mk(8, { type: 'nota', title: 'Ideias para a semana', cat: 'c-vida', fav: true, tags: ['ideias'], date: day(2), desc: 'Anote tudo aqui antes de esquecer.', content: '• Organizar a mesa\n• Marcar consulta\n• Montar a rotina de estudos' }),
-    mk(9, { type: 'nota', title: 'Bem-vindo à Mochila! 🎒', cat: 'c-vida', status: 'ver', fav: true, tags: ['comece-aqui'], desc: 'Guarde tudo num lugar só.', content: 'Dicas rápidas:\n• Ctrl+K busca em tudo\n• Arraste um arquivo para a janela para criar um item\n• Clique direito no cartão abre o menu\n• Concluir tarefas dá XP — suba de nível!' }),
+    mk(9, { type: 'nota', title: 'Bem-vindo ao MyLoot! 🎁', cat: 'c-vida', status: 'ver', fav: true, tags: ['comece-aqui'], desc: 'Guarde tudo num lugar só.', content: 'Dicas rápidas:\n• Ctrl+K busca em tudo\n• Arraste um arquivo para a janela para criar um item\n• Clique direito no cartão abre o menu\n• Concluir tarefas dá XP — suba de nível!' }),
   ];
   d.tasks = [
     { id: 't1', text: 'Revisar o capítulo 2', date: day(-1), prio: 'alta', done: false, created: now },
@@ -230,7 +230,7 @@ function driveSync(db) {
   const cfg = db.settings.drive || {};
   if (!cfg.path) throw new Error('Escolha a pasta do Drive.');
   if (!fs.existsSync(cfg.path)) throw new Error('A pasta do Drive não existe: ' + cfg.path);
-  const base = path.join(cfg.path, 'Mochila');
+  const antigo = path.join(cfg.path, 'Mochila'), base = fs.existsSync(antigo) && !fs.existsSync(path.join(cfg.path, 'MyLoot')) ? antigo : path.join(cfg.path, 'MyLoot');
   fs.mkdirSync(base, { recursive: true });
   let manifest = {};
   try { manifest = JSON.parse(fs.readFileSync(MANIFEST, 'utf8')); } catch (_) {}
@@ -270,6 +270,7 @@ function driveSync(db) {
 // ---------- Claude (API da Anthropic) ----------
 // A chave fica em data/segredos.json, fora do db.json: não entra no backup nem vai para o Drive.
 const https = require('https');
+const INT = require('./integracoes');
 const SECRETS = path.join(DATA, 'segredos.json');
 const AI_MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'];
 const readSecrets = () => { try { return JSON.parse(fs.readFileSync(SECRETS, 'utf8')); } catch (_) { return {}; } };
@@ -320,6 +321,41 @@ function callClaude(key, model, system, user) {
   });
 }
 
+// ---------- Claude Code (usa a assinatura do Claude já logada no computador, sem chave da API) ----------
+let codeInfo = null; // cache: { ok, versao }
+function claudeCodeInfo(force) {
+  if (codeInfo && !force) return codeInfo;
+  try {
+    const out = cp.execSync('claude --version', { encoding: 'utf8', timeout: 15000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
+    codeInfo = { ok: /claude/i.test(out), versao: out.trim().split(/\s/)[0] };
+  } catch (_) { codeInfo = { ok: false }; }
+  return codeInfo;
+}
+function callClaudeCode(model, system, user) {
+  return new Promise((ok, no) => {
+    // pasta vazia como diretório de trabalho: o Claude Code não enxerga nenhum projeto
+    const dir = path.join(require('os').tmpdir(), 'myloot-claude');
+    fs.mkdirSync(dir, { recursive: true });
+    const args = ['-p', '--output-format', 'json', '--model', model, '--system-prompt', JSON.stringify(system), '--tools', '""', '--no-session-persistence', '--strict-mcp-config'];
+    const ch = cp.spawn('claude', args, { cwd: dir, shell: true, windowsHide: true });
+    const out = [], err = [];
+    const t = setTimeout(() => { ch.kill(); no(new Error('O Claude Code demorou demais. Tente de novo.')); }, 240000);
+    ch.stdout.on('data', (c) => out.push(c));
+    ch.stderr.on('data', (c) => err.push(c));
+    ch.on('error', () => { clearTimeout(t); no(new Error('Não achei o Claude Code neste computador.')); });
+    ch.on('close', (code) => {
+      clearTimeout(t);
+      const txt = Buffer.concat(out).toString('utf8').trim();
+      let j = null; try { j = JSON.parse(txt.slice(txt.indexOf('{'))); } catch (_) {}
+      if (j && !j.is_error && j.result) return ok({ texto: String(j.result).trim(), modelo: model, via: 'code' });
+      const msg = (j && j.result) || Buffer.concat(err).toString('utf8').trim() || txt;
+      if (/log ?in|auth|login/i.test(msg)) return no(new Error('O Claude Code não está logado. Abra um terminal, rode "claude" e faça o login.'));
+      no(new Error('O Claude Code respondeu com erro: ' + (msg || 'código ' + code).slice(0, 300)));
+    });
+    ch.stdin.end(user);
+  });
+}
+
 // ---------- foco (o relógio mora no servidor: continua contando com a aba fechada) ----------
 const FOCO = path.join(DATA, 'foco.json');
 let foco = { end: 0, min: 25, pendentes: 0 };
@@ -329,9 +365,9 @@ const saveFoco = () => { try { fs.writeFileSync(FOCO, JSON.stringify(foco)); } c
 
 // aviso na área de trabalho do Windows (toast; se não der, balão na bandeja)
 function notify(title, text) {
-  if (process.platform !== 'win32' || process.env.MOCHILA_SEM_AVISO) return;
+  if (process.platform !== 'win32' || (process.env.MYLOOT_SEM_AVISO || process.env.MOCHILA_SEM_AVISO)) return;
   const q = (s) => String(s).replace(/'/g, "''");
-  const ico = path.join(ROOT, 'Mochila.ico');
+  const ico = path.join(ROOT, 'MyLoot.ico');
   const ps = `
 $t='${q(title)}'; $m='${q(text)}'
 try {
@@ -359,7 +395,7 @@ function armFoco() {
   const left = foco.end - Date.now();
   const done = (avisar) => {
     foco.end = 0; foco.pendentes = (foco.pendentes || 0) + 1; saveFoco();
-    if (avisar) notify('⏱ Foco concluído!', `Você ficou ${foco.min} minutos focado. Abra a Mochila para pegar seu XP.`);
+    if (avisar) notify('⏱ Foco concluído!', `Você ficou ${foco.min} minutos focado. Abra o MyLoot para pegar seu XP.`);
   };
   if (left <= 0) return done(false); // terminou enquanto o servidor estava desligado
   focoT = setTimeout(() => done(true), left);
@@ -405,8 +441,8 @@ const server = http.createServer(async (req, res) => {
     const p = decodeURIComponent(u.pathname);
 
     if (p.startsWith('/api/')) {
-      if (req.method !== 'GET' && req.headers['x-mochila'] !== '1') return send(res, 403, { erro: 'cabeçalho' });
-      if (p === '/api/ping') return send(res, 200, { ok: true, app: 'mochila' });
+      if (req.method !== 'GET' && req.headers['x-myloot'] !== '1' && req.headers['x-mochila'] !== '1') return send(res, 403, { erro: 'cabeçalho' });
+      if (p === '/api/ping') return send(res, 200, { ok: true, app: 'myloot' });
       if (p === '/api/db' && req.method === 'GET') {
         const { db, fresh } = readDB();
         if (fresh) writeDB(db);
@@ -441,7 +477,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/api/restore' && req.method === 'POST') {
         const body = JSON.parse((await readBody(req)).toString('utf8'));
-        if (!body || !Array.isArray(body.items)) return send(res, 400, { erro: 'Esse arquivo não parece um backup da Mochila.' });
+        if (!body || !Array.isArray(body.items)) return send(res, 400, { erro: 'Esse arquivo não parece um backup do MyLoot.' });
         if (fs.existsSync(DB)) fs.copyFileSync(DB, path.join(BAK, 'antes-de-restaurar-' + Date.now() + '.json'));
         writeDB(migrate(body));
         return send(res, 200, { ok: true });
@@ -463,8 +499,8 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/api/focus/stop' && req.method === 'POST') { foco.end = 0; clearTimeout(focoT); saveFoco(); return send(res, 200, { ok: true }); }
       if (p === '/api/focus/claim' && req.method === 'POST') { const n = foco.pendentes || 0; foco.pendentes = 0; saveFoco(); return send(res, 200, { n }); }
-      if (p === '/api/notify-test' && req.method === 'POST') { notify('🎒 Mochila', 'É assim que o aviso do foco aparece.'); return send(res, 200, { ok: true }); }
-      if (p === '/api/ai/status') return send(res, 200, { temChave: !!readSecrets().anthropicKey, modelos: AI_MODELS });
+      if (p === '/api/notify-test' && req.method === 'POST') { notify('🎁 MyLoot', 'É assim que o aviso do foco aparece.'); return send(res, 200, { ok: true }); }
+      if (p === '/api/ai/status') return send(res, 200, { temChave: !!readSecrets().anthropicKey, modelos: AI_MODELS, code: claudeCodeInfo(u.searchParams.get('checar') === '1') });
       if (p === '/api/ai/key' && req.method === 'POST') {
         const { key } = JSON.parse((await readBody(req)).toString('utf8'));
         const s = readSecrets();
@@ -475,17 +511,54 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/api/ai' && req.method === 'POST') {
         const key = readSecrets().anthropicKey;
-        if (!key) return send(res, 400, { erro: 'Coloque sua chave da API do Claude nas Configurações.' });
+        const via0 = readDB().db.settings.aiVia || 'auto';
+        const via = via0 === 'api' ? 'api' : via0 === 'code' ? 'code' : (claudeCodeInfo().ok ? 'code' : 'api');
+        if (via === 'api' && !key) return send(res, 400, { erro: 'Coloque sua chave da API do Claude nas Configurações ou instale o Claude Code.' });
         const b = JSON.parse((await readBody(req)).toString('utf8'));
         const texto = String(b.texto || ''), pedido = String(b.pedido || '').trim();
         const inst = b.acao === 'livre' ? pedido : AI_ACTIONS[b.acao];
         if (!inst) return send(res, 400, { erro: 'Escreva o que você quer que o Claude faça.' });
         const { db } = readDB();
         const model = AI_MODELS.includes(db.settings.aiModel) ? db.settings.aiModel : AI_MODELS[0];
-        const system = 'Você é o assistente de escrita de um app pessoal de notas chamado Mochila. Responda só com o texto final, pronto para colar: sem introdução, sem explicação, sem aspas em volta e sem cercas de código. Use o idioma do texto (por padrão, português do Brasil).';
+        const system = 'Você é o assistente de escrita de um app pessoal de notas chamado MyLoot. Responda só com o texto final, pronto para colar: sem introdução, sem explicação, sem aspas em volta e sem cercas de código. Use o idioma do texto (por padrão, português do Brasil).';
         const user = texto.trim() ? `Pedido: ${inst}\n\n<texto>\n${texto}\n</texto>` : `Pedido: ${inst}`;
-        try { return send(res, 200, await callClaude(key, model, system, user)); }
+        try { return send(res, 200, via === 'code' ? await callClaudeCode(model, system, user) : await callClaude(key, model, system, user)); }
         catch (e) { return send(res, 502, { erro: e.message }); }
+      }
+      // ----- integrações (Notion e Trello) -----
+      if (p === '/api/int/status') {
+        const x = readSecrets(), n = x.notion || {}, t = x.trello || {};
+        return send(res, 200, { notion: { ok: !!(n.token && n.alvo), temToken: !!n.token, alvoNome: n.alvoNome || '' }, trello: { ok: !!(t.key && t.token && t.alvo), temChave: !!(t.key && t.token), alvoNome: t.alvoNome || '' } });
+      }
+      if (p.startsWith('/api/int/') && req.method === 'POST') {
+        const b = JSON.parse((await readBody(req)).toString('utf8') || '{}');
+        const x = readSecrets();
+        try {
+          if (p === '/api/int/notion/paginas') return send(res, 200, { paginas: await INT.notionPaginas(b.token || (x.notion || {}).token || '') });
+          if (p === '/api/int/trello/listas') {
+            const o = x.trello || {};
+            return send(res, 200, { listas: await INT.trelloListas(b.key || o.key || '', b.token || o.token || '') });
+          }
+          if (p === '/api/int/salvar') {
+            for (const k of ['notion', 'trello']) {
+              if (!(k in b)) continue;
+              if (b[k] === null) { delete x[k]; continue; }
+              const novo = Object.assign({}, x[k] || {});
+              for (const [kk, v] of Object.entries(b[k])) if (v) novo[kk] = String(v);
+              x[k] = novo;
+            }
+            writeSecrets(x);
+            return send(res, 200, { ok: true });
+          }
+          const m = p.match(/^\/api\/int\/(notion|trello)\/enviar$/);
+          if (m) {
+            const it = readDB().db.items.find((i) => i.id === b.id);
+            if (!it) return send(res, 404, { erro: 'Item não encontrado.' });
+            const cfg = x[m[1]] || {};
+            if (!cfg.alvo) return send(res, 400, { erro: 'Conecte nas Configurações primeiro.' });
+            return send(res, 200, m[1] === 'notion' ? await INT.notionEnviar(cfg, it) : await INT.trelloEnviar(cfg, it));
+          }
+        } catch (e) { return send(res, 502, { erro: e.message }); }
       }
       if (p === '/api/shutdown' && req.method === 'POST') {
         send(res, 200, { ok: true });
@@ -511,11 +584,11 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.on('error', (e) => {
-  if (e.code === 'EADDRINUSE') { console.log('A Mochila já está aberta na porta ' + PORT + '.'); process.exit(0); }
+  if (e.code === 'EADDRINUSE') { console.log('O MyLoot já está aberto na porta ' + PORT + '.'); process.exit(0); }
   console.error(e); process.exit(1);
 });
 server.listen(PORT, HOST, () => {
-  console.log(`Mochila rodando em http://${HOST}:${PORT}  (feche esta janela para desligar)`);
+  console.log(`MyLoot rodando em http://${HOST}:${PORT}  (feche esta janela para desligar)`);
   const { db, fresh } = readDB();
   const novos = applyPacks(db);
   if (fresh || novos) writeDB(db); else dailyBackup();

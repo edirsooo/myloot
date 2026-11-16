@@ -84,7 +84,7 @@
     const CMDS = [
       ['＋', 'Novo item', 'N', () => { M.ui.page = 'lib'; M.render(); M.newItemDialog(); }],
       ['🏠', 'Ir para Início', 'H', () => M.go('home')],
-      ['🎒', 'Ir para Biblioteca', 'B', () => M.go('lib')],
+      ['📦', 'Ir para Biblioteca', 'B', () => M.go('lib')],
       ['✅', 'Ir para Tarefas', 'T', () => M.go('tasks')],
       ['🗓️', 'Ir para Calendário', 'C', () => M.go('cal')],
       ['🧰', 'Ir para Ferramentas', '', () => M.go('tools')],

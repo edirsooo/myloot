@@ -2,7 +2,7 @@
 (function () {
   const { esc, $, $$ } = M;
   const PAGES = [
-    ['home', '🏠', 'Início'], ['lib', '🎒', 'Biblioteca'], ['tasks', '✅', 'Tarefas'], ['cal', '🗓️', 'Calendário'], ['tools', '🧰', 'Ferramentas'],
+    ['home', '🏠', 'Início'], ['lib', '📦', 'Biblioteca'], ['tasks', '✅', 'Tarefas'], ['cal', '🗓️', 'Calendário'], ['tools', '🧰', 'Ferramentas'],
     ['ach', '🏆', 'Conquistas'], ['trash', '🗑️', 'Lixeira'], ['cfg', '⚙️', 'Configurações'],
   ];
 
@@ -70,7 +70,7 @@
 
   // iniciar
   (async () => {
-    try { await M.load(); } catch (e) { document.body.innerHTML = '<p style="padding:30px;font:16px monospace">Não consegui falar com o servidor. Abra pelo atalho da Mochila.</p>'; return; }
+    try { await M.load(); } catch (e) { document.body.innerHTML = '<p style="padding:30px;font:16px monospace">Não consegui falar com o servidor. Abra pelo atalho do MyLoot.</p>'; return; }
     M.applySettings();
     // endereço direto: #lib, #tasks, #cal, #ach, #cfg ou #item=ID
     const hash = location.hash.slice(1);

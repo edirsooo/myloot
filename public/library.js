@@ -75,7 +75,7 @@
     const count = (id) => M.db.items.filter((i) => i.type === id).length;
     v.innerHTML = `
       <div class="hotbar" id="hotbar">
-        <div class="slot ${!u.type ? 'on' : ''}" data-type="">🎒 Tudo <span class="n">${M.db.items.length}</span></div>
+        <div class="slot ${!u.type ? 'on' : ''}" data-type="">📦 Tudo <span class="n">${M.db.items.length}</span></div>
         ${M.TYPES.map((t) => `<div class="slot ${u.type === t.id ? 'on' : ''}" data-type="${t.id}" style="--c:${t.color}">${t.em} ${t.name} <span class="n">${count(t.id)}</span></div>`).join('')}
       </div>
       <div class="toolbar">
@@ -115,7 +115,7 @@
 
     // arrastar cartões entre colunas do quadro
     let dragId = null;
-    res.ondragstart = (e) => { const c = e.target.closest('.card'); if (!c) return; dragId = c.dataset.id; c.classList.add('dragging'); e.dataTransfer.setData('text/x-mochila', dragId); e.dataTransfer.effectAllowed = 'move'; };
+    res.ondragstart = (e) => { const c = e.target.closest('.card'); if (!c) return; dragId = c.dataset.id; c.classList.add('dragging'); e.dataTransfer.setData('text/x-myloot', dragId); e.dataTransfer.effectAllowed = 'move'; };
     res.ondragend = () => { dragId = null; $$('.dragging').forEach((x) => x.classList.remove('dragging')); $$('.col.over').forEach((x) => x.classList.remove('over')); };
     res.ondragover = (e) => { const col = e.target.closest('.col'); if (col && dragId) { e.preventDefault(); $$('.col.over').forEach((x) => { if (x !== col) x.classList.remove('over'); }); col.classList.add('over'); } };
     res.ondrop = (e) => {
@@ -150,6 +150,8 @@
       { em: '📂', t: 'Abrir', fn: () => M.openItem(it.id) },
       { em: '📋', t: 'Copiar conteúdo', fn: () => M.copyItem(it) },
       { em: '⭐', t: it.fav ? 'Tirar dos favoritos' : 'Favoritar', fn: () => M.toggleFav(it.id) },
+      { em: '📓', t: 'Enviar para o Notion', fn: () => M.sendItem(it, 'notion') },
+      { em: '📤', t: 'Enviar para o Trello', fn: () => M.sendItem(it, 'trello') },
       { em: '🧬', t: 'Duplicar', fn: () => { const c = M.newItem(JSON.parse(JSON.stringify(it))); c.id = M.uid(); c.title = (it.title || 'Sem título') + ' (cópia)'; c.checklist.forEach((x) => (x.id = M.uid())); M.db.items.push(c); M.save(); SFX.play('pop'); M.render(); M.toast('🧬 Duplicado'); } },
       ...(cats.length ? ['-', { sub: 'Mover para categoria' }, ...cats] : []),
       '-',

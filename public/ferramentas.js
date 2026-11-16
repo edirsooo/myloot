@@ -69,7 +69,7 @@
         <h3>${esc(f.n)}</h3>
         ${f.s ? `<p>Substitui <b style="color:var(--text)">${esc(f.s)}</b>${f.p ? ' · ' + esc(f.p) : ''}</p>` : f.p ? `<p style="-webkit-line-clamp:3">${esc(f.p)}</p>` : ''}
         <div class="meta"><span class="tdate" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">${esc(f.onde || host(f.u))}</span></div>
-        <div class="row" style="margin-top:10px;gap:8px"><a class="btn sm" href="${esc(f.u)}" target="_blank" rel="noopener" style="flex:1">↗ Abrir</a><button class="btn sm ghost" data-save="${i}" style="flex:1" ${tem ? 'disabled' : ''}>${tem ? '✔ Na mochila' : '＋ Guardar'}</button></div>
+        <div class="row" style="margin-top:10px;gap:8px"><a class="btn sm" href="${esc(f.u)}" target="_blank" rel="noopener" style="flex:1">↗ Abrir</a><button class="btn sm ghost" data-save="${i}" style="flex:1" ${tem ? 'disabled' : ''}>${tem ? '✔ Guardado' : '＋ Guardar'}</button></div>
       </div>`;
     }).join('')}</div>` : '<div class="empty"><div class="big">🕳️</div><h3>Nada encontrado</h3></div>';
   }
@@ -79,7 +79,7 @@
     v.innerHTML = `
       <div class="hotbar" id="fG"><div class="slot ${!st.g ? 'on' : ''}" data-g="">🧰 Tudo <span class="n">${F.length}</span></div>${GRUPOS.map((g) => `<div class="slot ${st.g === g.id ? 'on' : ''}" data-g="${g.id}" style="--c:${g.cor}">${g.em} ${g.nome} <span class="n">${F.filter((f) => f.g === g.id).length}</span></div>`).join('')}</div>
       <div class="toolbar"><input class="search" id="fQ" type="search" placeholder="Buscar ferramenta… (ex.: vídeo, Photoshop)" value="${esc(st.q)}" style="max-width:340px">
-        ${M.hint('Links tirados dos guias em PDF que vêm na Mochila. “Guardar” cria um item do tipo Link na sua Biblioteca. Preços e planos mudam sempre: confira no site oficial.')}
+        ${M.hint('Links tirados dos guias em PDF que vêm no MyLoot. “Guardar” cria um item do tipo Link na sua Biblioteca. Preços e planos mudam sempre: confira no site oficial.')}
         <span class="grow"></span><small id="fCount" style="color:var(--faint);font-family:var(--mono)"></small></div>
       <div id="fRes"></div>`;
     cartoes();
