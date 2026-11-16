@@ -161,7 +161,9 @@
     cv.ondblclick = (e) => { if (!pick(toWorld(e))) fit(); };
 
     resize(); loop();
-    return { nodes, edges, fit };
+    const api = { nodes, edges, fit, toScreen: (n) => ({ x: cam.x + n.x * cam.k, y: cam.y + n.y * cam.k }) };
+    host._g = api; // usado pelas capturas de tela do vídeo
+    return api;
   };
 
   const legend = () => `<div class="g-leg">${M.TYPES.map((t) => `<span><i style="background:${t.color}"></i>${t.name.replace(' / PDF', '')}</span>`).join('')}</div>`;

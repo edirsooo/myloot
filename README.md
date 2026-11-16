@@ -6,9 +6,9 @@
 
 Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua.
 
-[![Veja o MyLoot funcionando](docs/img/demo.gif)](docs/video/mochila-tutorial.mp4)
+[![Veja o MyLoot funcionando](docs/img/demo.gif)](docs/video/myloot-tutorial.mp4)
 
-▶️ **[Tutorial completo com som (2 min 37)](docs/video/mochila-tutorial.mp4)** · [apresentação rápida (50 s)](docs/video/mochila.mp4)
+▶️ **[Tutorial completo com som (3 min 10)](docs/video/myloot-tutorial.mp4)** · [apresentação rápida da versão anterior, quando se chamava Mochila (50 s)](docs/video/mochila.mp4)
 
 ⭐ Curtiu? Deixe uma estrela no repositório: ajuda outras pessoas a encontrarem o projeto.
 

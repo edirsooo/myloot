@@ -1,4 +1,4 @@
-"""Gera o ícone do MyLoot (MyLoot.ico + public/icon.png): baú em pixel-art no fundo escuro com brilho laranja.
+"""Gera o ícone do MyLoot (MyLoot.ico + public/icon.png): baú em pixel-art no fundo branco com brilho laranja.
 
 Uso:  python _ferramentas/fazer_icone.py
 """
@@ -54,7 +54,7 @@ def pix(grid, cell):
 
 
 def icone():
-    c1, c2 = (40, 24, 60), (12, 10, 26)
+    c1, c2 = (255, 255, 255), (238, 236, 244)
     bg = Image.new('RGBA', (S, S))
     px = bg.load()
     for y in range(S):
@@ -62,7 +62,7 @@ def icone():
             t = (x * .3 + y * .7) / S
             px[x, y] = tuple(int(c1[i] + (c2[i] - c1[i]) * t) for i in range(3)) + (255,)
     glow = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-    ImageDraw.Draw(glow).ellipse((180, 180, 844, 844), fill=(255, 126, 0, 80))
+    ImageDraw.Draw(glow).ellipse((180, 180, 844, 844), fill=(255, 150, 40, 60))
     bg.alpha_composite(glow.filter(ImageFilter.GaussianBlur(90)))
     sh = Image.new('RGBA', (S, S), (0, 0, 0, 0))
     ImageDraw.Draw(sh).ellipse((210, 760, 814, 840), fill=(0, 0, 0, 90))
@@ -71,8 +71,8 @@ def icone():
     bg.alpha_composite(ch, ((S - ch.width) // 2, (S - ch.height) // 2 + 10))
     d = ImageDraw.Draw(bg)
     for x, y, r in [(800, 250, 9), (220, 300, 6), (850, 520, 5)]:
-        d.rectangle((x - r, y - r * 3, x + r, y + r * 3), fill=(255, 250, 220))
-        d.rectangle((x - r * 3, y - r, x + r * 3, y + r), fill=(255, 250, 220))
+        d.rectangle((x - r, y - r * 3, x + r, y + r * 3), fill=(255, 166, 40))
+        d.rectangle((x - r * 3, y - r, x + r * 3, y + r), fill=(255, 166, 40))
     mask = Image.new('L', (S, S), 0)
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, S - 1, S - 1), radius=int(S * .22), fill=255)
     out = Image.new('RGBA', (S, S), (0, 0, 0, 0))
