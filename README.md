@@ -4,9 +4,9 @@
 
 Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua.
 
-[![Veja a Mochila em 50 segundos](docs/img/demo.gif)](docs/video/mochila.mp4)
+[![Veja a Mochila funcionando](docs/img/demo.gif)](docs/video/mochila-tutorial.mp4)
 
-▶️ **[Assistir ao vídeo de apresentação com som (50 s)](docs/video/mochila.mp4)**
+▶️ **[Tutorial completo com som (2 min 37)](docs/video/mochila-tutorial.mp4)** · [apresentação rápida (50 s)](docs/video/mochila.mp4)
 
 ⭐ Curtiu? Deixe uma estrela no repositório: ajuda outras pessoas a encontrarem o projeto.
 
