@@ -321,21 +321,47 @@ function callClaude(key, model, system, user) {
   });
 }
 
-// ---------- Claude Code (usa a assinatura do Claude já logada no computador, sem chave da API) ----------
-let codeInfo = null; // cache: { ok, versao }
-function claudeCodeInfo(force) {
-  if (codeInfo && !force) return codeInfo;
+// ---------- IAs locais: Claude Code e Codex (usam a assinatura já logada no computador, sem chave da API) ----------
+const IA_CMD = { claude: 'claude --version', codex: 'codex --version' };
+const iaCache = {};
+function iaInfo(nome, force) {
+  if (iaCache[nome] && !force) return iaCache[nome];
   try {
-    const out = cp.execSync('claude --version', { encoding: 'utf8', timeout: 15000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
-    codeInfo = { ok: /claude/i.test(out), versao: out.trim().split(/\s/)[0] };
-  } catch (_) { codeInfo = { ok: false }; }
-  return codeInfo;
+    const out = cp.execSync(IA_CMD[nome], { encoding: 'utf8', timeout: 15000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
+    const v = (out.match(/\d+\.\d+[\d.]*/) || [''])[0];
+    iaCache[nome] = { ok: !!out.trim(), versao: v };
+  } catch (_) { iaCache[nome] = { ok: false }; }
+  return iaCache[nome];
+}
+const claudeCodeInfo = (force) => iaInfo('claude', force);
+const pastaIA = (n) => { const d = path.join(require('os').tmpdir(), 'myloot-' + n); fs.mkdirSync(d, { recursive: true }); return d; };
+function callCodex(system, user) {
+  return new Promise((ok, no) => {
+    // pasta vazia, só leitura, sem histórico: o Codex só escreve a resposta
+    const dir = pastaIA('codex'), saida = path.join(dir, 'resposta.txt');
+    try { fs.writeFileSync(saida, ''); } catch (_) {}
+    const args = ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ephemeral', '--color', 'never', '-C', '"' + dir + '"', '-o', '"' + saida + '"', '-'];
+    const ch = cp.spawn('codex', args, { cwd: dir, shell: true, windowsHide: true });
+    const err = [];
+    const t = setTimeout(() => { ch.kill(); no(new Error('O Codex demorou demais. Tente de novo.')); }, 240000);
+    ch.stdout.on('data', (c) => err.push(c));
+    ch.stderr.on('data', (c) => err.push(c));
+    ch.on('error', () => { clearTimeout(t); no(new Error('Não achei o Codex neste computador.')); });
+    ch.on('close', (code) => {
+      clearTimeout(t);
+      let txt = ''; try { txt = fs.readFileSync(saida, 'utf8').trim(); } catch (_) {}
+      if (code === 0 && txt) return ok({ texto: txt, modelo: 'codex', via: 'codex' });
+      const msg = Buffer.concat(err).toString('utf8').trim();
+      if (/log ?in|auth|unauthorized/i.test(msg)) return no(new Error('O Codex não está logado. Abra um terminal, rode "codex" e faça o login.'));
+      no(new Error('O Codex respondeu com erro: ' + (msg.split(/\r?\n/).slice(-3).join(' ') || 'código ' + code).slice(0, 300)));
+    });
+    ch.stdin.end(system + '\n\n' + user);
+  });
 }
 function callClaudeCode(model, system, user) {
   return new Promise((ok, no) => {
     // pasta vazia como diretório de trabalho: o Claude Code não enxerga nenhum projeto
-    const dir = path.join(require('os').tmpdir(), 'myloot-claude');
-    fs.mkdirSync(dir, { recursive: true });
+    const dir = pastaIA('claude');
     const args = ['-p', '--output-format', 'json', '--model', model, '--system-prompt', JSON.stringify(system), '--tools', '""', '--no-session-persistence', '--strict-mcp-config'];
     const ch = cp.spawn('claude', args, { cwd: dir, shell: true, windowsHide: true });
     const out = [], err = [];
@@ -347,7 +373,7 @@ function callClaudeCode(model, system, user) {
       clearTimeout(t);
       const txt = Buffer.concat(out).toString('utf8').trim();
       let j = null; try { j = JSON.parse(txt.slice(txt.indexOf('{'))); } catch (_) {}
-      if (j && !j.is_error && j.result) return ok({ texto: String(j.result).trim(), modelo: model, via: 'code' });
+      if (j && !j.is_error && j.result) return ok({ texto: String(j.result).trim(), modelo: model, via: 'claude' });
       const msg = (j && j.result) || Buffer.concat(err).toString('utf8').trim() || txt;
       if (/log ?in|auth|login/i.test(msg)) return no(new Error('O Claude Code não está logado. Abra um terminal, rode "claude" e faça o login.'));
       no(new Error('O Claude Code respondeu com erro: ' + (msg || 'código ' + code).slice(0, 300)));
@@ -500,7 +526,11 @@ const server = http.createServer(async (req, res) => {
       if (p === '/api/focus/stop' && req.method === 'POST') { foco.end = 0; clearTimeout(focoT); saveFoco(); return send(res, 200, { ok: true }); }
       if (p === '/api/focus/claim' && req.method === 'POST') { const n = foco.pendentes || 0; foco.pendentes = 0; saveFoco(); return send(res, 200, { n }); }
       if (p === '/api/notify-test' && req.method === 'POST') { notify('🎁 MyLoot', 'É assim que o aviso do foco aparece.'); return send(res, 200, { ok: true }); }
-      if (p === '/api/ai/status') return send(res, 200, { temChave: !!readSecrets().anthropicKey, modelos: AI_MODELS, code: claudeCodeInfo(u.searchParams.get('checar') === '1') });
+      if (p === '/api/ai/status') {
+        const f = u.searchParams.get('checar') === '1';
+        const claude = iaInfo('claude', f), codex = iaInfo('codex', f);
+        return send(res, 200, { temChave: !!readSecrets().anthropicKey, modelos: AI_MODELS, code: claude, claude, codex });
+      }
       if (p === '/api/ai/key' && req.method === 'POST') {
         const { key } = JSON.parse((await readBody(req)).toString('utf8'));
         const s = readSecrets();
@@ -511,18 +541,22 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/api/ai' && req.method === 'POST') {
         const key = readSecrets().anthropicKey;
-        const via0 = readDB().db.settings.aiVia || 'auto';
-        const via = via0 === 'api' ? 'api' : via0 === 'code' ? 'code' : (claudeCodeInfo().ok ? 'code' : 'api');
-        if (via === 'api' && !key) return send(res, 400, { erro: 'Coloque sua chave da API do Claude nas Configurações ou instale o Claude Code.' });
         const b = JSON.parse((await readBody(req)).toString('utf8'));
+        // qual IA: a escolhida no pedido, ou a das Configurações; "auto" pega a primeira ligada e instalada
+        const st = readDB().db.settings, ligadas = st.aiTools || {};
+        let pref = b.via || st.aiVia || 'auto'; if (pref === 'code') pref = 'claude';
+        const pode = (n) => ligadas[n] !== false && iaInfo(n).ok;
+        let via = pref === 'api' ? 'api' : pref === 'auto' ? (['claude', 'codex'].find(pode) || 'api') : (pode(pref) ? pref : null);
+        if (!via) return send(res, 400, { erro: (pref === 'codex' ? 'O Codex' : 'O Claude Code') + ' não está instalado ou está desligado nas Configurações.' });
+        if (via === 'api' && !key) return send(res, 400, { erro: 'Nenhuma IA encontrada. Instale o Claude Code ou o Codex, ou coloque uma chave da API do Claude nas Configurações.' });
         const texto = String(b.texto || ''), pedido = String(b.pedido || '').trim();
         const inst = b.acao === 'livre' ? pedido : AI_ACTIONS[b.acao];
-        if (!inst) return send(res, 400, { erro: 'Escreva o que você quer que o Claude faça.' });
+        if (!inst) return send(res, 400, { erro: 'Escreva o que você quer que a IA faça.' });
         const { db } = readDB();
         const model = AI_MODELS.includes(db.settings.aiModel) ? db.settings.aiModel : AI_MODELS[0];
         const system = 'Você é o assistente de escrita de um app pessoal de notas chamado MyLoot. Responda só com o texto final, pronto para colar: sem introdução, sem explicação, sem aspas em volta e sem cercas de código. Use o idioma do texto (por padrão, português do Brasil).';
         const user = texto.trim() ? `Pedido: ${inst}\n\n<texto>\n${texto}\n</texto>` : `Pedido: ${inst}`;
-        try { return send(res, 200, via === 'code' ? await callClaudeCode(model, system, user) : await callClaude(key, model, system, user)); }
+        try { return send(res, 200, via === 'claude' ? await callClaudeCode(model, system, user) : via === 'codex' ? await callCodex(system, user) : await callClaude(key, model, system, user)); }
         catch (e) { return send(res, 502, { erro: e.message }); }
       }
       // ----- integrações (Notion e Trello) -----

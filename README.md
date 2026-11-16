@@ -25,7 +25,7 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua.
 - **Tarefas e calendário:** escreva "pagar conta amanhã" e a data entra sozinha.
 - **Modo foco:** timer que continua contando com o navegador fechado e avisa na área de trabalho.
 - **Joguinho:** XP, níveis, meta do dia, missões, sequência de dias e conquistas. Tudo pode ser desligado.
-- **Claude (opcional):** peça para melhorar, corrigir ou resumir qualquer texto. Se você tem o [Claude Code](https://claude.com/claude-code) instalado e logado, ele usa a sua assinatura, sem chave e sem custo extra. Se não tiver, dá para usar uma chave da API.
+- **IA (opcional): Claude ou Codex.** Peça para melhorar, corrigir ou resumir qualquer texto. O MyLoot acha sozinho o [Claude Code](https://claude.com/claude-code) e o [Codex](https://developers.openai.com/codex) instalados no seu PC e usa a sua própria assinatura, sem chave e sem custo extra. Na primeira vez, ele pergunta quais você quer usar. Sem nenhum dos dois, dá para colar uma chave da API do Claude.
 - **Notion e Trello (opcional):** envie qualquer item para uma página do Notion ou para uma lista do Trello com um clique.
 - **Google Drive (opcional):** copia tudo como arquivos `.md` para a sua pasta do Drive.
 - **Central de ferramentas:** 42 links de IAs de imagem e vídeo e de programas de código aberto, com busca e botão para guardar na sua Biblioteca.
@@ -79,7 +79,7 @@ Tudo fica na pasta `data/`, dentro da pasta do app:
 - `data/anexos/` — os arquivos que você anexou
 - `data/backups/` — uma cópia automática por dia (guarda as 20 mais novas)
 
-As chaves do Claude, do Notion e do Trello ficam em `data/segredos.json`, fora do backup e do GitHub.
+A chave da API do Claude e as do Notion e do Trello ficam em `data/segredos.json`, fora do backup e do GitHub.
 
 Nada sai do seu computador, a não ser que você ligue o Drive, use o Claude ou envie um item para o Notion/Trello.
 

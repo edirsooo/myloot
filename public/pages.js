@@ -57,14 +57,7 @@
       </section>
       <section class="stat"><div class="cfg-h">Categorias</div><div id="cCats"></div><button class="btn ghost sm" id="cCatAdd" style="margin-top:6px">＋ Nova categoria</button></section>
       ${M.intSection()}
-      <section class="stat"><div class="cfg-h">Claude (IA)</div>
-        <div class="cfg-row"><span class="l">Como falar com o Claude ${M.hint('Claude Code: usa a assinatura do Claude que já está logada neste computador, sem chave e sem pagar à parte (precisa do Claude Code instalado). Chave da API: cobra por uso na sua conta da Anthropic. Automático: usa o Claude Code se ele estiver instalado.')}</span><select id="aiVia" style="width:auto"><option value="auto">Automático</option><option value="code">Claude Code (sua assinatura)</option><option value="api">Chave da API</option></select></div>
-        <div class="cfg-row"><span class="l">Claude Code neste computador</span><span id="aiCode" style="font:700 12px var(--mono)">…</span></div>
-        <div class="cfg-row"><span class="l">Chave da API ${M.hint('Crie em console.anthropic.com → API Keys. Fica guardada só neste computador, em data/segredos.json, fora do backup e do Drive.')}</span><span id="aiSt" style="font:700 12px var(--mono)"></span></div>
-        <div class="row" style="align-items:center"><input type="password" id="aiKey" placeholder="Cole aqui a sua chave (sk-ant-…)" autocomplete="off" style="flex:3"><button class="btn" id="aiSave" style="flex:none">Guardar</button><button class="btn ghost" id="aiDel" style="flex:none">Remover</button></div>
-        <div class="cfg-row" style="margin-top:8px"><span class="l">Modelo ${M.hint('Opus: o mais caprichado. Sonnet: rápido e bom. Haiku: o mais barato.')}</span><select id="aiModel" style="width:auto"><option value="claude-opus-5-5">Claude Opus 5.5</option><option value="claude-sonnet-5-5">Claude Sonnet 5.5</option><option value="claude-haiku-5-5">Claude Haiku 5.5</option></select></div>
-        <small style="color:var(--dim);display:block;margin-top:6px">Use o botão <span style="font-weight:700">🤖 Pedir ao Claude</span> dentro de qualquer item para melhorar, corrigir, resumir ou reescrever o texto. Com o Claude Code, usa a sua assinatura; com a chave, cada pedido gasta créditos da sua conta da Anthropic.</small>
-      </section>
+      ${M.iaSection()}
       <section class="stat"><div class="cfg-h">Google Drive</div>
         <div class="cfg-row"><span class="l">Copiar para o Drive ${M.hint('Precisa do app “Google Drive para computador”. Cada item vira um arquivo .md numa pasta por tipo, com os anexos junto.')}</span>${M.sw('cDrive', s.drive.on)}</div>
         <div class="row" style="margin-top:8px;align-items:center"><input type="text" id="cPath" value="${esc(s.drive.path)}" placeholder="Ex: G:\\Meu Drive" style="flex:3"><button class="btn ghost" id="cFind" style="flex:none">🔎 Procurar</button><button class="btn" id="cSync" style="flex:none">☁️ Sincronizar agora</button></div>
@@ -88,17 +81,8 @@
     $('#cConf').onchange = (e) => { set('confetti', e.target.checked); FX.burst(null, null, 30); };
     $('#cGoal').onchange = (e) => { set('dailyGoal', Math.max(10, Math.min(500, +e.target.value || 50))); M.renderHud(); };
 
-    const aiSt = (on) => { const e = $('#aiSt'); if (!e) return; e.textContent = on ? '● conectada' : '○ sem chave'; e.style.color = on ? 'var(--green)' : 'var(--faint)'; };
-    const codeSt = (c) => { const e = $('#aiCode'); if (!e) return; e.textContent = c && c.ok ? '● encontrado' + (c.versao ? ' (v' + c.versao + ')' : '') : '○ não instalado'; e.style.color = c && c.ok ? 'var(--green)' : 'var(--faint)'; };
-    M.api('/api/ai/status?checar=1').then((r) => { aiSt(r.temChave); codeSt(r.code); }).catch(() => {});
     M.intBind();
-    $('#aiVia').value = s.aiVia || 'auto';
-    $('#aiVia').onchange = () => { s.aiVia = $('#aiVia').value; M.save(); M.toast('🤖 Pronto'); };
-    $('#aiModel').value = s.aiModel || 'claude-opus-5-5';
-    $('#aiModel').onchange = (e) => set('aiModel', e.target.value);
-    const putKey = async (key) => { try { const r = await M.api('/api/ai/key', { method: 'POST', body: JSON.stringify({ key }) }); $('#aiKey').value = ''; aiSt(r.temChave); SFX.play(r.temChave ? 'coin' : 'click'); M.toast(r.temChave ? '🔑 Chave guardada' : 'Chave removida'); } catch (e) { M.toast('⚠️ ' + e.message); } };
-    $('#aiSave').onclick = () => { const k = $('#aiKey').value.trim(); if (k) putKey(k); };
-    $('#aiDel').onclick = () => putKey('');
+    M.iaBind(set);
 
     function drawCats() {
       $('#cCats').innerHTML = M.db.categories.map((c) => `<div class="catrow" data-id="${c.id}"><input type="text" class="ico" value="${esc(c.icon)}" maxlength="4"><input type="text" class="nm" value="${esc(c.name)}"><input type="color" value="${c.color}"><button class="xbtn" title="Apagar categoria">✕</button></div>`).join('') || '<small style="color:var(--faint)">Nenhuma categoria ainda.</small>';

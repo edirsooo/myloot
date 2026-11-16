@@ -78,5 +78,6 @@
     M.render();
     if (hash.startsWith('item=')) M.openItem(hash.slice(5));
     M.focusPaint();
+    if (!M.db.settings.aiSetupDone) setTimeout(() => { if (!M.modalOpen()) M.iaSetup(); }, 1200);
   })();
 })();
