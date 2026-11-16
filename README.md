@@ -49,6 +49,8 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua.
 
 ## Como instalar (Windows)
 
+▶️ **[Veja o vídeo de instalação passo a passo (55 s)](docs/video/myloot-como-instalar.mp4)**
+
 1. Instale o **Node.js** (versão LTS): https://nodejs.org — é só avançar até o fim.
 2. Nesta página, clique no botão verde **Code → Download ZIP** e extraia a pasta onde quiser.
 3. Dê dois cliques em **`Instalar.bat`**. Ele cria o atalho "MyLoot" na área de trabalho e abre o app.
