@@ -1,0 +1,6 @@
+# dados pessoais: nunca vão para o GitHub
+data/
+*.lnk
+*.tmp
+.claude/
+__pycache__/

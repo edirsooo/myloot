@@ -1,0 +1,4 @@
+*.bat -text
+*.vbs -text
+*.pdf binary
+*.ico binary
