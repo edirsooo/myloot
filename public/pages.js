@@ -67,6 +67,7 @@
         <div class="row" style="align-items:center"><a class="btn ghost" id="cBak" href="/api/backup" download="myloot-backup.json" style="flex:none">⬇️ Baixar backup (.json)</a><button class="btn ghost" id="cRes" style="flex:none">⬆️ Restaurar backup</button><input type="file" id="cResF" accept=".json,application/json" hidden></div>
         <small style="color:var(--dim);display:block;margin-top:8px">Cópia automática todo dia em <code>data/backups</code> (guarda as 20 mais novas).</small>
       </section>
+      ${M.versaoSection()}
       <section class="stat"><div class="cfg-h">Atalhos</div><div class="sc">
         <kbd>Ctrl K</kbd><span>Busca global (ou a tecla <kbd>/</kbd>)</span><kbd>N</kbd><span>Novo item</span><kbd>H</kbd><span>Início</span><kbd>B</kbd><span>Biblioteca</span><kbd>T</kbd><span>Tarefas</span><kbd>C</kbd><span>Calendário</span><kbd>F</kbd><span>Começar ou parar o foco</span><kbd>Esc</kbd><span>Fechar janela</span><kbd>Clique direito</kbd><span>Menu do cartão</span></div></section>
       <section class="stat"><div class="cfg-h">Servidor</div><button class="btn danger" id="cOff">⏻ Desligar o MyLoot</button> ${M.hint('Desliga o servidor. Para abrir de novo, use o atalho da área de trabalho.')}</section>
@@ -83,6 +84,7 @@
 
     M.intBind();
     M.iaBind(set);
+    M.versaoBind();
 
     function drawCats() {
       $('#cCats').innerHTML = M.db.categories.map((c) => `<div class="catrow" data-id="${c.id}"><input type="text" class="ico" value="${esc(c.icon)}" maxlength="4"><input type="text" class="nm" value="${esc(c.name)}"><input type="color" value="${c.color}"><button class="xbtn" title="Apagar categoria">✕</button></div>`).join('') || '<small style="color:var(--faint)">Nenhuma categoria ainda.</small>';

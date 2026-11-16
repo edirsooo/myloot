@@ -1,0 +1,10 @@
+{
+  "versao": "2.2.0",
+  "data": "2026-11-16",
+  "novidades": [
+    "O app avisa sozinho quando sai versão nova e se atualiza com um clique",
+    "Codex junto com o Claude Code: use a IA que você já tem no PC",
+    "Mapa de conexões no estilo do Obsidian na tela inicial",
+    "Envio de itens para o Notion e o Trello"
+  ]
+}

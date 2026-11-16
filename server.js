@@ -271,6 +271,7 @@ function driveSync(db) {
 // A chave fica em data/segredos.json, fora do db.json: não entra no backup nem vai para o Drive.
 const https = require('https');
 const INT = require('./integracoes');
+const UPD = require('./atualizar');
 const SECRETS = path.join(DATA, 'segredos.json');
 const AI_MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'];
 const readSecrets = () => { try { return JSON.parse(fs.readFileSync(SECRETS, 'utf8')); } catch (_) { return {}; } };
@@ -468,7 +469,7 @@ const server = http.createServer(async (req, res) => {
 
     if (p.startsWith('/api/')) {
       if (req.method !== 'GET' && req.headers['x-myloot'] !== '1' && req.headers['x-mochila'] !== '1') return send(res, 403, { erro: 'cabeçalho' });
-      if (p === '/api/ping') return send(res, 200, { ok: true, app: 'myloot' });
+      if (p === '/api/ping') return send(res, 200, { ok: true, app: 'myloot', versao: UPD.local(ROOT).versao });
       if (p === '/api/db' && req.method === 'GET') {
         const { db, fresh } = readDB();
         if (fresh) writeDB(db);
@@ -593,6 +594,13 @@ const server = http.createServer(async (req, res) => {
             return send(res, 200, m[1] === 'notion' ? await INT.notionEnviar(cfg, it) : await INT.trelloEnviar(cfg, it));
           }
         } catch (e) { return send(res, 502, { erro: e.message }); }
+      }
+      // ----- atualização pelo GitHub -----
+      if (p === '/api/versao') return send(res, 200, UPD.local(ROOT));
+      if (p === '/api/atualizacao') return send(res, 200, await UPD.checar(ROOT, u.searchParams.get('forcar') === '1'));
+      if (p === '/api/atualizacao/aplicar' && req.method === 'POST') {
+        try { const v = await UPD.aplicar(ROOT); send(res, 200, { ok: true, versao: v }); UPD.reiniciar(ROOT); return; }
+        catch (e) { return send(res, 500, { erro: e.message }); }
       }
       if (p === '/api/shutdown' && req.method === 'POST') {
         send(res, 200, { ok: true });
