@@ -85,7 +85,9 @@ Nada sai do seu computador, a não ser que você ligue o Drive, use o Claude ou 
 
 ## Como atualizar
 
-Baixe o ZIP novo e copie por cima, **menos a pasta `data/`**. Seus dados são migrados sozinhos ao abrir.
+A partir da versão 2.2, **o próprio MyLoot avisa** quando sai versão nova: é só clicar em **Atualizar agora**. Ele baixa do GitHub, troca só os arquivos do app e reabre sozinho, sem mexer nos seus itens. Dá para procurar na hora em **Configurações → Versão**.
+
+Se você tem uma versão mais antiga (ou ainda a Mochila), baixe o ZIP novo uma última vez e copie por cima, **menos a pasta `data/`**. Seus dados são migrados sozinhos ao abrir.
 
 ## Por dentro
 
@@ -95,7 +97,7 @@ Baixe o ZIP novo e copie por cima, **menos a pasta `data/`**. Seus dados são mi
 
 ## Novidades
 
-O repositório vai sendo atualizado: quando houver material novo (guias, links, melhorias), ele entra aqui. Para receber, baixe o ZIP de novo e copie por cima, sem mexer na pasta `data/`.
+O repositório vai sendo atualizado: quando houver material novo (guias, links, melhorias), ele entra aqui e o app avisa você.
 
 ## Licença
 

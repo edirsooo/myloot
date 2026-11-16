@@ -26,14 +26,14 @@ function baixar(url, destino, voltas = 0) {
 const num = (v) => String(v || '0').split('.').map((x) => parseInt(x, 10) || 0);
 function maior(a, b) { const x = num(a), y = num(b); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; }
 
-function local(ROOT) { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'versao.json'), 'utf8')); } catch (_) { return { versao: '0.0.0' }; } }
+function local(ROOT) { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'versao.json'), 'utf8').replace(/^\uFEFF/, '')); } catch (_) { return { versao: '0.0.0' }; } }
 
 let cache = null;
 async function checar(ROOT, forcar) {
   if (cache && !forcar && Date.now() - cache.em < 6 * 3600e3) return cache.r;
   const loc = local(ROOT);
   let rem;
-  try { rem = JSON.parse(await baixar(URL_VERSAO + '?t=' + Date.now())); } catch (e) { return { atual: loc.versao, erro: e.message }; }
+  try { rem = JSON.parse((await baixar(URL_VERSAO + '?t=' + Date.now())).replace(/^\uFEFF/, '')); } catch (e) { return { atual: loc.versao, erro: e.message }; }
   const r = { atual: loc.versao, nova: rem.versao, temNova: maior(rem.versao, loc.versao), novidades: rem.novidades || [], data: rem.data || '', git: fs.existsSync(path.join(ROOT, '.git')) };
   cache = { em: Date.now(), r };
   return r;
