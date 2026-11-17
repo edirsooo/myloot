@@ -39,13 +39,30 @@ async function checar(ROOT, forcar) {
   return r;
 }
 
+// extrai o ZIP: PowerShell no Windows; unzip ou tar (bsdtar lê .zip) no Mac e no Linux
+function extrair(zip, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  const o = { windowsHide: true, timeout: 180000, stdio: 'ignore' };
+  if (process.platform === 'win32') {
+    return cp.execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -LiteralPath '${zip.replace(/'/g, "''")}' -DestinationPath '${dest.replace(/'/g, "''")}' -Force`], o);
+  }
+  try { cp.execFileSync('unzip', ['-q', '-o', zip, '-d', dest], o); }
+  catch (_) {
+    try { cp.execFileSync('tar', ['-xf', zip, '-C', dest], o); }
+    catch (e) { throw new Error('Não consegui extrair o ZIP. Instale o "unzip" (ex.: sudo apt install unzip) e tente de novo.'); }
+  }
+}
+
 // copia a pasta nova por cima; nunca apaga nada e pula data/ e .git/
 function copiar(de, para) {
   for (const nome of fs.readdirSync(de)) {
     if (nome === 'data' || nome === '.git') continue;
     const a = path.join(de, nome), b = path.join(para, nome);
     if (fs.statSync(a).isDirectory()) { fs.mkdirSync(b, { recursive: true }); copiar(a, b); }
-    else fs.copyFileSync(a, b);
+    else {
+      fs.copyFileSync(a, b);
+      if (/\.(sh|command)$/.test(nome)) { try { fs.chmodSync(b, 0o755); } catch (_) {} } // atalhos do Mac/Linux continuam executáveis
+    }
   }
 }
 
@@ -55,7 +72,7 @@ async function aplicar(ROOT) {
   const zip = path.join(tmp, 'myloot.zip');
   await baixar(URL_ZIP, zip);
   const dest = path.join(tmp, 'novo');
-  cp.execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -LiteralPath '${zip.replace(/'/g, "''")}' -DestinationPath '${dest.replace(/'/g, "''")}' -Force`], { windowsHide: true, timeout: 180000 });
+  extrair(zip, dest);
   const raiz = fs.readdirSync(dest).map((n) => path.join(dest, n)).find((p) => fs.statSync(p).isDirectory() && fs.existsSync(path.join(p, 'server.js')));
   if (!raiz) throw new Error('O pacote baixado veio estranho (sem server.js). Nada foi trocado.');
   copiar(raiz, ROOT);

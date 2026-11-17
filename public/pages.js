@@ -7,7 +7,7 @@
   M.pages.trash = () => {
     const v = $('#view'), T = M.db.trash;
     v.innerHTML = T.length ? `<div class="toolbar"><span class="grow"></span><button class="btn danger sm" id="empty">Esvaziar lixeira</button></div><div class="list">${T.map((e) => {
-      const it = e.data, title = e.kind === 'item' ? (M.type(it.type).em + ' ' + (it.title || 'Sem título')) : '☑️ ' + it.text;
+      const it = e.data, title = e.kind === 'item' ? (M.type(it.type).em + ' ' + (it.title || 'Sem título')) : e.kind === 'client' ? '👤 ' + (it.nome || 'Cliente') : '☑️ ' + it.text;
       return `<div class="card" style="--c:var(--faint);cursor:default"><div class="mid"><h3>${esc(title)}</h3></div><span class="tdate">${new Date(e.at).toLocaleString('pt-BR')}</span><button class="btn sm" data-r="${it.id}">↩ Restaurar</button></div>`;
     }).join('')}</div>` : '<div class="empty"><div class="big">🧹</div><h3>Lixeira vazia</h3><p>O que você apagar fica aqui para dar para voltar atrás.</p></div>';
     v.onclick = async (e) => {
@@ -44,7 +44,7 @@
     const s = M.db.settings, v = $('#view');
     v.innerHTML = `<div style="max-width:760px;display:flex;flex-direction:column;gap:22px">
       <section class="stat"><div class="cfg-h">Aparência</div>
-        <div class="cfg-row"><span class="l">Seguir o tema do aparelho ${M.hint('Fica claro ou escuro sozinho, igual ao Windows ou ao celular.')}</span>${M.sw('cAuto', s.themeAuto)}</div>
+        <div class="cfg-row"><span class="l">Seguir o tema do aparelho ${M.hint('Fica claro ou escuro sozinho, igual ao sistema do computador ou do celular.')}</span>${M.sw('cAuto', s.themeAuto)}</div>
         <div class="cfg-row" id="rowTheme" style="${s.themeAuto ? 'opacity:.45;pointer-events:none' : ''}"><span class="l">Tema escuro</span>${M.sw('cTheme', s.theme === 'dark')}</div>
         <div class="cfg-row"><span class="l">Tamanho das letras ${M.hint('Aumenta ou diminui tudo na tela.')}</span><div class="seg" id="cFont">${[[0.9, 'A−'], [1, 'Normal'], [1.1, 'A+'], [1.25, 'A++']].map(([v, n]) => `<button data-f="${v}" class="${(+s.fontScale || 1) === v ? 'on' : ''}">${n}</button>`).join('')}</div></div>
         <div class="cfg-row"><span class="l">Modo compacto ${M.hint('Deixa tudo mais apertadinho, cabe mais coisa na tela.')}</span>${M.sw('cCompact', s.compact)}</div>
@@ -56,21 +56,24 @@
         <div class="cfg-row"><span class="l">Meta do dia (XP) ${M.hint('Quantos pontos você quer fazer por dia.')}</span><input type="number" id="cGoal" min="10" max="500" step="10" value="${s.dailyGoal}" style="width:90px"></div>
       </section>
       <section class="stat"><div class="cfg-h">Categorias</div><div id="cCats"></div><button class="btn ghost sm" id="cCatAdd" style="margin-top:6px">＋ Nova categoria</button></section>
-      ${M.intSection()}
+      ${M.celSection()}
+      <div class="so-pc" style="display:contents">${M.intSection()}</div>
       ${M.iaSection()}
-      <section class="stat"><div class="cfg-h">Google Drive</div>
+      ${M.webSection()}
+      <section class="stat so-pc"><div class="cfg-h">Google Drive</div>
         <div class="cfg-row"><span class="l">Copiar para o Drive ${M.hint('Precisa do app “Google Drive para computador”. Cada item vira um arquivo .md numa pasta por tipo, com os anexos junto.')}</span>${M.sw('cDrive', s.drive.on)}</div>
         <div class="row" style="margin-top:8px;align-items:center"><input type="text" id="cPath" value="${esc(s.drive.path)}" placeholder="Ex: G:\\Meu Drive" style="flex:3"><button class="btn ghost" id="cFind" style="flex:none">🔎 Procurar</button><button class="btn" id="cSync" style="flex:none">☁️ Sincronizar agora</button></div>
         <small id="cDriveMsg" style="color:var(--dim);display:block;margin-top:8px"></small>
       </section>
       <section class="stat"><div class="cfg-h">Dados</div>
-        <div class="row" style="align-items:center"><a class="btn ghost" id="cBak" href="/api/backup" download="myloot-backup.json" style="flex:none">⬇️ Baixar backup (.json)</a><button class="btn ghost" id="cRes" style="flex:none">⬆️ Restaurar backup</button><input type="file" id="cResF" accept=".json,application/json" hidden></div>
+        <div class="row" style="align-items:center"><a class="btn ghost" id="cBak" href="/api/backup" download="myloot-backup.json" style="flex:none">⬇️ Baixar backup (.json)</a><button class="btn ghost so-pc" id="cRes" style="flex:none">⬆️ Restaurar backup</button><input type="file" id="cResF" accept=".json,.myloot,application/json" hidden></div>
+        ${M.dadosExtras()}
         <small style="color:var(--dim);display:block;margin-top:8px">Cópia automática todo dia em <code>data/backups</code> (guarda as 20 mais novas).</small>
       </section>
-      ${M.versaoSection()}
+      <div class="so-pc" style="display:contents">${M.versaoSection()}</div>
       <section class="stat"><div class="cfg-h">Atalhos</div><div class="sc">
         <kbd>Ctrl K</kbd><span>Busca global (ou a tecla <kbd>/</kbd>)</span><kbd>N</kbd><span>Novo item</span><kbd>H</kbd><span>Início</span><kbd>B</kbd><span>Biblioteca</span><kbd>T</kbd><span>Tarefas</span><kbd>C</kbd><span>Calendário</span><kbd>F</kbd><span>Começar ou parar o foco</span><kbd>Esc</kbd><span>Fechar janela</span><kbd>Clique direito</kbd><span>Menu do cartão</span></div></section>
-      <section class="stat"><div class="cfg-h">Servidor</div><button class="btn danger" id="cOff">⏻ Desligar o MyLoot</button> ${M.hint('Desliga o servidor. Para abrir de novo, use o atalho da área de trabalho.')}</section>
+      <section class="stat so-pc"><div class="cfg-h">Servidor</div><button class="btn danger" id="cOff">⏻ Desligar o MyLoot</button> ${M.hint('Desliga o servidor. Para abrir de novo, use o atalho da área de trabalho.')}</section>
     </div>`;
     const set = (k, val) => { s[k] = val; M.save(); M.applySettings(); };
     $('#cAuto').onchange = (e) => { set('themeAuto', e.target.checked); SFX.play('click'); M.render(); };
@@ -85,6 +88,8 @@
     M.intBind();
     M.iaBind(set);
     M.versaoBind();
+    M.celBind();
+    M.dadosBind();
 
     function drawCats() {
       $('#cCats').innerHTML = M.db.categories.map((c) => `<div class="catrow" data-id="${c.id}"><input type="text" class="ico" value="${esc(c.icon)}" maxlength="4"><input type="text" class="nm" value="${esc(c.name)}"><input type="color" value="${c.color}"><button class="xbtn" title="Apagar categoria">✕</button></div>`).join('') || '<small style="color:var(--faint)">Nenhuma categoria ainda.</small>';
@@ -125,8 +130,9 @@
     $('#cRes').onclick = () => $('#cResF').click();
     $('#cResF').onchange = async (e) => {
       const f = e.target.files[0]; if (!f) return;
+      e.target.value = '';
       if (!(await M.confirm('Trocar os dados atuais pelos desse backup? Uma cópia dos atuais é guardada antes.', 'Restaurar'))) return;
-      try { await M.api('/api/restore', { method: 'POST', body: await f.text() }); await M.load(); M.applySettings(); M.toast('✅ Backup restaurado'); M.go('lib'); } catch (er) { M.toast('⚠️ ' + er.message); }
+      try { await M.api('/api/restore', { method: 'POST', body: await M.corpoRestaurar(f) }); await M.load(); M.applySettings(); M.toast('✅ Backup restaurado'); M.go('lib'); } catch (er) { M.toast('⚠️ ' + er.message); }
     };
     $('#cOff').onclick = async () => {
       if (!(await M.confirm('Desligar o servidor do MyLoot?', 'Desligar'))) return;

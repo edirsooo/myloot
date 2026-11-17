@@ -1,0 +1,51 @@
+{
+  "id": "instrucoes-prontas-v1",
+  "categoria": { "id": "c-organizar", "name": "Instruções prontas", "icon": "🧹", "color": "#3cffaa" },
+  "itens": [
+    {
+      "tipo": "prompt",
+      "titulo": "Organizar a pasta Downloads",
+      "descricao": "Cole no Claude Code ou no Codex aberto na pasta Downloads. Ele mostra o plano antes de mexer.",
+      "etiquetas": ["organizar", "arquivos", "claude-code"],
+      "favorito": true,
+      "conteudo": "Você está na minha pasta Downloads. Quero ela organizada, com segurança.\n\nRegras:\n1. NÃO apague nada. Nunca use comandos de apagar.\n2. Antes de mover qualquer coisa, me mostre o PLANO: uma tabela com cada arquivo, a pasta de destino e o motivo. Espere eu responder \"pode\".\n3. Crie estas pastas (se não existirem): Documentos, Imagens, Vídeos, Áudios, Instaladores, Compactados, Planilhas, Apresentações, Outros.\n4. Arquivos repetidos (mesmo nome com (1), (2)... e mesmo tamanho): mova para uma pasta \"_repetidos - revisar\".\n5. Instaladores com mais de 30 dias (.exe, .msi, .dmg, .pkg): mova para \"_instaladores antigos - revisar\".\n6. Não mexa em pastas que já existiam, só nos arquivos soltos.\n7. No fim, me mostre um resumo: quantos arquivos foram para cada pasta.\n\nComece pelo plano.",
+      "checklist": ["Abrir o Claude Code ou o Codex dentro da pasta Downloads", "Colar este prompt", "Conferir o plano antes de responder \"pode\"", "Revisar as pastas \"_revisar\" e apagar você mesmo o que não quiser"]
+    },
+    {
+      "tipo": "prompt",
+      "titulo": "Renomear fotos pela data",
+      "descricao": "Deixa as fotos com nome tipo 2026-11-16_14-30_viagem.jpg, na ordem certa.",
+      "etiquetas": ["organizar", "fotos", "claude-code"],
+      "conteudo": "Você está numa pasta de fotos e vídeos. Quero renomear tudo pela data em que a foto foi tirada.\n\nRegras:\n1. NÃO apague nada.\n2. Use a data de captura (EXIF) quando existir; se não existir, use a data de modificação do arquivo e marque isso no plano.\n3. Formato do nome: AAAA-MM-DD_HH-MM_[ASSUNTO].extensão (ASSUNTO = [ESCREVA AQUI, ex.: viagem-rio]). Se dois arquivos tiverem o mesmo horário, acrescente _2, _3...\n4. Antes de renomear, me mostre uma tabela \"nome atual → nome novo\" com os 20 primeiros e o total. Espere eu responder \"pode\".\n5. Salve um arquivo \"renomeados.csv\" com o nome antigo e o novo de cada um, para dar para desfazer.\n\nComece pelo plano."
+    },
+    {
+      "tipo": "prompt",
+      "titulo": "Achar arquivos repetidos e grandes",
+      "descricao": "Relatório do que ocupa espaço à toa. Não apaga nada: só lista e separa para você revisar.",
+      "etiquetas": ["organizar", "espaco", "claude-code"],
+      "conteudo": "Analise esta pasta (e as subpastas) e me ajude a liberar espaço, sem apagar nada.\n\nFaça:\n1. Liste os 30 maiores arquivos (nome, pasta, tamanho, data).\n2. Encontre arquivos repetidos de verdade (mesmo conteúdo: compare pelo hash, não só pelo nome). Mostre os grupos.\n3. Liste pastas vazias.\n4. Me dê um resumo: quanto espaço daria para liberar.\n5. Só se eu responder \"separa\": mova as cópias repetidas (deixando sempre 1 original no lugar) para uma pasta \"_repetidos - revisar\".\n\nNunca use comandos de apagar. Eu mesmo apago depois de revisar."
+    },
+    {
+      "tipo": "prompt",
+      "titulo": "Organizar a área de trabalho",
+      "descricao": "Limpa a Mesa / Área de trabalho sem perder atalhos.",
+      "etiquetas": ["organizar", "arquivos", "claude-code"],
+      "conteudo": "Você está na minha Área de trabalho. Quero ela limpa.\n\nRegras:\n1. NÃO apague nada e NÃO mexa nos atalhos (.lnk, .url, .app, .desktop).\n2. Crie uma pasta \"Arrumado [DATA DE HOJE]\" e, dentro dela, pastas por tipo (Documentos, Imagens, Vídeos, Planilhas, Outros).\n3. Mostre o plano (tabela arquivo → destino) e espere eu responder \"pode\".\n4. No fim, a Área de trabalho deve ficar só com os atalhos e a pasta \"Arrumado\".\n\nComece pelo plano."
+    },
+    {
+      "tipo": "prompt",
+      "titulo": "Criar pastas padrão para clientes",
+      "descricao": "Para quem é social media ou freelancer: uma estrutura igual para cada cliente.",
+      "etiquetas": ["organizar", "clientes", "claude-code"],
+      "conteudo": "Você está na minha pasta de clientes. Para cada cliente da lista abaixo, crie esta estrutura de pastas (se já existir, só complete o que falta, sem mexer no que já está lá):\n\n[NOME DO CLIENTE]/\n  01 - Briefing e contrato/\n  02 - Identidade visual (logo, cores, fontes)/\n  03 - Fotos e vídeos brutos/\n  04 - Em produção/\n  05 - Aprovados/\n  06 - Publicados/\n  07 - Relatórios/\n\nClientes:\n- [CLIENTE 1]\n- [CLIENTE 2]\n\nNão apague nem mova nada que já exista. No fim, mostre a árvore criada.\nDica: depois, cole o caminho da pasta de cada cliente na ficha dele em MyLoot → Clientes."
+    },
+    {
+      "tipo": "instrucao",
+      "titulo": "Como usar as instruções prontas",
+      "descricao": "Passo a passo para rodar estes prompts com segurança no Claude Code ou no Codex.",
+      "etiquetas": ["comece-aqui", "organizar"],
+      "conteudo": "1) Instale o Claude Code ou o Codex (o MyLoot avisa em Configurações → IA se já tiver).\n2) Abra o terminal DENTRO da pasta que você quer organizar.\n   Windows: na pasta, clique na barra de endereço, digite cmd e Enter.\n   Mac: clique com o botão direito na pasta → Serviços → Novo Terminal na Pasta.\n3) Digite claude (ou codex) e Enter.\n4) Copie a instrução daqui (botão Copiar) e cole lá.\n5) Leia o PLANO que ele mostrar. Só responda \"pode\" se estiver tudo certo.\n\nTodas as instruções daqui proíbem apagar: o que sobrar vai para pastas \"_revisar\", e quem apaga é você.",
+      "checklist": ["Testar primeiro numa pasta pequena", "Sempre ler o plano antes de dizer \"pode\""]
+    }
+  ]
+}

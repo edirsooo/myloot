@@ -88,7 +88,7 @@ body.nogame .hud-goal,body.nogame .hud-level,body.nogame #hudStreak{display:none
 .btn.sm{padding:4px 9px;font-size:12px}
 .icon-btn{border:2px solid var(--edge);background:var(--panel);border-radius:9px;width:34px;height:34px;cursor:pointer;display:inline-grid;place-items:center}
 .icon-btn:hover{border-color:var(--accent)}
-input[type=text],input[type=search],input[type=date],input[type=number],select,textarea{background:var(--panel);border:2px solid var(--edge);border-radius:10px;padding:8px 11px;outline:none;width:100%}
+input[type=text],input[type=search],input[type=date],input[type=number],input[type=time],input[type=email],input[type=tel],input[type=password],select,textarea{background:var(--panel);border:2px solid var(--edge);border-radius:10px;padding:8px 11px;outline:none;width:100%}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 textarea{resize:vertical;min-height:80px;font-family:var(--mono);font-size:13px}
 select{cursor:pointer}

@@ -87,6 +87,8 @@
       ['📦', 'Ir para Biblioteca', 'B', () => M.go('lib')],
       ['✅', 'Ir para Tarefas', 'T', () => M.go('tasks')],
       ['🗓️', 'Ir para Calendário', 'C', () => M.go('cal')],
+      ['👥', 'Ir para Clientes', 'L', () => M.go('clients')],
+      ['👤', 'Novo cliente', '', () => { M.go('clients'); M.novoCliente(); }],
       ['🧰', 'Ir para Ferramentas', '', () => M.go('tools')],
       ['🏆', 'Ver Conquistas', '', () => M.go('ach')],
       ['⚙️', 'Abrir Configurações', '', () => M.go('cfg')],
@@ -106,6 +108,7 @@
           if (where) list.push({ kind: 'item', it, where, score: where === 'título' ? 0 : 1 });
         });
         M.db.tasks.forEach((t) => { if (M.norm(t.text).includes(q)) list.push({ kind: 'task', t, where: 'tarefa', score: 2 }); });
+        (M.db.clients || []).forEach((c) => { if (M.norm([c.nome, c.empresa, c.email, c.insta].join(' ')).includes(q)) list.push({ kind: 'cli', c, score: 0.5 }); });
         list.sort((a, b) => a.score - b.score);
         list = list.slice(0, 40);
       }
@@ -117,12 +120,14 @@
         ? `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>${r.c[0]}</span><span>${hi(r.c[1], q)}</span>${r.c[2] ? `<kbd>${r.c[2]}</kbd>` : '<small>comando</small>'}</div>`
         : r.kind === 'item'
         ? `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>${M.type(r.it.type).em}</span><span>${hi(r.it.title || 'Sem título', q)}</span><small>${r.where}</small></div>`
+        : r.kind === 'cli'
+        ? `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>👤</span><span>${hi(r.c.nome || 'Sem nome', q)}${r.c.empresa ? ' · ' + esc(r.c.empresa) : ''}</span><small>cliente</small></div>`
         : `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>${r.t.done ? '✅' : '☐'}</span><span>${hi(r.t.text, q)}</span><small>tarefa</small></div>`).join('');
     }
     function go(i) {
       const r = list[i]; if (!r) return;
       M.closeModal();
-      if (r.kind === 'cmd') r.c[3](); else if (r.kind === 'item') M.openItem(r.it.id); else M.go('tasks');
+      if (r.kind === 'cmd') r.c[3](); else if (r.kind === 'item') M.openItem(r.it.id); else if (r.kind === 'cli') { M.go('clients'); M.openClient(r.c.id); } else M.go('tasks');
     }
     input.oninput = run;
     input.onkeydown = (e) => {

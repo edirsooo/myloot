@@ -23,9 +23,26 @@
     return t;
   };
 
+  // tarefas que repetem: ao concluir, nasce a próxima
+  M.REP = [['', 'Não repete'], ['dia', 'Todo dia'], ['uteis', 'Dias úteis (seg a sex)'], ['semana', 'Toda semana'], ['mes', 'Todo mês']];
+  M.proximaData = (d, rep) => {
+    const base = d || M.today();
+    if (rep === 'dia') return M.addDays(base, 1);
+    if (rep === 'semana') return M.addDays(base, 7);
+    if (rep === 'uteis') { let n = M.addDays(base, 1); while ([0, 6].includes(new Date(n + 'T12:00:00').getDay())) n = M.addDays(n, 1); return n; }
+    if (rep === 'mes') { const [y, m, dd] = base.split('-').map(Number); const x = new Date(y, m, 1); const fim = new Date(y, m + 1, 0).getDate(); return M.ymd(new Date(y, m, Math.min(dd, fim))) || M.ymd(x); }
+    return '';
+  };
+
   M.toggleTask = (t, ev) => {
     t.done = !t.done;
     t.doneAt = t.done ? Date.now() : null;
+    if (t.done && t.rep && !t.repFeita) {
+      t.repFeita = true;
+      const nova = Object.assign({}, t, { id: M.uid(), done: false, doneAt: null, xpd: false, repFeita: false, date: M.proximaData(t.date, t.rep), created: Date.now() });
+      M.db.tasks.push(nova);
+      setTimeout(() => M.toast('🔁 Próxima: ' + M.fmtDate(nova.date)), 900);
+    }
     if (t.done) {
       const at = ev ? { x: ev.clientX, y: ev.clientY } : null;
       if (!t.xpd) { t.xpd = true; M.award('task', at); } else { SFX.play('done'); M.save(); }
@@ -37,7 +54,9 @@
 
   function taskHTML(t) {
     const late = !t.done && t.date && t.date < M.today();
-    return `<div class="task ${t.done ? 'done' : ''}" data-id="${t.id}"><input type="checkbox" ${t.done ? 'checked' : ''}><span class="tx">${esc(t.text)}</span>${t.date ? `<span class="tdate" data-a="date" style="${late ? 'color:var(--red)' : ''};cursor:pointer" title="Mudar data">📅 ${M.fmtDate(t.date)}</span>` : `<span class="tdate" data-a="date" style="cursor:pointer;opacity:.6" title="Definir data">📅 —</span>`}<span class="prio ${t.prio}" data-a="prio" title="Clique para mudar a prioridade">${t.prio}</span><button class="xbtn" data-a="rm" title="Lixeira">✕</button></div>`;
+    const cli = t.client && M.client ? M.client(t.client) : null;
+    const extra = `${t.hora ? `<span class="tdate" title="Lembrete">⏰ ${esc(t.hora)}</span>` : ''}${t.rep ? `<span class="tdate" title="${esc((M.REP.find((r) => r[0] === t.rep) || [])[1] || '')}">🔁</span>` : ''}${cli ? `<span class="tag" title="Cliente">👤 ${esc(cli.nome)}</span>` : ''}`;
+    return `<div class="task ${t.done ? 'done' : ''}" data-id="${t.id}"><input type="checkbox" ${t.done ? 'checked' : ''}><span class="tx">${esc(t.text)}</span>${extra}${t.date ? `<span class="tdate" data-a="date" style="${late ? 'color:var(--red)' : ''};cursor:pointer" title="Mudar data">📅 ${M.fmtDate(t.date)}</span>` : `<span class="tdate" data-a="date" style="cursor:pointer;opacity:.6" title="Definir data">📅 —</span>`}<span class="prio ${t.prio}" data-a="prio" title="Clique para mudar a prioridade">${t.prio}</span><button class="xbtn" data-a="rm" title="Lixeira">✕</button></div>`;
   }
 
   M.taskHTML = taskHTML;
@@ -80,14 +99,25 @@
     };
   };
 
-  function editTask(t) {
-    const m = M.modal(`<div class="modal-h"><h2>Editar tarefa</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><input type="text" id="et" value="${esc(t.text)}"><div class="row"><div class="fld"><label>Data</label><input type="date" id="ed" value="${t.date}"></div><div class="fld"><label>Prioridade</label><select id="ep">${M.PRIOS.map((p) => `<option ${p === t.prio ? 'selected' : ''}>${p}</option>`).join('')}</select></div></div><div class="row" style="justify-content:space-between"><button class="btn danger" id="dl" style="flex:none">🗑️ Lixeira</button><button class="btn" id="ok" style="flex:none">Salvar</button></div></div>`, { small: true });
-    $('#x', m).onclick = M.closeModal;
+  function editTask(t, depois) {
+    const C = M.db.clients || [];
+    const m = M.modal(`<div class="modal-h"><h2>Editar tarefa</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><input type="text" id="et" value="${esc(t.text)}">
+      <div class="row"><div class="fld"><label>Data</label><input type="date" id="ed" value="${t.date}"></div><div class="fld"><label>Lembrete ${M.hint('No horário, aparece um aviso no computador (mesmo com a aba fechada). Precisa ter data.')}</label><input type="time" id="eh" value="${esc(t.hora || '')}"></div></div>
+      <div class="row"><div class="fld"><label>Repetir</label><select id="er">${M.REP.map(([k, n]) => `<option value="${k}" ${k === (t.rep || '') ? 'selected' : ''}>${n}</option>`).join('')}</select></div><div class="fld"><label>Prioridade</label><select id="ep">${M.PRIOS.map((p) => `<option ${p === t.prio ? 'selected' : ''}>${p}</option>`).join('')}</select></div></div>
+      ${C.length ? `<div class="fld"><label>Cliente</label><select id="ec"><option value="">— nenhum —</option>${C.map((c) => `<option value="${c.id}" ${c.id === t.client ? 'selected' : ''}>${esc(c.nome || 'Sem nome')}</option>`).join('')}</select></div>` : ''}
+      <div class="row" style="justify-content:space-between"><button class="btn danger" id="dl" style="flex:none">🗑️ Lixeira</button><button class="btn" id="ok" style="flex:none">Salvar</button></div></div>`, { small: true });
+    $('#x', m).onclick = () => { M.closeModal(); if (depois) depois(); };
     $('#et', m).focus();
-    const ok = () => { t.text = $('#et', m).value.trim() || t.text; t.date = $('#ed', m).value; t.prio = $('#ep', m).value; M.save(); M.closeModal(); M.render(); };
+    const ok = () => {
+      t.text = $('#et', m).value.trim() || t.text; t.date = $('#ed', m).value; t.prio = $('#ep', m).value; t.hora = $('#eh', m).value; t.rep = $('#er', m).value;
+      if (t.rep && !t.date) t.date = M.today();
+      if ($('#ec', m)) t.client = $('#ec', m).value;
+      M.save(); M.closeModal(); M.render(); if (depois) depois();
+    };
     $('#ok', m).onclick = ok; $('#et', m).onkeydown = (e) => { if (e.key === 'Enter') ok(); };
-    $('#dl', m).onclick = () => { M.closeModal(); M.trashTask(t); };
+    $('#dl', m).onclick = () => { M.closeModal(); M.trashTask(t); if (depois) depois(); };
   }
+  M.editTask = editTask;
 
   // ----- calendário -----
   M.pages.cal = () => {

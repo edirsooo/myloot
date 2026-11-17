@@ -1,10 +1,12 @@
 {
-  "versao": "2.2.0",
+  "versao": "2.3.0",
   "data": "2026-11-16",
   "novidades": [
-    "O app avisa sozinho quando sai versão nova e se atualiza com um clique",
-    "Codex junto com o Claude Code: use a IA que você já tem no PC",
-    "Mapa de conexões no estilo do Obsidian na tela inicial",
-    "Envio de itens para o Notion e o Trello"
+    "Use no celular: QR Code e código, pela rede Wi-Fi de casa",
+    "Clientes (mini CRM): contatos, funil, WhatsApp, Trello e a pasta de cada cliente",
+    "Tarefas que repetem e lembretes com horário",
+    "Modelos de item e instruções prontas para organizar arquivos com IA",
+    "Exportar tudo para o Obsidian e backup com senha",
+    "Agora também roda no Mac e no Linux"
   ]
 }

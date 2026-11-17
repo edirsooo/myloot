@@ -86,7 +86,7 @@
   };
 
   // ----- timer de foco (25 min) -----
-  // O relógio fica no servidor: fechar a aba não para o foco, e o Windows avisa quando acabar.
+  // O relógio fica no servidor: fechar a aba não para o foco, e o computador avisa quando acabar.
   let end = 0, min = 25, tick = 0, claiming = false;
   const fmt = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
   async function claim() {
@@ -117,7 +117,7 @@
     try {
       const r = await M.api('/api/focus/start', { method: 'POST', body: JSON.stringify({ min: m || 25 }) });
       end = Date.now() + (r.end - r.agora); min = r.min; SFX.play('star'); paint();
-      M.toast(`⏱ Foco de ${min} min começou. Pode fechar a aba: o Windows avisa no fim.`);
+      M.toast(`⏱ Foco de ${min} min começou. Pode fechar a aba: o computador avisa no fim.`);
     } catch (e) { M.toast('⚠️ ' + e.message); }
   };
   M.focusToggle = async () => {
@@ -126,7 +126,7 @@
       await M.api('/api/focus/stop', { method: 'POST' }).catch(() => {});
       end = 0; SFX.play('click'); paint(); return;
     }
-    const m = M.modal(`<div class="modal-h"><h2>⏱ Modo foco</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div>Quanto tempo? ${M.hint('O relógio roda no servidor do MyLoot. Você pode fechar o navegador: quando acabar, aparece um aviso do Windows. Só para se você desligar o MyLoot ou o computador.')}</div><div class="row">${[15, 25, 45, 60].map((n) => `<button class="btn ${n === 25 ? '' : 'ghost'}" data-m="${n}">${n} min</button>`).join('')}</div><button class="btn ghost sm" id="nt" style="align-self:flex-start">🔔 Testar o aviso do Windows</button></div>`, { small: true });
+    const m = M.modal(`<div class="modal-h"><h2>⏱ Modo foco</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div>Quanto tempo? ${M.hint('O relógio roda no servidor do MyLoot. Você pode fechar o navegador: quando acabar, aparece um aviso no computador. Só para se você desligar o MyLoot ou o computador.')}</div><div class="row">${[15, 25, 45, 60].map((n) => `<button class="btn ${n === 25 ? '' : 'ghost'}" data-m="${n}">${n} min</button>`).join('')}</div><button class="btn ghost sm" id="nt" style="align-self:flex-start">🔔 Testar o aviso</button></div>`, { small: true });
     $('#x', m).onclick = M.closeModal;
     $('#nt', m).onclick = () => M.api('/api/notify-test', { method: 'POST' }).then(() => M.toast('Aviso enviado. Olhe o canto da tela.'));
     m.onclick = (e) => { const b = e.target.closest('[data-m]'); if (b) { M.closeModal(); M.focusStart(+b.dataset.m); } };

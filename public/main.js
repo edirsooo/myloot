@@ -2,7 +2,7 @@
 (function () {
   const { esc, $, $$ } = M;
   const PAGES = [
-    ['home', '🏠', 'Início'], ['lib', '📦', 'Biblioteca'], ['tasks', '✅', 'Tarefas'], ['cal', '🗓️', 'Calendário'], ['tools', '🧰', 'Ferramentas'],
+    ['home', '🏠', 'Início'], ['lib', '📦', 'Biblioteca'], ['tasks', '✅', 'Tarefas'], ['cal', '🗓️', 'Calendário'], ['clients', '👥', 'Clientes'], ['tools', '🧰', 'Ferramentas'],
     ['ach', '🏆', 'Conquistas'], ['trash', '🗑️', 'Lixeira'], ['cfg', '⚙️', 'Configurações'],
   ];
 
@@ -23,7 +23,7 @@
     const p = M.ui.page, v = $('#view');
     ['onclick', 'oncontextmenu', 'ondragstart', 'ondragover', 'ondrop', 'ondragend'].forEach((k) => { v[k] = null; });
     $('#nav').innerHTML = PAGES.map(([id, em, n]) => {
-      const c = id === 'tasks' ? M.db.tasks.filter((t) => !t.done).length : id === 'lib' ? M.db.items.length : id === 'trash' ? M.db.trash.length : '';
+      const c = id === 'tasks' ? M.db.tasks.filter((t) => !t.done).length : id === 'lib' ? M.db.items.length : id === 'trash' ? M.db.trash.length : id === 'clients' ? (M.db.clients || []).length : '';
       return `<button class="nav-i ${p === id ? 'on' : ''}" data-p="${id}"><span class="em">${em}</span>${n}<span class="cnt">${c || ''}</span></button>`;
     }).join('');
     $('#pageTitle').textContent = (PAGES.find((x) => x[0] === p) || [])[2] || '';
@@ -31,10 +31,11 @@
     M.pages[p]();
     v.scrollTop = top;
     M.renderHud();
+    if (M.onRender) M.onRender(p);
   };
 
   $('#nav').onclick = (e) => { const b = e.target.closest('[data-p]'); if (b) { SFX.play('click'); M.go(b.dataset.p); } };
-  $('#btnNew').onclick = () => { M.ui.page = 'lib'; M.render(); M.newItemDialog(); };
+  $('#btnNew').onclick = () => { document.body.classList.remove('menu'); M.novoComModelo(); };
   $('#btnSearch').onclick = M.openSearch;
   $('#menuBtn').onclick = () => document.body.classList.toggle('menu');
   $('#main').addEventListener('click', () => document.body.classList.remove('menu'));
@@ -46,7 +47,8 @@
     if (e.key === 'Escape') { if (!$('#levelup').hidden) $('#levelup').hidden = true; else if (M.modalOpen()) M.closeModal(); $('#ctx').hidden = true; return; }
     if (typing || e.ctrlKey || e.altKey || e.metaKey || M.modalOpen()) return;
     if (e.key === '/') { e.preventDefault(); M.openSearch(); }
-    else if (e.key.toLowerCase() === 'n') { e.preventDefault(); M.ui.page = 'lib'; M.render(); M.newItemDialog(); }
+    else if (e.key.toLowerCase() === 'n') { e.preventDefault(); M.novoComModelo(); }
+    else if (e.key.toLowerCase() === 'l') M.go('clients');
     else if (e.key.toLowerCase() === 'h') M.go('home');
     else if (e.key.toLowerCase() === 'c') M.go('cal');
     else if (e.key.toLowerCase() === 'f') M.focusToggle();
@@ -71,6 +73,7 @@
   // iniciar
   (async () => {
     try { await M.load(); } catch (e) { document.body.innerHTML = '<p style="padding:30px;font:16px monospace">Não consegui falar com o servidor. Abra pelo atalho do MyLoot.</p>'; return; }
+    await M.iniciarCelular();
     M.applySettings();
     // endereço direto: #lib, #tasks, #cal, #ach, #cfg ou #item=ID
     const hash = location.hash.slice(1);
@@ -78,7 +81,9 @@
     M.render();
     if (hash.startsWith('item=')) M.openItem(hash.slice(5));
     M.focusPaint();
-    if (!M.db.settings.aiSetupDone) setTimeout(() => { if (!M.modalOpen()) M.iaSetup(); }, 1200);
-    setTimeout(() => M.checarAtualizacao(false), 5000);
+    if (!M.remoto) {
+      if (!M.db.settings.aiSetupDone) setTimeout(() => { if (!M.modalOpen()) M.iaSetup(); }, 1200);
+      setTimeout(() => M.checarAtualizacao(false), 5000);
+    }
   })();
 })();

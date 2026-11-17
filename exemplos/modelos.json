@@ -1,0 +1,41 @@
+{
+  "id": "modelos-v1",
+  "categoria": { "id": "c-modelos", "name": "Modelos", "icon": "📐", "color": "#a78bfa" },
+  "itens": [
+    {
+      "tipo": "nota",
+      "titulo": "Briefing de cliente",
+      "descricao": "Perguntas para o primeiro contato com um cliente novo.",
+      "etiquetas": ["modelo", "clientes"],
+      "modelo": true,
+      "conteudo": "CLIENTE: \nNEGÓCIO (o que vende, para quem): \nOBJETIVO (vender mais, seguidores, autoridade…): \nPÚBLICO (idade, cidade, dores): \nCONCORRENTES / REFERÊNCIAS: \nTOM DE VOZ (sério, divertido, técnico…): \nCORES E FONTES: \nREDES E FREQUÊNCIA (ex.: 3 posts + 5 stories por semana): \nO QUE NÃO PODE (assuntos, palavras, cores): \nQUEM APROVA E PRAZO DE APROVAÇÃO: \nVALOR E DATA DE PAGAMENTO: ",
+      "checklist": ["Receber logo e identidade visual", "Receber acessos (como colaborador, nunca a senha)", "Definir dias de postagem", "Enviar contrato"]
+    },
+    {
+      "tipo": "nota",
+      "titulo": "Roteiro de vídeo (Reels / TikTok)",
+      "descricao": "Gancho, desenvolvimento e chamada para ação.",
+      "etiquetas": ["modelo", "conteudo"],
+      "modelo": true,
+      "conteudo": "GANCHO (primeiros 3 segundos): \n\nPROBLEMA / CONTEXTO: \n\nDESENVOLVIMENTO (3 pontos):\n1. \n2. \n3. \n\nVIRADA / PROVA: \n\nCHAMADA PARA AÇÃO: \n\nLEGENDA: \nHASHTAGS: ",
+      "checklist": ["Escrever o roteiro", "Gravar", "Editar", "Capa", "Aprovar com o cliente", "Publicar"]
+    },
+    {
+      "tipo": "instrucao",
+      "titulo": "Checklist de post",
+      "descricao": "Para não esquecer nada antes de publicar.",
+      "etiquetas": ["modelo", "conteudo"],
+      "modelo": true,
+      "conteudo": "Post: \nRede: \nData e horário: ",
+      "checklist": ["Arte ou vídeo no tamanho certo", "Texto revisado (sem erro de português)", "Legenda com chamada para ação", "Marcações e localização", "Aprovado pelo cliente", "Agendado ou publicado", "Respondi os primeiros comentários"]
+    },
+    {
+      "tipo": "nota",
+      "titulo": "Reunião",
+      "descricao": "Pauta, decisões e próximos passos.",
+      "etiquetas": ["modelo"],
+      "modelo": true,
+      "conteudo": "DATA: \nCOM QUEM: \n\nPAUTA:\n- \n\nO QUE FOI DECIDIDO:\n- \n\nPRÓXIMOS PASSOS (quem faz o quê, até quando):\n- "
+    }
+  ]
+}

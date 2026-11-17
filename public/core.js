@@ -198,7 +198,7 @@
     const i = M.db.trash.findIndex((x) => x.data.id === id);
     if (i < 0) return;
     const [e] = M.db.trash.splice(i, 1);
-    (e.kind === 'item' ? M.db.items : M.db.tasks).push(e.data);
+    (e.kind === 'item' ? M.db.items : e.kind === 'client' ? (M.db.clients || (M.db.clients = [])) : M.db.tasks).push(e.data);
     M.save(); SFX.play('undo'); M.render();
     if (!silent) M.toast('↩️ Restaurado');
   };

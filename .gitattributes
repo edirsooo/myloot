@@ -2,3 +2,6 @@
 *.vbs -text
 *.pdf binary
 *.ico binary
+# scripts do Mac e do Linux precisam de fim de linha LF (senão não rodam)
+*.sh text eol=lf
+*.command text eol=lf

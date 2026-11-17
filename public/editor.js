@@ -34,7 +34,7 @@
     else M.toast(`📥 ${files.length} itens criados`);
   };
 
-  M.newItemDialog = () => { const it = M.createItem({ title: '' }, true); it._new = true; M.openItem(it.id); };
+  M.newItemDialog = (o) => { const it = M.createItem(Object.assign({ title: '' }, o), true); it._new = true; M.openItem(it.id); };
 
   M.openItem = (id) => {
     const it = M.db.items.find((i) => i.id === id);
@@ -50,6 +50,8 @@
       }
       delete it._new; delete it._xp;
       M.render();
+      // item aberto de dentro da ficha do cliente: volta para a ficha
+      if (M.cliAberto && M.client && M.client(M.cliAberto)) setTimeout(() => { if (!M.modalOpen()) M.openClient(M.cliAberto); }, 0);
     } });
 
     function draw() {
@@ -77,7 +79,9 @@
             <div class="fld"><label>Categoria</label><select id="eCat"><option value="">— nenhuma —</option>${M.db.categories.map((c) => `<option value="${c.id}" ${c.id === it.cat ? 'selected' : ''}>${esc(c.icon)} ${esc(c.name)}</option>`).join('')}</select></div>
             <div class="fld"><label>Status</label><select id="eSt">${M.STATUS.map((s) => `<option value="${s.id}" ${s.id === it.status ? 'selected' : ''}>${s.em} ${s.name}</option>`).join('')}</select></div>
             <div class="fld"><label>Data</label><input type="date" id="eDate" value="${it.date}"></div>
+            ${(M.db.clients || []).length ? `<div class="fld"><label>Cliente</label><select id="eCli"><option value="">— nenhum —</option>${M.db.clients.map((c) => `<option value="${c.id}" ${c.id === it.client ? 'selected' : ''}>👤 ${esc(c.nome || 'Sem nome')}</option>`).join('')}</select></div>` : ''}
           </div>
+          <div class="cfg-row" style="border:0;padding:0"><span class="l" style="font-size:13px">📐 Usar como modelo ${M.hint('Modelos aparecem em ＋ Novo item: o item novo já nasce com o texto e o checklist deste. Bom para briefing, roteiro, checklist de post.')}</span>${M.sw('eMod', it.modelo)}</div>
           <div class="fld"><label>Etiquetas ${M.hint('Separe com vírgula. Ex: ia, estudo, urgente')}</label><input type="text" id="eTags" value="${esc(it.tags.join(', '))}" placeholder="ia, estudo…" list="tagList"><datalist id="tagList">${M.allTags().map((x) => `<option value="${esc(x)}">`).join('')}</datalist></div>
           <div class="fld"><label>Checklist</label><div id="eCheck"></div></div>
           <div class="fld"><label>Links</label><div id="eLinks"></div></div>
@@ -146,6 +150,8 @@
       $('#eCat', m).onchange = (e) => { it.cat = e.target.value; touch(); };
       $('#eSt', m).onchange = (e) => { it.status = e.target.value; touch(); SFX.play('click'); };
       $('#eDate', m).onchange = (e) => { it.date = e.target.value; touch(); };
+      if ($('#eCli', m)) $('#eCli', m).onchange = (e) => { it.client = e.target.value; touch(); SFX.play('click'); };
+      $('#eMod', m).onchange = (e) => { it.modelo = e.target.checked; touch(); SFX.play('click'); if (it.modelo) M.toast('📐 Agora aparece em ＋ Novo item'); };
       $('#eTags', m).oninput = (e) => { it.tags = [...new Set(e.target.value.split(',').map((s) => s.trim().replace(/^#/, '')).filter(Boolean))]; touch(); };
     }
 
@@ -179,7 +185,7 @@
 
     function drawAtt() {
       const box = $('#eAtt', m);
-      box.innerHTML = it.attachments.map((a) => `<div class="attach" data-id="${a.id}"><span class="ic">${M.fileIcon(a)}</span><span class="nm" title="${esc(a.name)}">${esc(a.name)}</span><small>${M.size(a.size)}</small><button class="btn sm ghost" data-a="prev" title="${M.isText(a.name) ? 'Ler em blocos' : 'Ver aqui dentro'}">${M.isText(a.name) ? M.ic('livro') + ' Ler' : M.ic('olho') + ' Ver'}</button><button class="btn sm ghost" data-a="open" title="Abrir no programa do Windows">${M.ic('abrir')} Abrir</button><button class="btn sm ghost" data-a="show" title="Mostrar na pasta">${M.ic('pasta')} Pasta</button><button class="xbtn" data-a="rm" title="Remover">✕</button></div>`).join('<div style="height:6px"></div>') +
+      box.innerHTML = it.attachments.map((a) => `<div class="attach" data-id="${a.id}"><span class="ic">${M.fileIcon(a)}</span><span class="nm" title="${esc(a.name)}">${esc(a.name)}</span><small>${M.size(a.size)}</small><button class="btn sm ghost" data-a="prev" title="${M.isText(a.name) ? 'Ler em blocos' : 'Ver aqui dentro'}">${M.isText(a.name) ? M.ic('livro') + ' Ler' : M.ic('olho') + ' Ver'}</button><button class="btn sm ghost" data-a="open" title="Abrir no programa do computador">${M.ic('abrir')} Abrir</button><button class="btn sm ghost" data-a="show" title="Mostrar na pasta">${M.ic('pasta')} Pasta</button><button class="xbtn" data-a="rm" title="Remover">✕</button></div>`).join('<div style="height:6px"></div>') +
         `<div class="dz" id="eDz" style="margin-top:8px">${M.ic('clipe')} Arraste arquivos aqui ou clique para escolher</div><input type="file" id="eFile" multiple hidden>`;
       box.onclick = async (e) => {
         const b = e.target.closest('[data-a]'); if (!b) return;

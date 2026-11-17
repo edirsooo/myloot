@@ -4,9 +4,11 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
+const os = require('os');
+const crypto = require('crypto');
+const WIN = process.platform === 'win32', MAC = process.platform === 'darwin';
 
 const PORT = Number(process.env.MYLOOT_PORT || process.env.MOCHILA_PORT) || 4321;
-const HOST = '127.0.0.1';
 const ROOT = __dirname;
 const PUB = path.join(ROOT, 'public');
 const DATA = process.env.MYLOOT_DATA || process.env.MOCHILA_DATA || path.join(ROOT, 'data');
@@ -35,7 +37,7 @@ function defaults() {
     version: DB_VERSION,
     settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, confetti: true, gamify: true, dailyGoal: 50,
       view: 'grid', boardBy: 'status', aiModel: 'claude-opus-5-5', drive: { on: false, path: '' } },
-    categories: [], items: [], tasks: [], trash: [],
+    categories: [], items: [], tasks: [], trash: [], clients: [],
     game: { xp: 0, log: {}, streak: { last: '', count: 0 }, achievements: {}, counters: {}, goalDays: 0 },
   };
 }
@@ -82,7 +84,12 @@ function migrate(raw) {
   out.settings.drive = Object.assign({}, d.settings.drive, (raw.settings || {}).drive || {});
   out.game = Object.assign({}, d.game, raw.game || {});
   out.game.streak = Object.assign({}, d.game.streak, out.game.streak || {});
-  for (const k of ['categories', 'items', 'tasks', 'trash']) if (!Array.isArray(out[k])) out[k] = [];
+  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients']) if (!Array.isArray(out[k])) out[k] = [];
+  out.clients.forEach((c) => {
+    c.id = c.id || uid(); c.nome = c.nome || ''; c.status = c.status || 'ativo';
+    for (const k of ['empresa', 'email', 'whats', 'insta', 'site', 'trello', 'pasta', 'notas']) c[k] = c[k] || '';
+    c.tags = Array.isArray(c.tags) ? c.tags : []; c.created = c.created || Date.now(); c.updated = c.updated || c.created;
+  });
   out.items.forEach((it) => {
     it.id = it.id || uid();
     it.type = it.type || 'nota';
@@ -97,10 +104,11 @@ function migrate(raw) {
     it.cat = it.cat || '';
     it.date = it.date || '';
     it.fav = !!it.fav;
+    it.client = it.client || '';
     it.created = it.created || Date.now();
     it.updated = it.updated || it.created;
   });
-  out.tasks.forEach((t) => { t.id = t.id || uid(); t.text = t.text || ''; t.date = t.date || ''; t.prio = t.prio || 'media'; t.done = !!t.done; t.created = t.created || Date.now(); });
+  out.tasks.forEach((t) => { t.id = t.id || uid(); t.text = t.text || ''; t.date = t.date || ''; t.prio = t.prio || 'media'; t.done = !!t.done; t.created = t.created || Date.now(); t.client = t.client || ''; t.rep = t.rep || ''; t.hora = t.hora || ''; });
   out.version = DB_VERSION;
   return out;
 }
@@ -186,18 +194,27 @@ function inside(base, p) {
 // ---------- Google Drive ----------
 function findDrive() {
   const out = [];
-  for (let c = 65; c <= 90; c++) {
-    const L = String.fromCharCode(c);
-    for (const n of ['Meu Drive', 'My Drive']) {
-      const p = `${L}:\\${n}`;
-      try { if (fs.statSync(p).isDirectory()) out.push(p); } catch (_) {}
-    }
+  const tem = (p) => { try { if (fs.statSync(p).isDirectory() && !out.includes(p)) out.push(p); } catch (_) {} };
+  const home = os.homedir();
+  if (WIN) {
+    for (let c = 65; c <= 90; c++) for (const n of ['Meu Drive', 'My Drive']) tem(`${String.fromCharCode(c)}:\\${n}`);
   }
-  const home = process.env.USERPROFILE || '';
-  for (const p of [path.join(home, 'Google Drive'), path.join(home, 'My Drive'), path.join(home, 'Meu Drive')]) {
-    try { if (fs.statSync(p).isDirectory()) out.push(p); } catch (_) {}
+  if (MAC) {
+    // Google Drive para Mac: ~/Library/CloudStorage/GoogleDrive-<conta>/Meu Drive (ou o antigo /Volumes/GoogleDrive)
+    const cs = path.join(home, 'Library', 'CloudStorage');
+    try { for (const d of fs.readdirSync(cs)) if (/^GoogleDrive/i.test(d)) for (const n of ['Meu Drive', 'My Drive']) tem(path.join(cs, d, n)); } catch (_) {}
+    for (const n of ['Meu Drive', 'My Drive']) tem(path.join('/Volumes', 'GoogleDrive', n));
   }
+  for (const n of ['Google Drive', 'My Drive', 'Meu Drive', 'GoogleDrive', 'google-drive']) tem(path.join(home, n));
   return out;
+}
+
+// abre um arquivo/pasta no programa padrão do sistema (Windows, Mac ou Linux); "mostrar" seleciona na pasta
+function abrirNoSistema(alvo, mostrar) {
+  const solto = { detached: true, stdio: 'ignore' };
+  if (WIN) return cp.spawn('explorer.exe', mostrar ? ['/select,' + alvo] : [alvo], solto).unref();
+  if (MAC) return cp.spawn('open', mostrar ? ['-R', alvo] : [alvo], solto).unref();
+  return cp.spawn('xdg-open', [mostrar ? path.dirname(alvo) : alvo], solto).unref();
 }
 
 const TYPE_DIR = { estudo: 'Estudo-PDF', prompt: 'Prompts', instrucao: 'Instrucoes', comando: 'Comandos', link: 'Links', nota: 'Notas' };
@@ -272,6 +289,8 @@ function driveSync(db) {
 const https = require('https');
 const INT = require('./integracoes');
 const UPD = require('./atualizar');
+const EXP = require('./exportar');
+const REDE = require('./celular')(DATA);
 const SECRETS = path.join(DATA, 'segredos.json');
 const AI_MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'];
 const readSecrets = () => { try { return JSON.parse(fs.readFileSync(SECRETS, 'utf8')); } catch (_) { return {}; } };
@@ -390,9 +409,18 @@ let focoT = null;
 try { foco = Object.assign(foco, JSON.parse(fs.readFileSync(FOCO, 'utf8'))); } catch (_) {}
 const saveFoco = () => { try { fs.writeFileSync(FOCO, JSON.stringify(foco)); } catch (_) {} };
 
-// aviso na área de trabalho do Windows (toast; se não der, balão na bandeja)
+// aviso na área de trabalho: Windows (toast ou balão), Mac (Central de Notificações) ou Linux (notify-send)
 function notify(title, text) {
-  if (process.platform !== 'win32' || (process.env.MYLOOT_SEM_AVISO || process.env.MOCHILA_SEM_AVISO)) return;
+  if (process.env.MYLOOT_SEM_AVISO || process.env.MOCHILA_SEM_AVISO) return;
+  if (MAC) {
+    const a = (s) => String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    try { cp.spawn('osascript', ['-e', `display notification "${a(text)}" with title "${a(title)}" sound name "Glass"`], { detached: true, stdio: 'ignore' }).unref(); } catch (_) {}
+    return;
+  }
+  if (!WIN) {
+    try { const ch = cp.spawn('notify-send', ['-i', path.join(PUB, 'icon.png'), String(title), String(text)], { detached: true, stdio: 'ignore' }); ch.on('error', () => {}); ch.unref(); } catch (_) {}
+    return;
+  }
   const q = (s) => String(s).replace(/'/g, "''");
   const ico = path.join(ROOT, 'MyLoot.ico');
   const ps = `
@@ -429,6 +457,28 @@ function armFoco() {
 }
 armFoco();
 
+// ---------- lembretes: tarefa de hoje com horário avisa na área de trabalho (mesmo com a aba fechada) ----------
+const AVISOS = path.join(DATA, 'avisos.json');
+let avisados = [];
+try { avisados = JSON.parse(fs.readFileSync(AVISOS, 'utf8')); } catch (_) {}
+function lembretes() {
+  let db; try { db = JSON.parse(fs.readFileSync(DB, 'utf8')); } catch (_) { return; }
+  const agora = new Date(), pad = (n) => String(n).padStart(2, '0');
+  const hoje = `${agora.getFullYear()}-${pad(agora.getMonth() + 1)}-${pad(agora.getDate())}`;
+  const min = agora.getHours() * 60 + agora.getMinutes();
+  let mudou = false;
+  for (const t of db.tasks || []) {
+    if (t.done || t.date !== hoje || !/^\d\d:\d\d$/.test(t.hora || '')) continue;
+    const [h, m] = t.hora.split(':').map(Number), k = `${t.id}|${hoje}|${t.hora}`;
+    if (min < h * 60 + m || min > h * 60 + m + 180 || avisados.includes(k)) continue;
+    notify('⏰ ' + t.text, `Lembrete do MyLoot · hoje às ${t.hora}`);
+    avisados.push(k); mudou = true;
+  }
+  if (mudou) { avisados = avisados.slice(-500); try { fs.writeFileSync(AVISOS, JSON.stringify(avisados)); } catch (_) {} }
+}
+setInterval(lembretes, 30000);
+setTimeout(lembretes, 5000);
+
 // ---------- pacotes de conteúdo (pasta exemplos/): entram uma vez só, sem duplicar ----------
 function applyPacks(db) {
   const dir = path.join(ROOT, 'exemplos');
@@ -450,7 +500,8 @@ function applyPacks(db) {
         const file = uid() + '-' + safeName(a);
         try { fs.copyFileSync(src, path.join(ANX, file)); attachments.push({ id: uid(), name: a, file, size: fs.statSync(src).size, mime: MIME[path.extname(a).toLowerCase()] || '' }); } catch (_) {}
       }
-      db.items.push({ id: p.id + '-' + i, type: it.tipo || 'estudo', title: it.titulo || '', desc: it.descricao || '', content: it.conteudo || '', checklist: [], links: it.links || [], attachments,
+      db.items.push({ id: p.id + '-' + i, type: it.tipo || 'estudo', title: it.titulo || '', desc: it.descricao || '', content: it.conteudo || '', links: it.links || [], attachments,
+        checklist: (it.checklist || []).map((t, k) => ({ id: p.id + '-' + i + '-' + k, t, done: false })), modelo: !!it.modelo, client: '',
         cat: p.categoria ? p.categoria.id : '', status: 'ver', tags: it.etiquetas || [], date: '', fav: !!it.favorito, created: now - i * 1000, updated: now - i * 1000 });
     });
     db.packs.push(p.id);
@@ -460,16 +511,68 @@ function applyPacks(db) {
 }
 
 // ---------- rotas ----------
-const server = http.createServer(async (req, res) => {
+// o que só o próprio computador pode fazer (o celular usa e mexe nos dados, mas não desliga, não troca chaves nem abre coisas no PC)
+const SO_PC = ['/api/shutdown', '/api/open', '/api/reveal', '/api/abrir-pasta', '/api/atualizacao/aplicar', '/api/rede', '/api/rede/trocar', '/api/ai/key', '/api/int/salvar', '/api/restore', '/api/drive/sync', '/api/notify-test'];
+
+async function app(req, res) {
   try {
-    const host = (req.headers.host || '').split(':')[0];
-    if (host !== '127.0.0.1' && host !== 'localhost') return send(res, 403, { erro: 'host' });
+    const host = (req.headers.host || '').split(':')[0].toLowerCase().replace(/^\[|\]$/g, '');
+    if (!REDE.hostOk(host)) return send(res, 403, { erro: 'host' });
     const u = new URL(req.url, 'http://x');
     const p = decodeURIComponent(u.pathname);
+    const pc = REDE.loopback(req);
+
+    // ----- entrada do celular (QR Code ou código de 6 números) -----
+    if (p === '/entrar') {
+      if (pc || REDE.autorizado(req)) { res.writeHead(302, { Location: '/' }); return res.end(); }
+      const c = u.searchParams.get('c');
+      if (req.method === 'GET' && c && REDE.tokenOk(c)) { res.writeHead(302, { Location: '/', 'Set-Cookie': REDE.setCookie() }); return res.end(); }
+      if (req.method === 'POST') {
+        const pin = new URLSearchParams((await readBody(req, 4096)).toString('utf8')).get('pin');
+        const r = REDE.tentar(req, pin);
+        if (r === 'ok') { res.writeHead(302, { Location: '/', 'Set-Cookie': REDE.setCookie() }); return res.end(); }
+        return send(res, 200, REDE.paginaEntrar(r === 'travado' ? 'Muitas tentativas. Espere 15 minutos.' : 'Código errado. Confira no computador.'), 'text/html; charset=utf-8');
+      }
+      return send(res, 200, REDE.paginaEntrar(c ? 'Esse QR Code é antigo. Digite o código atual.' : ''), 'text/html; charset=utf-8');
+    }
+    if (!REDE.autorizado(req)) {
+      // arquivos do visual podem carregar (ícone, manifesto); o resto pede o código
+      if (/^\/(icon\.png|bau\.png|manifest\.json|icon-\d+\.png)$/.test(p)) return serveFile(req, res, path.join(PUB, p));
+      if (p.startsWith('/api/')) return send(res, 401, { erro: 'Entre com o código do MyLoot.' });
+      res.writeHead(302, { Location: '/entrar' }); return res.end();
+    }
 
     if (p.startsWith('/api/')) {
       if (req.method !== 'GET' && req.headers['x-myloot'] !== '1' && req.headers['x-mochila'] !== '1') return send(res, 403, { erro: 'cabeçalho' });
-      if (p === '/api/ping') return send(res, 200, { ok: true, app: 'myloot', versao: UPD.local(ROOT).versao });
+      if (!pc && SO_PC.includes(p)) return send(res, 403, { erro: 'Isso só dá para fazer no computador onde o MyLoot está instalado.' });
+      if (p === '/api/ping') return send(res, 200, { ok: true, app: 'myloot', versao: UPD.local(ROOT).versao, remoto: !pc, sistema: process.platform });
+      // ----- celular / rede -----
+      if (p === '/api/rede' && req.method === 'GET') return send(res, 200, REDE.status(PORT));
+      if (p === '/api/rede' && req.method === 'POST') {
+        const b = JSON.parse((await readBody(req)).toString('utf8') || '{}');
+        REDE.ligar(b.on); send(res, 200, REDE.status(PORT)); setTimeout(ouvir, 200); return;
+      }
+      if (p === '/api/rede/trocar' && req.method === 'POST') { REDE.trocar(); return send(res, 200, REDE.status(PORT)); }
+      // ----- exportar, backup com senha, pasta do cliente -----
+      if (p === '/api/exportar-md') {
+        const { db } = readDB();
+        const buf = EXP.markdown(db, { itemToMd, TYPE_DIR, slug, safeName, ANX, anexos: u.searchParams.get('anexos') !== '0' });
+        res.writeHead(200, { 'Content-Type': 'application/zip', 'Content-Length': buf.length, 'Content-Disposition': `attachment; filename="myloot-markdown-${today()}.zip"`, 'Cache-Control': 'no-store' });
+        return res.end(buf);
+      }
+      if (p === '/api/backup/senha' && req.method === 'POST') {
+        const { senha } = JSON.parse((await readBody(req)).toString('utf8') || '{}');
+        if (!senha || String(senha).length < 6) return send(res, 400, { erro: 'Use uma senha com pelo menos 6 caracteres.' });
+        const { db } = readDB();
+        return send(res, 200, EXP.cifrar(JSON.stringify(db), senha));
+      }
+      if (p === '/api/abrir-pasta' && req.method === 'POST') {
+        const { pasta } = JSON.parse((await readBody(req)).toString('utf8') || '{}');
+        let ok = false; try { ok = fs.statSync(String(pasta || '')).isDirectory(); } catch (_) {}
+        if (!ok) return send(res, 404, { erro: 'Essa pasta não existe neste computador.' });
+        abrirNoSistema(path.resolve(String(pasta)));
+        return send(res, 200, { ok: true });
+      }
       if (p === '/api/db' && req.method === 'GET') {
         const { db, fresh } = readDB();
         if (fresh) writeDB(db);
@@ -494,8 +597,7 @@ const server = http.createServer(async (req, res) => {
         const { file } = JSON.parse((await readBody(req)).toString('utf8'));
         const full = path.join(ANX, path.basename(String(file || '')));
         if (!inside(ANX, full) || !fs.existsSync(full)) return send(res, 404, { erro: 'arquivo não achado' });
-        const args = p === '/api/open' ? [full] : ['/select,' + full];
-        cp.spawn('explorer.exe', args, { detached: true, stdio: 'ignore' }).unref();
+        abrirNoSistema(full, p === '/api/reveal');
         return send(res, 200, { ok: true });
       }
       if (p === '/api/backup') {
@@ -503,7 +605,10 @@ const server = http.createServer(async (req, res) => {
         return send(res, 200, JSON.stringify(db, null, 1), 'application/json');
       }
       if (p === '/api/restore' && req.method === 'POST') {
-        const body = JSON.parse((await readBody(req)).toString('utf8'));
+        let body = JSON.parse((await readBody(req)).toString('utf8'));
+        if (body && body.cripto) {
+          try { body = JSON.parse(EXP.decifrar(body.cripto, body.senha)); } catch (e) { return send(res, 400, { erro: e.message }); }
+        }
         if (!body || !Array.isArray(body.items)) return send(res, 400, { erro: 'Esse arquivo não parece um backup do MyLoot.' });
         if (fs.existsSync(DB)) fs.copyFileSync(DB, path.join(BAK, 'antes-de-restaurar-' + Date.now() + '.json'));
         writeDB(migrate(body));
@@ -587,7 +692,15 @@ const server = http.createServer(async (req, res) => {
           }
           const m = p.match(/^\/api\/int\/(notion|trello)\/enviar$/);
           if (m) {
-            const it = readDB().db.items.find((i) => i.id === b.id);
+            const dbx = readDB().db;
+            let it = dbx.items.find((i) => i.id === b.id);
+            const cli = b.cliente && dbx.clients.find((c) => c.id === b.cliente);
+            if (cli) { // cliente vira um cartão/página: contatos + anotações + tarefas abertas
+              const contatos = [['Empresa', cli.empresa], ['WhatsApp', cli.whats], ['E-mail', cli.email], ['Instagram', cli.insta], ['Site', cli.site], ['Pasta', cli.pasta]].filter((x) => x[1]).map((x) => x[0] + ': ' + x[1]).join('\n');
+              it = { id: cli.id, type: 'nota', title: '👤 ' + (cli.nome || 'Cliente'), desc: contatos, content: cli.notas || '', tags: cli.tags || [], attachments: [],
+                links: [cli.site, cli.trello].filter((u) => /^https?:/i.test(u || '')).map((u) => ({ url: u, label: u })),
+                checklist: dbx.tasks.filter((t) => t.client === cli.id && !t.done).map((t) => ({ t: t.text + (t.date ? ' (' + t.date.split('-').reverse().join('/') + ')' : ''), done: false })) };
+            }
             if (!it) return send(res, 404, { erro: 'Item não encontrado.' });
             const cfg = x[m[1]] || {};
             if (!cfg.alvo) return send(res, 400, { erro: 'Conecte nas Configurações primeiro.' });
@@ -623,15 +736,29 @@ const server = http.createServer(async (req, res) => {
   } catch (e) {
     send(res, 500, { erro: String(e.message || e) });
   }
-});
+}
 
-server.on('error', (e) => {
-  if (e.code === 'EADDRINUSE') { console.log('O MyLoot já está aberto na porta ' + PORT + '.'); process.exit(0); }
-  console.error(e); process.exit(1);
-});
-server.listen(PORT, HOST, () => {
-  console.log(`MyLoot rodando em http://${HOST}:${PORT}  (feche esta janela para desligar)`);
-  const { db, fresh } = readDB();
-  const novos = applyPacks(db);
-  if (fresh || novos) writeDB(db); else dailyBackup();
-});
+// escuta só no próprio PC ou, com "Usar no celular" ligado, na rede de casa (troca sem reiniciar)
+let server = null, primeira = true;
+function ouvir() {
+  const host = REDE.host();
+  if (server && server._host === host) return;
+  const velho = server;
+  server = http.createServer(app); server._host = host;
+  server.on('error', (e) => {
+    if (e.code === 'EADDRINUSE' && primeira) { console.log('O MyLoot já está aberto na porta ' + PORT + '.'); process.exit(0); }
+    if (e.code === 'EADDRINUSE') return setTimeout(() => server.listen(PORT, host), 500);
+    console.error(e); process.exit(1);
+  });
+  const ligar = () => server.listen(PORT, host, () => {
+    if (!primeira) return console.log(host === '0.0.0.0' ? 'Celular liberado na rede de casa.' : 'Só este computador acessa agora.');
+    primeira = false;
+    console.log(`MyLoot rodando em http://127.0.0.1:${PORT}  (feche esta janela para desligar)`);
+    if (host === '0.0.0.0') console.log('Celular: ' + REDE.ips().map((i) => `http://${i}:${PORT}`).join('  '));
+    const { db, fresh } = readDB();
+    const novos = applyPacks(db);
+    if (fresh || novos) writeDB(db); else dailyBackup();
+  });
+  if (velho) { velho.close(); if (velho.closeAllConnections) velho.closeAllConnections(); setTimeout(ligar, 300); } else ligar();
+}
+ouvir();
