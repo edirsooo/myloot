@@ -10,13 +10,15 @@
     const irLib = () => { if (!o.client && M.ui.page !== 'lib') { M.ui.page = 'lib'; M.render(); } };
     if (!L.length) { irLib(); return M.newItemDialog(o); }
     const m = M.modal(`<div class="modal-h"><h2>＋ Novo item</h2><button class="icon-btn" id="x">✕</button></div>
-      <div class="modal-b"><div class="mod-grid">
-        <button class="mod" data-m=""><span>📄</span><b>Em branco</b><small>Começar do zero</small></button>
-        ${L.map((it) => `<button class="mod" data-m="${it.id}" style="--c:${M.type(it.type).color}"><span>${M.type(it.type).em}</span><b>${esc((it.title || 'Sem título').replace(/^modelo:?\s*/i, ''))}</b><small>${esc(it.desc || M.type(it.type).name)}</small></button>`).join('')}
-      </div><small style="color:var(--faint)">Os modelos são exemplos: adapte para a sua marca (dentro de cada um tem uma dica para fazer isso com IA). Para criar o seu, abra um item e ligue “📐 Usar como modelo”.</small></div>`, { small: true });
+      <div class="modal-b novo-b"><div class="mod-grid">
+        <button class="mod destaque" data-m=""><span class="em">📄</span><span class="tx"><b>Em branco</b><small>Começar do zero</small></span></button>
+        <button class="mod destaque" data-m="voz"><span class="em">🎙️</span><span class="tx"><b>Por voz</b><small>Fale e a IA organiza</small></span></button>
+        ${L.map((it) => { const d = it.desc || M.type(it.type).name; return `<button class="mod" data-m="${it.id}" style="--c:${M.type(it.type).color}" title="${esc(d)}"><span class="em">${M.type(it.type).em}</span><span class="tx"><b>${esc((it.title || 'Sem título').replace(/^modelo:?\s*/i, ''))}</b><small>${esc(d)}</small></span></button>`; }).join('')}
+      </div><small style="color:var(--faint)">Os modelos são exemplos para adaptar à sua marca. Para criar o seu, abra um item e ligue “📐 Usar como modelo”.</small></div>`);
     $('#x', m).onclick = M.closeModal;
     m.onclick = (e) => {
       const b = e.target.closest('[data-m]'); if (!b) return;
+      if (b.dataset.m === 'voz') { M.closeModal(); return M.voz(); }
       M.closeModal(); irLib();
       const base = M.db.items.find((i) => i.id === b.dataset.m);
       if (!base) return M.newItemDialog(o);

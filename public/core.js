@@ -129,7 +129,16 @@
       const { rev } = await M.api('/api/rev');
       if (rev && rev !== M.rev && !M.salvando()) mudouFora = (await M.sincronizar()) || mudouFora;
     } catch (_) { return; }
-    if (mudouFora && !ocupado() && M.render) { mudouFora = false; M.render(); if (M.aoSincronizar) M.aoSincronizar(); }
+    if (mudouFora && !ocupado() && M.render) {
+      mudouFora = false;
+      // redesenhar a tela não pode apagar o que a pessoa já digitou nos campos (ex.: a tarefa nova antes de clicar em Adicionar)
+      const guardados = M.$$('#view input[id], #view textarea[id], #view select[id]').filter((e) => e.type !== 'checkbox' && e.type !== 'file').map((e) => [e.id, e.value]);
+      const foco = document.activeElement && document.activeElement.id;
+      M.render();
+      for (const [id, v] of guardados) { const e = document.getElementById(id); if (e && v && e.value !== v) e.value = v; }
+      if (foco) { const e = document.getElementById(foco); if (e && e.closest('#view')) e.focus(); }
+      if (M.aoSincronizar) M.aoSincronizar();
+    }
   }
   setInterval(olhar, 4000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) olhar(); });

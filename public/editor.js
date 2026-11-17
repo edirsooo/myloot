@@ -70,9 +70,9 @@
         </div>
         <div class="modal-b">
           <div class="types" id="eTypes">${M.TYPES.map((x) => `<div class="slot ${x.id === it.type ? 'on' : ''}" data-t="${x.id}" style="--c:${x.color}">${x.em} ${x.name}</div>`).join('')}</div>
-          <input class="title-in" id="eTitle" type="text" placeholder="Título" value="${esc(it.title)}">
-          <div class="fld"><label>Descrição ${M.hint('Um resumo curto. Aparece no cartão.')}</label><textarea id="eDesc" style="min-height:56px;font-family:var(--f)" placeholder="Sobre o que é?">${esc(it.desc)}</textarea></div>
-          <div class="fld"><label>${it.type === 'link' ? 'Endereço (URL)' : 'Conteúdo'} ${M.hint(it.type === 'prompt' ? 'Copiar este prompt dá XP.' : 'O texto principal. Use o botão Copiar para levar para outro lugar.')}</label>
+          <div class="com-mic"><input class="title-in" id="eTitle" type="text" placeholder="Título" value="${esc(it.title)}">${M.micBtn('#eTitle')}</div>
+          <div class="fld"><label>Descrição ${M.hint('Um resumo curto. Aparece no cartão.')}${M.micBtn('#eDesc')}</label><textarea id="eDesc" style="min-height:56px;font-family:var(--f)" placeholder="Sobre o que é?">${esc(it.desc)}</textarea></div>
+          <div class="fld"><label>${it.type === 'link' ? 'Endereço (URL)' : 'Conteúdo'} ${M.hint(it.type === 'prompt' ? 'Copiar este prompt dá XP.' : 'O texto principal. Use o botão Copiar para levar para outro lugar.')}${it.type === 'link' ? '' : M.micBtn('#eContent')}</label>
             <div class="copybox"><textarea id="eContent" placeholder="${it.type === 'link' ? 'https://…' : it.type === 'comando' ? 'Cole o comando aqui' : 'Escreva ou cole aqui'}">${esc(it.content)}</textarea>
             <button class="btn sm" id="eCopy">📋 Copiar</button></div>
             <div id="eAi" style="margin-top:8px"></div>
@@ -123,7 +123,7 @@
         } catch (e) { if (M.cur === it) { SFX.play('error'); drawAi({ err: e.message }); } }
       };
       $('.ai-acts', box).onclick = (e) => { const b = e.target.closest('button'); if (b) ask(b.dataset.k); };
-      const go = () => { const q = $('#aiQ', box).value.trim(); if (q) ask('livre', q); };
+      const go = () => { const q = $('#aiQ', box).value.trim(); if (q) ask('livre', q); else M.falta($('#aiQ', box), '✍️ Escreva o que você quer pedir à IA'); };
       $('#aiGo', box).onclick = go; $('#aiQ', box).onkeydown = (e) => { if (e.key === 'Enter') go(); };
       $('#aiRes', box).onclick = (e) => {
         const u = e.target.dataset.u; if (!u) return;

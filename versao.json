@@ -1,7 +1,10 @@
 {
-  "versao": "2.5.1",
-  "data": "2026-11-16",
-  "novidades": [],
+  "versao": "2.6.0",
+  "data": "2026-11-17",
+  "novidades": [
+    "🎙️ Microfone ao lado dos campos: fale em vez de digitar no título, na descrição, no conteúdo e nas tarefas",
+    "🧩 Novo item em 3 colunas: os modelos cabem numa tela só, com o atalho “Por voz”"
+  ],
   "historico": {
     "2.5.0": [
       "🎙️ Crie falando: grave um áudio (ou mande um do WhatsApp) e ele vira nota, tarefa ou conta",

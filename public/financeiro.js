@@ -99,7 +99,7 @@
     const C = M.db.clients || [];
     const m = M.modal(`<div class="modal-h"><h2>${novo ? 'Novo lançamento' : 'Editar lançamento'}</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b">
       <div class="seg fin-tipo" id="ft"><button data-t="entrada" class="${f.tipo === 'entrada' ? 'on' : ''}">＋ Entrada</button><button data-t="saida" class="${f.tipo === 'saida' ? 'on' : ''}">− Saída</button></div>
-      <input type="text" id="fd" placeholder="Descrição (ex.: Mensalidade Padaria, Adobe, DAS do MEI)" value="${esc(f.desc)}">
+      <div class="com-mic"><input type="text" id="fd" placeholder="Descrição (ex.: Mensalidade Padaria, Adobe, DAS do MEI)" value="${esc(f.desc)}">${M.micBtn('#fd')}</div>
       <div class="row"><div class="fld"><label>Valor (R$)</label><input type="text" id="fv" inputmode="decimal" placeholder="0,00" value="${f.valor ? String(f.valor.toFixed(2)).replace('.', ',') : ''}"></div>
         <div class="fld"><label>${f.tipo === 'entrada' ? 'Data / vencimento' : 'Vencimento'}</label><input type="date" id="fdt" value="${f.data}"></div></div>
       <div class="row"><div class="fld"><label>Categoria</label><select id="fc"></select></div><div class="fld"><label>Forma</label><select id="ffo"><option value="">—</option>${M.FORMAS.map((x) => `<option ${x === f.forma ? 'selected' : ''}>${x}</option>`).join('')}</select></div></div>
@@ -116,7 +116,7 @@
     if ($('#fr', m)) $('#fr', m).onchange = (e) => { $('#fnp', m).hidden = e.target.value !== 'parc'; };
     const ok = () => {
       const valor = M.lerValor($('#fv', m).value);
-      if (!valor) return M.toast('Coloque o valor.');
+      if (!valor) return M.falta($('#fv', m), '💰 Coloque o valor primeiro');
       Object.assign(f, { desc: $('#fd', m).value.trim(), valor, data: $('#fdt', m).value || M.today(), cat: $('#fc', m).value, forma: $('#ffo', m).value, pago: $('#fpg', m).checked, obs: $('#fo', m).value.trim() });
       f.pagoEm = f.pago ? (f.pagoEm || M.today()) : '';
       if ($('#fcl', m)) f.client = $('#fcl', m).value;

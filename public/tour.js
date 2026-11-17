@@ -28,7 +28,7 @@
     home: [
       { s: '.hero', t: 'Seu resumo do dia', d: 'Aqui em cima ficam a data, quantas tarefas você tem para hoje e os seus números: itens guardados, tarefas abertas, nível e dias seguidos.' },
       { s: '.ring', t: 'Meta do dia', d: 'O anel enche conforme você ganha pontos (XP) concluindo tarefas e guardando itens. Se não curtir o joguinho, dá para desligar nas Configurações.' },
-      { s: '.qc', t: 'Guarde qualquer coisa', d: 'Escolha Tarefa, Nota, Prompt ou Link, escreva e aperte Enter. Se colar um link, ele entende sozinho. No 🎙️ você cria falando.' },
+      { s: '.qc', t: 'Guarde qualquer coisa', d: 'Escolha Tarefa, Nota, Prompt ou Link, escreva e aperte Enter. Se colar um link, ele entende sozinho. No 🎙️ você fala em vez de digitar.' },
       { s: '.home > .panel', tudo: true, t: 'Seus painéis', d: 'Para hoje, Missões do dia, Em andamento, Favoritos e Mexidos por último: o que importa agora, sem procurar.' },
       { s: '#gSide', t: 'Mapa de conexões', d: 'Cada bolinha é um item. Os que têm a mesma etiqueta, a mesma categoria ou citam um ao outro se ligam sozinhos. Passe o mouse, clique para abrir ou veja em tela cheia.' },
       { s: '#focus', t: 'Modo foco', d: 'Um timer para trabalhar sem distração. Pode fechar o navegador: quando acabar, o computador avisa.' },
@@ -43,7 +43,7 @@
       { s: ['#btnNew', '#bnav .novo'], t: 'Novo item', d: 'Crie em branco ou a partir de um modelo pronto (briefing, contrato, proposta, roteiro…).' },
     ],
     tasks: [
-      { s: '.tnew', t: 'Nova tarefa', d: 'Escreva e aperte Enter. Se terminar com “hoje” ou “amanhã”, a data entra sozinha.' },
+      { s: '.tnew', t: 'Nova tarefa', d: 'Escreva (ou fale no 🎙️) e aperte Enter. Se terminar com “hoje” ou “amanhã”, a data entra sozinha.' },
       { s: '.tgroup', t: 'Separadas por prazo', d: 'Atrasadas, hoje, próximas e sem data. Concluir uma tarefa dá pontos.' },
       { s: '.task', t: 'Detalhes da tarefa', d: 'Clique no texto para editar: data, lembrete com horário (o computador avisa), repetição (todo dia, toda semana, todo mês) e o cliente.' },
     ],

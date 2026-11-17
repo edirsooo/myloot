@@ -74,7 +74,7 @@
     const done = M.db.tasks.filter((t) => t.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0)).slice(0, 12);
     v.innerHTML = `
       <div class="tnew">
-        <input type="text" id="tIn" placeholder="Nova tarefa… (termine com “hoje” ou “amanhã” para marcar a data)" autocomplete="off">
+        <input type="text" id="tIn" placeholder="Nova tarefa… (termine com “hoje” ou “amanhã” para marcar a data)" autocomplete="off">${M.micBtn('#tIn')}
         <select id="tPr" title="Prioridade"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Média</option><option value="baixa">🔵 Baixa</option></select>
         <input type="date" id="tDt" style="width:auto" title="Data (opcional)">
         <button class="btn" id="tAdd">＋ Adicionar</button>
@@ -83,7 +83,7 @@
       ${G.map(([k, n, L]) => L.length ? `<div class="tgroup ${k}"><h4>${n} <span>${L.length}</span></h4>${L.map(taskHTML).join('')}</div>` : '').join('')}
       ${!open.length ? '<div class="empty"><div class="big">🎉</div><h3>Nenhuma tarefa pendente</h3></div>' : ''}
       ${done.length ? `<div class="tgroup"><h4>✅ Concluídas recentemente</h4>${done.map(taskHTML).join('')}</div>` : ''}`;
-    const add = () => { const i = $('#tIn'); if (M.addTask(i.value, $('#tDt').value, $('#tPr').value)) { M.render(); $('#tIn').focus(); } };
+    const add = () => { const i = $('#tIn'); if (M.addTask(i.value, $('#tDt').value, $('#tPr').value)) { M.toast('✅ Tarefa criada'); M.render(); $('#tIn').focus(); } else M.falta(i, '✍️ Escreva a tarefa primeiro (ou fale no 🎙️)'); };
     $('#tAdd').onclick = add;
     $('#tIn').onkeydown = (e) => { if (e.key === 'Enter') add(); };
     $('#tIn').focus();
@@ -101,7 +101,7 @@
 
   function editTask(t, depois) {
     const C = M.db.clients || [];
-    const m = M.modal(`<div class="modal-h"><h2>Editar tarefa</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><input type="text" id="et" value="${esc(t.text)}">
+    const m = M.modal(`<div class="modal-h"><h2>Editar tarefa</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div class="com-mic"><input type="text" id="et" value="${esc(t.text)}">${M.micBtn('#et')}</div>
       <div class="row"><div class="fld"><label>Data</label><input type="date" id="ed" value="${t.date}"></div><div class="fld"><label>Lembrete ${M.hint('No horário, aparece um aviso no computador (mesmo com a aba fechada). Precisa ter data.')}</label><input type="time" id="eh" value="${esc(t.hora || '')}"></div></div>
       <div class="row"><div class="fld"><label>Repetir</label><select id="er">${M.REP.map(([k, n]) => `<option value="${k}" ${k === (t.rep || '') ? 'selected' : ''}>${n}</option>`).join('')}</select></div><div class="fld"><label>Prioridade</label><select id="ep">${M.PRIOS.map((p) => `<option ${p === t.prio ? 'selected' : ''}>${p}</option>`).join('')}</select></div></div>
       ${C.length ? `<div class="fld"><label>Cliente</label><select id="ec"><option value="">— nenhum —</option>${C.map((c) => `<option value="${c.id}" ${c.id === t.client ? 'selected' : ''}>${esc(c.nome || 'Sem nome')}</option>`).join('')}</select></div>` : ''}
@@ -157,9 +157,9 @@
   };
 
   function quickAdd(date) {
-    const m = M.modal(`<div class="modal-h"><h2>Nova tarefa · ${M.fmtDate(date)}</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><input type="text" id="qt" placeholder="O que precisa ser feito?"><div class="row" style="align-items:center"><select id="qp"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Média</option><option value="baixa">🔵 Baixa</option></select><button class="btn" id="qa" style="flex:none">＋ Criar</button></div></div>`, { small: true });
+    const m = M.modal(`<div class="modal-h"><h2>Nova tarefa · ${M.fmtDate(date)}</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div class="com-mic"><input type="text" id="qt" placeholder="O que precisa ser feito?">${M.micBtn('#qt')}</div><div class="row" style="align-items:center"><select id="qp"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Média</option><option value="baixa">🔵 Baixa</option></select><button class="btn" id="qa" style="flex:none">＋ Criar</button></div></div>`, { small: true });
     $('#x', m).onclick = M.closeModal; $('#qt', m).focus();
-    const ok = () => { if (M.addTask($('#qt', m).value, date, $('#qp', m).value)) { M.closeModal(); M.render(); } };
+    const ok = () => { if (M.addTask($('#qt', m).value, date, $('#qp', m).value)) { M.closeModal(); M.render(); } else M.falta($('#qt', m), '✍️ Escreva a tarefa primeiro'); };
     $('#qa', m).onclick = ok; $('#qt', m).onkeydown = (e) => { if (e.key === 'Enter') ok(); };
   }
 })();

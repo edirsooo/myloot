@@ -36,7 +36,7 @@
     const m = M.modal(`<div class="modal-h"><h2>🐞 Reportar um problema</h2><button class="icon-btn" id="x">✕</button></div>
       <div class="modal-b">
         <div class="seg" id="rTipo"><button data-t="Problema" class="on">🐞 Problema</button><button data-t="Sugestão">💡 Sugestão</button><button data-t="Dúvida">❓ Dúvida</button></div>
-        <textarea id="rTx" placeholder="O que aconteceu? O que você estava fazendo na hora? Se der, conte o passo a passo para o erro aparecer de novo." style="min-height:120px;font-family:var(--f)"></textarea>
+        <div class="com-mic topo"><textarea id="rTx" placeholder="O que aconteceu? O que você estava fazendo na hora? Se der, conte o passo a passo para o erro aparecer de novo." style="min-height:120px;font-family:var(--f)"></textarea>${M.micBtn('#rTx')}</div>
         ${form ? '' : '<input type="text" id="rCt" placeholder="Seu nome ou contato (opcional, para eu te responder)">'}
         <small style="color:var(--faint)">${form ? 'Abre um formulário já preenchido: é só colocar o seu e-mail e enviar. ' : ''}Vai junto a versão do MyLoot e os últimos erros da tela. Nenhum item, anexo ou chave sua.</small>
         <div class="row" style="justify-content:flex-end;gap:8px;flex-wrap:wrap">

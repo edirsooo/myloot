@@ -108,6 +108,66 @@ Regras: "tarefa" é algo a fazer (comece com verbo); datas faladas (amanhã, sex
     return it;
   }
 
+  // ----- ditar dentro de um campo: botão 🎙️ ao lado de um campo de texto -----
+  // M.micBtn('#idDoCampo') devolve o botão; o clique grava, o segundo clique para e o texto entra no campo.
+  M.micBtn = (alvo, cls) => (podeGravar() && !M.remoto ? `<button type="button" class="mic-in ${cls || ''}" data-ditar="${alvo}" title="Falar em vez de digitar" aria-label="Ditar neste campo">🎙️</button>` : '');
+  let dit = null; // { sel, raiz, rec, estado, t }
+  const ditBtn = () => (dit && dit.raiz.isConnected ? dit.raiz.querySelector(`[data-ditar="${dit.sel}"]`) : null);
+  const ditPinta = () => {
+    document.querySelectorAll('.mic-in.on,.mic-in.wait').forEach((x) => { x.classList.remove('on', 'wait'); x.textContent = '🎙️'; x.style.removeProperty('--n'); });
+    const b = ditBtn(); if (!b || !dit) return;
+    if (dit.estado === 'gravando') { b.classList.add('on'); b.textContent = '⏹'; }
+    else if (dit.estado === 'transcrevendo') { b.classList.add('wait'); b.textContent = '⏳'; }
+  };
+  async function ditParar(usar) {
+    const d = dit; if (!d || d.estado !== 'gravando') return;
+    clearTimeout(d.t); d.estado = 'transcrevendo'; ditPinta();
+    let blob = null; try { blob = await d.rec.parar(); } catch (_) {}
+    if (!usar || !blob) { dit = null; ditPinta(); return; }
+    let fase = '', avisou = false;
+    try {
+      // só avisa do download se ele demorar (com o motor já guardado no navegador, passa direto)
+      const txt = await M.transcrever(blob, (x) => {
+        fase = x.tipo;
+        if (x.tipo === 'baixando' && !avisou) { avisou = true; setTimeout(() => { if (fase === 'baixando' && dit === d) M.toast('⬇️ Baixando o motor de voz (só na primeira vez, uns 80 MB)…'); }, 1500); }
+      });
+      const el = d.raiz.isConnected ? d.raiz.querySelector(d.sel) : null;
+      if (!txt) M.toast('🎙️ Não entendi o áudio. Tente falar mais perto do microfone.');
+      else if (!el) { navigator.clipboard.writeText(txt).catch(() => {}); M.toast('🎙️ O campo fechou. O texto falado está copiado: é só colar.'); }
+      else {
+        const umaLinha = el.tagName === 'INPUT';
+        const novo = umaLinha ? txt.replace(/\s+/g, ' ').trim().replace(/[.。]$/, '') : txt.trim();
+        const sep = !el.value ? '' : /\s$/.test(el.value) ? '' : ' ';
+        el.value = el.value + sep + novo;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch (_) {}
+        if (!umaLinha) el.scrollTop = el.scrollHeight;
+        SFX.play('pop');
+      }
+    } catch (e) { M.toast('⚠️ ' + e.message); }
+    dit = null; ditPinta();
+  }
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest && e.target.closest('[data-ditar]'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if (dit) { if (dit.estado === 'gravando') ditParar(true); return; } // segundo clique (em qualquer microfone) para e transcreve
+    const d = (dit = { sel: b.dataset.ditar, raiz: b.closest('.modal') || document, rec: null, estado: 'pedindo', t: 0 });
+    try {
+      d.rec = await gravar((n) => {
+        if (dit !== d) return;
+        if (!d.raiz.isConnected) return ditParar(false); // a janela fechou no meio: joga fora
+        const x = ditBtn(); if (x) { if (!x.classList.contains('on')) ditPinta(); x.style.setProperty('--n', n.toFixed(2)); }
+      });
+      if (dit !== d) { d.rec.parar(); return; }
+      d.estado = 'gravando'; ditPinta(); SFX.play('click');
+      M.toast('🎙️ Gravando… clique no microfone de novo para parar.');
+      d.t = setTimeout(() => { if (dit === d) ditParar(true); }, 180000); // 3 minutos no máximo
+    } catch (er) {
+      dit = null; ditPinta();
+      M.toast(/denied|permission|NotAllowed/i.test(er.name + er.message) ? '⚠️ Libere o microfone no cadeado da barra de endereço e tente de novo.' : '⚠️ Não consegui usar o microfone: ' + er.message);
+    }
+  }, true);
+
   // ----- janela -----
   M.voz = () => {
     if (M.remoto) return vozCelular();
@@ -172,7 +232,7 @@ Regras: "tarefa" é algo a fazer (comece com verbo); datas faladas (amanhã, sex
     };
     $('#vArq', m).onchange = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f && !ocupado) processar(f); };
 
-    const texto = () => $('#vTx', m).value.trim();
+    const texto = () => { const t = $('#vTx', m).value.trim(); if (!t) M.falta($('#vTx', m), '✍️ Fale ou escreva algo primeiro'); return t; };
     const audio = () => ($('#vGuarda', m).checked && ultimo ? arquivo(ultimo) : null);
     const fim = (msg) => { M.toast(msg); M.render(); $('#vTx', m).value = ''; $('#vRes', m).hidden = true; $('#vLista', m).innerHTML = ''; st('Toque no microfone e fale', 'Pode mandar o próximo.'); };
     $('#vNota', m).onclick = async () => { const t = texto(); if (!t) return; await criar({ tipo: 'nota', titulo: titulo(t), texto: t }, audio()); fim('📝 Nota salva'); };

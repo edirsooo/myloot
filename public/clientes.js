@@ -138,10 +138,10 @@
           <div class="row">${campo('site', 'Site', 'site.com.br')}${campo('trello', 'Quadro do Trello', 'Cole o link do quadro')}</div>
           <div class="fld"><label>Pasta do cliente ${M.hint('Caminho da pasta no computador (ex.: D:\\Clientes\\João) ou link do Google Drive. O botão 📁 abre direto.')}</label><input type="text" data-k="pasta" value="${esc(c.pasta)}" placeholder="${M.sistema === 'win32' ? 'D:\\Clientes\\Nome' : '/Users/voce/Clientes/Nome'} ou link do Drive"></div>
           <div class="fld"><label>Etiquetas</label><input type="text" id="cTags" value="${esc(c.tags.join(', '))}" placeholder="social media, mensal…"></div>
-          <div class="fld"><label>Anotações</label><textarea data-k="notas" style="font-family:var(--f);min-height:80px" placeholder="Briefing, combinados, valores, preferências…">${esc(c.notas)}</textarea></div>
+          <div class="fld"><label>Anotações${M.micBtn('[data-k=notas]')}</label><textarea data-k="notas" style="font-family:var(--f);min-height:80px" placeholder="Briefing, combinados, valores, preferências…">${esc(c.notas)}</textarea></div>
           <div class="fld"><label>✅ Tarefas do cliente</label>
             ${ts.map(M.taskHTML).join('') || '<small style="color:var(--faint)">Nenhuma tarefa ainda.</small>'}
-            <div class="row" style="margin-top:8px;align-items:center"><input type="text" id="cTk" placeholder="Nova tarefa… (ex.: Postar carrossel amanhã)" style="flex:3"><button class="btn sm" id="cTkGo" style="flex:none">＋</button></div></div>
+            <div class="row" style="margin-top:8px;align-items:center"><input type="text" id="cTk" placeholder="Nova tarefa… (ex.: Postar carrossel amanhã)" style="flex:3">${M.micBtn('#cTk')}<button class="btn sm" id="cTkGo" style="flex:none">＋</button></div></div>
           <div class="fld"><label>📦 Itens do cliente ${M.hint('Briefings, roteiros, prompts, arquivos e links deste cliente. Crie aqui ou ligue um item que já existe.')}</label>
             ${its.map((it) => `<div class="rowi" data-it="${it.id}" style="--c:${M.type(it.type).color}"><span class="ic">${M.type(it.type).em}</span><b>${esc(it.title || 'Sem título')}</b><button class="xbtn" data-solta="${it.id}" title="Desligar do cliente">✕</button></div>`).join('') || '<small style="color:var(--faint)">Nenhum item ligado.</small>'}
             <div class="row" style="margin-top:8px;gap:8px"><button class="btn sm" id="cItNovo" style="flex:none">＋ Novo item</button>${M.modelos().length ? '<button class="btn sm ghost" id="cItMod" style="flex:none">📐 Usar modelo</button>' : ''}
@@ -160,7 +160,7 @@
       $('#cTags', m).oninput = (e) => { c.tags = [...new Set(e.target.value.split(',').map((x) => x.trim().replace(/^#/, '')).filter(Boolean))]; touch(); };
       $('#cSt', m).onclick = (e) => { const x = e.target.closest('[data-s]'); if (!x) return; c.status = x.dataset.s; touch(); SFX.play('click'); draw(); };
       m.querySelectorAll('.cli-bar [data-pasta]').forEach((b) => { b.onclick = () => M.abrirPastaCliente(c); });
-      const addT = () => { const i = $('#cTk', m); const t = M.addTask(i.value); if (t) { t.client = c.id; M.save(); draw(); $('#cTk', m).focus(); } };
+      const addT = () => { const i = $('#cTk', m); const t = M.addTask(i.value); if (t) { t.client = c.id; M.save(); draw(); $('#cTk', m).focus(); } else M.falta(i, '✍️ Escreva a tarefa primeiro'); };
       $('#cTkGo', m).onclick = addT; $('#cTk', m).onkeydown = (e) => { if (e.key === 'Enter') addT(); };
       m.querySelectorAll('.task').forEach((row) => {
         row.onclick = (e) => {

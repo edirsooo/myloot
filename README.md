@@ -14,6 +14,11 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.6
+
+- 🎙️ **Microfone ao lado dos campos**: no título, na descrição e no conteúdo de um item, na tarefa nova, nas anotações do cliente e no lançamento do financeiro. Clique, fale, clique de novo: o texto entra no campo. (No computador; no celular use o microfone do teclado.)
+- 🧩 **Novo item em 3 colunas**: os modelos cabem numa tela só, sem rolar, com os atalhos “Em branco” e “Por voz” no topo.
+
 ## Novidades da versão 2.5
 
 - 🎙️ **Crie falando**: aperte o microfone (ou a tecla `V`), fale, e o que você disse vira nota, tarefa ou conta. Também aceita áudio do WhatsApp. A transcrição roda no seu computador (Whisper no navegador); na primeira vez ele baixa o motor de voz, uns 80 MB.

@@ -28,11 +28,15 @@
     setTimeout(() => el.remove(), undo ? 6500 : 2800);
   };
 
+  // campo obrigatório vazio: avisa, balança o campo e põe o cursor nele (o botão nunca fica "mudo")
+  M.falta = (el, msg) => { if (!el) return; M.toast(msg); el.classList.remove('falta'); void el.offsetWidth; el.classList.add('falta'); el.focus(); SFX.play('error'); setTimeout(() => el.classList.remove('falta'), 900); };
+
   // ----- janelas -----
   let onClose = null;
   M.modal = (html, opt) => {
     opt = opt || {};
     const ov = $('#overlay');
+    document.body.classList.remove('menu'); // no celular o menu lateral fica por cima das janelas: fecha antes de abrir qualquer uma
     ov.innerHTML = `<div class="modal ${opt.small ? 'sm' : ''}">${html}</div>`;
     ov.classList.add('on');
     ov.onmousedown = (e) => { if (e.target === ov) M.closeModal(); };

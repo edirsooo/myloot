@@ -69,7 +69,7 @@
     $('#aiModel').value = s.aiModel || 'claude-opus-5-5';
     $('#aiModel').onchange = (e) => set('aiModel', e.target.value);
     const putKey = async (key) => { try { const r = await M.api('/api/ai/key', { method: 'POST', body: JSON.stringify({ key }) }); $('#aiKey').value = ''; aiSt(r.temChave); st = null; SFX.play(r.temChave ? 'coin' : 'click'); M.toast(r.temChave ? '🔑 Chave guardada' : 'Chave removida'); } catch (e) { M.toast('⚠️ ' + e.message); } };
-    $('#aiSave').onclick = () => { const k = $('#aiKey').value.trim(); if (k) putKey(k); };
+    $('#aiSave').onclick = () => { const k = $('#aiKey').value.trim(); if (k) putKey(k); else M.falta($('#aiKey'), '🔑 Cole a chave primeiro'); };
     $('#aiDel').onclick = () => putKey('');
     $('#iaRedo').onclick = () => M.iaSetup();
   };
