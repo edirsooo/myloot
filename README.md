@@ -16,6 +16,10 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.16
+
+- 🔄 Sincronizar entre computadores: usa o MyLoot em mais de um PC? Ligue em Configurações → Google Drive e os dois ficam com os mesmos itens, tarefas, clientes, lançamentos e anexos, pela pasta do Google Drive (ou OneDrive, Dropbox). Se os dois mudarem o mesmo item, fica a mudança mais nova, campo a campo, e o que for apagado vai para a Lixeira do outro (precisa do Google Drive para computador instalado em todos os PCs)
+
 ## Novidades da versão 2.15.2
 
 - 🤖 Codex: se você tem o app do ChatGPT (ou do Codex) para computador, o MyLoot agora acha e usa o Codex que vem dentro dele, já logado na sua conta, sem instalar nada pelo terminal
@@ -137,6 +141,7 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 - **IA (opcional): Claude ou Codex.** Peça para melhorar, corrigir ou resumir qualquer texto. O MyLoot acha sozinho o [Claude Code](https://claude.com/claude-code) e o [Codex](https://developers.openai.com/codex) instalados no seu PC e usa a sua própria assinatura, sem chave e sem custo extra. Na primeira vez, ele pergunta quais você quer usar. Sem nenhum dos dois, dá para colar uma chave da API do Claude.
 - **Notion e Trello (opcional):** envie qualquer item para uma página do Notion ou para uma lista do Trello com um clique.
 - **Google Drive (opcional):** copia tudo como arquivos `.md` para a sua pasta do Drive. O que você editar direto no Drive não é apagado: vai para a pasta `_substituidos`.
+- **Sincronizar entre computadores (opcional):** quem usa o MyLoot em dois ou mais PCs liga em Configurações → Google Drive → *Sincronizar entre computadores*. Cada PC grava só o próprio arquivo na pasta `MyLoot-sync` do Drive e lê o dos outros ao abrir, a cada minuto e logo depois de salvar. Mudança no mesmo item: fica a mais nova, campo a campo; apagado vai para a Lixeira dos outros; antes da primeira junção o app guarda uma cópia automática. Precisa do **Google Drive para computador** (ou OneDrive, Dropbox) instalado e aberto em todos os PCs, com a mesma conta, e do relógio dos PCs certo. Configurações, XP e chaves (`data/segredos.json`) não vão para a nuvem.
 - **Exportar para o Obsidian:** baixa um ZIP com tudo em Markdown (itens, anexos, clientes e tarefas), pronto para abrir como cofre.
 - **Backup:** completo (`.zip` com os registros e os anexos, restaurável em outro computador), só dos registros (`.json` ou `.myloot` com senha, AES-256) e cópias automáticas de cada dia, restauráveis pela tela.
 - **Central de ferramentas:** 42 links de IAs de imagem e vídeo e de programas de código aberto, com busca e botão para guardar na sua Biblioteca.
@@ -229,7 +234,7 @@ Tudo fica na pasta `data/`, dentro da pasta do app:
 
 A chave da API do Claude e as do Notion e do Trello ficam em `data/segredos.json`, fora do backup e do GitHub.
 
-Nada sai do seu computador, a não ser que você ligue o Drive, use o Claude ou envie um item para o Notion/Trello.
+Nada sai do seu computador, a não ser que você ligue o Drive (cópia ou sincronização entre computadores), use o Claude ou envie um item para o Notion/Trello.
 
 ## Como atualizar
 

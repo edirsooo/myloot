@@ -81,6 +81,12 @@
         <div class="cfg-row"><span class="l">Copiar para o Drive ${M.hint('Precisa do app “Google Drive para computador”. Cada item vira um arquivo .md numa pasta por tipo, com os anexos junto. Se você mexer num arquivo lá no Drive, ou apagar o item aqui, o MyLoot não apaga nem troca a sua versão: ela vai para a pasta _substituidos.')}</span>${M.sw('cDrive', s.drive.on)}</div>
         <div class="row" style="margin-top:8px;align-items:center"><input type="text" id="cPath" value="${esc(s.drive.path)}" placeholder="Ex: G:\\Meu Drive" style="flex:3"><button class="btn ghost" id="cFind" style="flex:none">🔎 Procurar</button><button class="btn" id="cSync" style="flex:none">☁️ Copiar para o Drive agora</button></div>
         <small id="cDriveMsg" style="color:var(--dim);display:block;margin-top:8px"></small>
+        <div id="cNuvem" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line, rgba(127,127,127,.25))">
+          <div class="cfg-row"><span class="l">Sincronizar entre computadores ${M.hint('Para quem usa o MyLoot em mais de um PC. Cada computador grava só o próprio arquivo na pasta MyLoot-sync do Drive e lê os dos outros a cada minuto e depois de salvar. Se dois PCs mudarem o mesmo item, fica a mudança mais nova, campo a campo. O que foi apagado vai para a Lixeira dos outros. Chaves e senhas nunca vão para a nuvem.')}</span>${M.sw('cNuvOn', false)}</div>
+          <small style="color:var(--dim);display:block;margin:6px 0 8px">⚠️ Precisa do app “Google Drive para computador” (ou OneDrive, Dropbox) instalado e aberto em TODOS os computadores, com a mesma conta e a mesma pasta. Deixe o relógio dos PCs certo: a mudança mais nova vence.</small>
+          <div class="row" style="align-items:center"><input type="text" id="cNuvPasta" placeholder="Pasta da nuvem, ex: G:\\Meu Drive" style="flex:3"><input type="text" id="cNuvNome" placeholder="Nome deste computador" maxlength="40" style="flex:2"><button class="btn" id="cNuvSync" style="flex:none">🔄 Sincronizar agora</button></div>
+          <small id="cNuvMsg" style="color:var(--dim);display:block;margin-top:8px">Carregando…</small>
+        </div>
       </section>
       <section class="stat"><div class="cfg-h">💾 Dados e backup</div>${M.dadosExtras()}
       </section>
@@ -118,7 +124,7 @@
     const DESC = { 'Aparência': 'Tema, tamanho das letras e modo compacto.', 'Diversão': 'Pontos, níveis, sons, confete, mascote e a meta do dia.', 'Categorias': 'Crie, renomeie e pinte as categorias da Biblioteca.',
       'Tutorial': 'Reveja a explicação de cada tela.', 'Atalhos do teclado': 'Teclas para ir mais rápido.', 'Usar no celular': 'Abra o MyLoot no celular pela rede Wi-Fi de casa.',
       'IA (Claude e Codex)': 'Escolha a IA que melhora, corrige e resume seus textos.', 'Notion e Trello': 'Mande itens para o Notion e para o Trello com um clique.',
-      'Conexões': 'Deixe outros programas do computador mandarem itens ao MyLoot.', 'Google Drive': 'Copie tudo para a sua pasta do Drive.',
+      'Conexões': 'Deixe outros programas do computador mandarem itens ao MyLoot.', 'Google Drive': 'Copie tudo para o Drive e sincronize entre computadores.',
       'Dados e backup': 'Baixe, restaure e exporte tudo o que você guardou.', 'Versão': 'Veja a versão e procure atualização.', 'Ajuda e problemas': 'Relate um problema ou peça ajuda.', 'Servidor': 'Como o MyLoot abre neste computador e como desligar.' };
     const secs = $$('#cfgCols section.stat').filter((x) => x.offsetParent !== null);
     const nomeSec = (x) => { const h = x.querySelector('.cfg-h'); return ((h && h.firstChild && h.firstChild.textContent) || '').trim(); };
@@ -182,6 +188,49 @@
         const pl = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
         msg(`Pronto! ${pl(r.itens, 'item', 'itens')} · ${pl(r.escritos, 'arquivo atualizado', 'arquivos atualizados')}` + (r.movidos ? ` · ${pl(r.movidos, 'guardado', 'guardados')} na pasta _substituidos (mexidos fora do MyLoot ou que saíram da cópia)` : '') + (r.erros ? ` · ⚠️ ${pl(r.erros, 'arquivo', 'arquivos')} não consegui copiar` : '') + '.', !!r.erros); SFX.play('done');
       } catch (e) { msg(e.message, true); SFX.play('error'); }
+    };
+    // ----- sincronizar entre computadores (a configuração fica em data/nuvem.json, só neste PC) -----
+    const nMsg = (t, bad) => { const el = $('#cNuvMsg'); if (el) { el.textContent = t; el.style.color = bad ? 'var(--red)' : 'var(--dim)'; } };
+    const quando = (t) => (t ? new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'nunca');
+    const nStatus = (st) => {
+      if (!$('#cNuvOn')) return;
+      $('#cNuvOn').checked = !!st.on;
+      if (document.activeElement !== $('#cNuvPasta')) $('#cNuvPasta').value = st.pasta || '';
+      if (document.activeElement !== $('#cNuvNome')) $('#cNuvNome').value = st.nome || '';
+      const outros = (st.aparelhos || []).filter((a) => !a.este);
+      if (st.erro && st.on) return nMsg('⚠️ ' + st.erro, true);
+      nMsg(!st.on ? 'Desligado. Ligue nos dois computadores, com a mesma pasta do Drive.'
+        : `Última sincronização: ${quando(st.ultima)}` + (outros.length ? ` · outros computadores: ${outros.map((a) => a.nome + ' (' + quando(a.quando) + ')').join(', ')}` : ' · nenhum outro computador ainda'));
+    };
+    const nCarregar = () => M.api('/api/nuvem').then(nStatus).catch(() => nMsg(''));
+    nCarregar();
+    const nMudar = async (b) => { try { nStatus(await M.api('/api/nuvem', { method: 'POST', body: JSON.stringify(b) })); } catch (e) { nMsg(e.message, true); } };
+    $('#cNuvOn').onchange = async (e) => {
+      SFX.play('click');
+      const b = { on: e.target.checked };
+      if (b.on && !$('#cNuvPasta').value.trim()) {
+        const pasta = s.drive.path || ((await M.api('/api/drive/find').catch(() => ({ pastas: [] }))).pastas || [])[0];
+        if (!pasta) { e.target.checked = false; return nMsg('Não achei o Google Drive. Instale o “Google Drive para computador” ou digite a pasta.', true); }
+        b.pasta = pasta;
+      }
+      if (b.on) nMsg('Ligando… na primeira vez o MyLoot guarda uma cópia automática antes de juntar.');
+      await nMudar(b);
+      if (b.on) setTimeout(() => { M.sincronizar().then(() => M.render()).catch(() => {}); }, 2500);
+    };
+    $('#cNuvPasta').onchange = (e) => nMudar({ pasta: e.target.value.trim() });
+    $('#cNuvNome').onchange = (e) => nMudar({ nome: e.target.value.trim() });
+    $('#cNuvSync').onclick = async () => {
+      try {
+        nMsg('Salvando antes de sincronizar…');
+        M.save(true); await M.salvou();
+        nMsg('Sincronizando…');
+        const r = await M.api('/api/nuvem/sync', { method: 'POST' });
+        nStatus(r);
+        const ax = (r.resumo && r.resumo.anexos) || {};
+        M.toast('🔄 Sincronizado' + (r.resumo && r.resumo.mudou ? ': chegaram mudanças de outro computador' : '') + (ax.faltando ? ` · ${ax.faltando} anexo(s) ainda chegando pelo Drive` : ''));
+        SFX.play('done');
+        if (r.resumo && r.resumo.mudou) { await M.sincronizar(); M.render(); }
+      } catch (e) { nMsg('⚠️ ' + e.message, true); SFX.play('error'); }
     };
     $('#cOff').onclick = async () => {
       if (!(await M.confirm('Desligar o servidor do MyLoot?', 'Desligar'))) return;

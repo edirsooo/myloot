@@ -150,7 +150,7 @@
     if (!box.isConnected) return;
     if (!L.length) { box.innerHTML = '<small style="color:var(--faint)">Ainda não há cópias. A primeira é feita no dia em que você salvar algo.</small>'; return; }
     const anx = (c) => (c.anexosFaltando ? ` · ⚠️ ${plural(c.anexosFaltando, 'anexo não está', 'anexos não estão')} mais na pasta` : c.anexos ? ` · ${plural(c.anexos, 'anexo', 'anexos')} na pasta` : '');
-    const linha = (c) => `<div class="bk-copia"><div class="bk-ct"><span class="bk-q">${c.ruim ? esc(c.arquivo) : dataHora(c.quando)}</span><span class="tag">${c.tipo === 'antes' ? 'guardada antes de restaurar' : 'cópia do dia'}</span>
+    const linha = (c) => `<div class="bk-copia"><div class="bk-ct"><span class="bk-q">${c.ruim ? esc(c.arquivo) : dataHora(c.quando)}</span><span class="tag">${c.tipo === 'antes' ? 'guardada antes de restaurar' : c.tipo === 'nuvem' ? 'guardada antes de sincronizar' : 'cópia do dia'}</span>
       <small>${c.ruim ? '⚠️ Não consegui abrir esta cópia.' : contagem(c) + ' · ' + tam(c.tamanho) + anx(c)}</small></div>
       ${c.ruim ? '' : `<button class="btn ghost sm" data-copia="${esc(c.arquivo)}" style="flex:none">↩ Restaurar esta cópia</button>`}</div>`;
     const N = 6;

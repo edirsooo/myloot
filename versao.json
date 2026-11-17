@@ -1,10 +1,14 @@
 {
-  "versao": "2.15.2",
+  "versao": "2.16.0",
   "data": "2026-11-17",
   "novidades": [
-    "🤖 Codex: se você tem o app do ChatGPT (ou do Codex) para computador, o MyLoot agora acha e usa o Codex que vem dentro dele, já logado na sua conta, sem instalar nada pelo terminal"
+    "🔄 Sincronizar entre computadores: usa o MyLoot em mais de um PC? Ligue em Configurações → Google Drive e os dois ficam com os mesmos itens, tarefas, clientes, lançamentos e anexos, pela pasta do Google Drive (ou OneDrive, Dropbox). Se os dois mudarem o mesmo item, fica a mudança mais nova, campo a campo, e o que for apagado vai para a Lixeira do outro",
+    "🪪 Cada computador ganha a sua própria identidade na sincronização, mesmo que a pasta de dados tenha sido copiada ou restaurada de outro PC"
   ],
   "historico": {
+    "2.15.2": [
+      "🤖 Codex: se você tem o app do ChatGPT (ou do Codex) para computador, o MyLoot agora acha e usa o Codex que vem dentro dele, já logado na sua conta, sem instalar nada pelo terminal"
+    ],
     "2.15.1": [
       "🪟 Janela própria: no Windows, o MyLoot abre numa janela só dele, sem abas nem barra de endereço, e deixa um baú perto do relógio para abrir e fechar (dá para voltar ao navegador em Configurações → Servidor)",
       "🤖 IA: o MyLoot agora acha o Claude Code e o Codex mesmo instalados depois de abrir o app ou fora do caminho padrão, e “Procurar de novo” funciona sem reiniciar",

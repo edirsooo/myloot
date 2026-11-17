@@ -122,12 +122,13 @@ function readDB() {
 
 // REV muda a cada gravação: o PC e o celular comparam para não salvar um por cima do outro
 let REV = Date.now();
-function writeDB(db) {
+function writeDB(db, daNuvem) {
   const tmp = DB + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(db, null, 1));
   fs.renameSync(tmp, DB);
   REV++;
   dailyBackup();
+  if (!daNuvem) { NUVEM.marcar(db); NUVEM.agendar(); } // mandou para a nuvem alguns segundos depois de salvar
 }
 
 function dailyBackup() {
@@ -318,7 +319,7 @@ function driveSync(db) {
 }
 
 // ---------- cópias automáticas (data/backups): listar e voltar para uma delas ----------
-const RE_COPIA = /^(db-\d{4}-\d\d-\d\d|antes-de-restaurar-\d+)\.json$/;
+const RE_COPIA = /^(db-\d{4}-\d\d-\d\d|antes-de-(restaurar|sincronizar)-\d+)\.json$/;
 const copiasLidas = new Map(); // contar os registros pede abrir o arquivo: guarda o resultado enquanto ele não mudar
 function listarCopias() {
   let anexos = new Set();
@@ -331,8 +332,8 @@ function listarCopias() {
       let c = copiasLidas.get(k);
       if (!c) {
         const d = JSON.parse(fs.readFileSync(path.join(BAK, f), 'utf8'));
-        const n = (x) => (Array.isArray(d[x]) ? d[x].length : 0), antes = /^antes-de-restaurar-(\d+)/.exec(f);
-        c = { arquivo: f, tipo: antes ? 'antes' : 'diaria', quando: antes ? Number(antes[1]) : Math.round(st.mtimeMs), tamanho: st.size, itens: n('items'), tarefas: n('tasks'), clientes: n('clients'),
+        const n = (x) => (Array.isArray(d[x]) ? d[x].length : 0), antes = /^antes-de-(?:restaurar|sincronizar)-(\d+)/.exec(f);
+        c = { arquivo: f, tipo: antes ? (f.includes('sincronizar') ? 'nuvem' : 'antes') : 'diaria', quando: antes ? Number(antes[1]) : Math.round(st.mtimeMs), tamanho: st.size, itens: n('items'), tarefas: n('tasks'), clientes: n('clients'),
           arqs: (Array.isArray(d.items) ? d.items : []).flatMap((i) => (i.attachments || []).map((a) => path.basename(a.file || ''))) };
         copiasLidas.set(k, c);
       }
@@ -343,6 +344,8 @@ function listarCopias() {
 }
 // antes de qualquer restauração, o banco de agora vira uma cópia em data/backups (e aparece na lista de cópias automáticas)
 function guardarAtual() { if (fs.existsSync(DB)) fs.copyFileSync(DB, path.join(BAK, 'antes-de-restaurar-' + Date.now() + '.json')); }
+// ---------- sincronizar entre computadores pela pasta da nuvem (nuvem.js) ----------
+const NUVEM = require('./nuvem')(DATA, { readDB, writeDB, migrate, ANX, guardarCopia: () => { if (fs.existsSync(DB)) fs.copyFileSync(DB, path.join(BAK, 'antes-de-sincronizar-' + Date.now() + '.json')); } });
 let restaurando = false;
 
 // ---------- Claude (API da Anthropic) ----------
@@ -683,7 +686,7 @@ function applyPacks(db) {
 
 // ---------- rotas ----------
 // o que só o próprio computador pode fazer (o celular usa e mexe nos dados, mas não desliga, não troca chaves nem abre coisas no PC)
-const SO_PC = ['/api/shutdown', '/api/open', '/api/reveal', '/api/abrir-pasta', '/api/atualizacao/aplicar', '/api/rede', '/api/rede/trocar', '/api/ai/key', '/api/int/salvar', '/api/restore', '/api/restore/completo', '/api/backups', '/api/backups/restaurar', '/api/drive/sync', '/api/notify-test', '/api/conexoes', '/api/conexoes/mudar', '/api/conexoes/apagar'];
+const SO_PC = ['/api/shutdown', '/api/open', '/api/reveal', '/api/abrir-pasta', '/api/atualizacao/aplicar', '/api/rede', '/api/rede/trocar', '/api/ai/key', '/api/int/salvar', '/api/restore', '/api/restore/completo', '/api/backups', '/api/backups/restaurar', '/api/drive/sync', '/api/nuvem', '/api/nuvem/sync', '/api/notify-test', '/api/conexoes', '/api/conexoes/mudar', '/api/conexoes/apagar'];
 
 async function app(req, res) {
   try {
@@ -866,6 +869,17 @@ async function app(req, res) {
           return send(res, 200, driveSync(db));
         } catch (e) { return send(res, 400, { erro: e.message }); }
       }
+      if (p === '/api/nuvem' && req.method === 'GET') return send(res, 200, NUVEM.status());
+      if (p === '/api/nuvem' && req.method === 'POST') {
+        const b = JSON.parse((await readBody(req, 4096)).toString('utf8') || '{}');
+        const st = NUVEM.configurar(b);
+        if (st.on) NUVEM.agendar(300);
+        return send(res, 200, st);
+      }
+      if (p === '/api/nuvem/sync' && req.method === 'POST') {
+        try { const r = NUVEM.sincronizar(); return send(res, 200, Object.assign({ rev: String(REV) }, NUVEM.status(), { resumo: r })); }
+        catch (e) { return send(res, 400, { erro: e.message }); }
+      }
       if (p === '/api/focus' && req.method === 'GET') return send(res, 200, { end: foco.end, min: foco.min, pendentes: foco.pendentes || 0, agora: Date.now() });
       if (p === '/api/focus/start' && req.method === 'POST') {
         const b = JSON.parse((await readBody(req)).toString('utf8') || '{}');
@@ -1011,6 +1025,7 @@ function ouvir() {
     const { db, fresh } = readDB();
     const novos = applyPacks(db);
     if (fresh || novos) writeDB(db); else dailyBackup();
+    NUVEM.agendar(1500); // ao abrir: traz o que os outros computadores mudaram
   });
   if (velho) { velho.close(); if (velho.closeAllConnections) velho.closeAllConnections(); setTimeout(ligar, 300); } else ligar();
 }
