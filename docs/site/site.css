@@ -180,6 +180,17 @@ kbd,code{font:700 .82em var(--mono);background:var(--panel2);border:1px solid va
 .som[aria-pressed=true] span{display:inline-block;animation:nota 1s ease-in-out infinite alternate}
 @keyframes nota{to{transform:translateY(-3px) rotate(-8deg)}}
 
+/* volume: aparece no computador ao passar o mouse ou com a música ligada */
+.som-box{display:flex;align-items:center;margin-left:8px}
+.som-box .som{margin-left:0}
+.vol{width:0;opacity:0;margin:0;transition:width .2s,opacity .2s,margin .2s;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--accent) var(--v,35%),var(--edge2) var(--v,35%));cursor:pointer}
+.vol::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--accent)}
+.vol::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--accent)}
+@media (hover:hover) and (pointer:fine){
+  .som-box:hover .vol,.som-box:focus-within .vol,.com-som .vol{width:90px;opacity:1;margin:0 4px 0 10px}
+}
+@media (hover:none),(pointer:coarse){.vol{display:none}}
+
 /* pausar animações */
 .pausa{flex:none;width:44px;height:44px;margin-left:8px;border-radius:12px;border:1px solid var(--edge2);background:var(--panel);color:var(--dim);font:700 13px var(--mono);cursor:pointer;transition:transform .15s,color .15s}
 .pausa:hover{color:var(--text);transform:translateY(-2px)}
@@ -222,7 +233,7 @@ kbd,code{font:700 .82em var(--mono);background:var(--panel2);border:1px solid va
   .menu-aberto .menu{display:flex}
   .menu-aberto .topo{background:var(--bg)}
   .menu-bt{display:flex}
-  .som{margin-left:auto}
+  .som-box{margin-left:auto}
   .menu-bt{margin-left:8px}
   .grade,.par .grade{grid-template-columns:1fr}
   .par .texto{order:0}

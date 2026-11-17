@@ -146,7 +146,11 @@
   }
 
   // música: uma faixa do app por personagem, como no vídeo; troca com crossfade quando a seção muda
-  const som = q('.som'), players = [new Audio(), new Audio()]; let atual = 0, faixa = '', tocando = false;
+  const som = q('.som'), vol = q('.vol'), players = [new Audio(), new Audio()]; let atual = 0, faixa = '', tocando = false, volume = 0.35;
+  try { const v = parseFloat(localStorage.getItem('myloot-site-volume')); if (v >= 0 && v <= 1) { volume = v; vol.value = Math.round(v * 100); } } catch (_) {}
+  // barrinha de volume (computador); no celular vale o volume do próprio aparelho
+  vol.addEventListener('input', () => { volume = vol.value / 100; players[atual].volume = volume; vol.style.setProperty('--v', vol.value + '%'); try { localStorage.setItem('myloot-site-volume', volume); } catch (_) {} });
+  vol.style.setProperty('--v', vol.value + '%');
   players.forEach((a) => { a.loop = true; a.preload = 'none'; a.volume = 0; });
   function fade(a, alvo, ms, fim) {
     const v0 = a.volume, t0 = performance.now();
@@ -157,11 +161,11 @@
     if (!tocando || !nome || nome === faixa) return;
     faixa = nome; const velho = players[atual]; atual = 1 - atual; const novo = players[atual];
     novo.src = 'site/musica/' + nome + '.mp3'; novo.currentTime = 0; novo.volume = 0;
-    novo.play().then(() => fade(novo, 0.35, 700)).catch(() => {});
+    novo.play().then(() => fade(novo, volume, 700)).catch(() => {});
     fade(velho, 0, 700, () => velho.pause());
   }
   function liga(on) {
-    tocando = on; som.setAttribute('aria-pressed', on); const t = on ? 'Parar a música' : 'Tocar a música'; som.setAttribute('aria-label', t); som.title = t;
+    tocando = on; som.setAttribute('aria-pressed', on); document.body.classList.toggle('com-som', on); const t = on ? 'Parar a música' : 'Tocar a música'; som.setAttribute('aria-label', t); som.title = t;
     try { localStorage.setItem('myloot-site-musica', on ? '1' : '0'); } catch (_) {}
     if (on) { faixa = ''; toca((ativa || secoes[0]).dataset.faixa); } else { faixa = ''; players.forEach((a) => fade(a, 0, 400, () => a.pause())); }
   }

@@ -3,17 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MyLoot: app grátis para guardar, organizar e trabalhar</title>
-<meta name="description" content="MyLoot guarda prompts, links, notas, tarefas, clientes e o financeiro num app que roda no seu computador. Grátis, sem conta e de código aberto, para Windows, Mac e Linux.">
+<title>MyLoot: app grátis para organizar tarefas, prompts, clientes e finanças</title>
+<meta name="description" content="MyLoot é um app grátis e de código aberto para guardar prompts, links e notas e organizar tarefas, agenda, clientes e finanças no seu computador. Sem conta. Windows, Mac e Linux.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Prestes Design">
+<link rel="canonical" href="https://myloot.prestesdesign.com.br/">
 <meta name="page-type" content="software">
 <meta name="site-kind" content="software">
 <meta name="theme-color" content="#070b18">
 <meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="MyLoot">
+<meta property="og:url" content="https://myloot.prestesdesign.com.br/">
 <meta property="og:title" content="MyLoot: seu inventário pessoal, grátis e de código aberto">
-<meta property="og:description" content="Guarde, organize e trabalhe num app só, no seu computador. Com seis mascotes voxel.">
-<meta property="og:image" content="site/share.jpg">
+<meta property="og:description" content="Guarde prompts, links, tarefas, clientes e finanças num app só, no seu computador. Sem conta e sem mensalidade.">
+<meta property="og:image" content="https://myloot.prestesdesign.com.br/site/share.jpg">
+<meta property="og:image:secure_url" content="https://myloot.prestesdesign.com.br/site/share.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Logo do MyLoot com os seis mascotes voxel: Grátis, Sem conta, Código aberto">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="site/icon.png">
+<meta name="twitter:title" content="MyLoot: seu inventário pessoal, grátis e de código aberto">
+<meta name="twitter:description" content="Guarde prompts, links, tarefas, clientes e finanças num app só, no seu computador.">
+<meta name="twitter:image" content="https://myloot.prestesdesign.com.br/site/share.jpg">
+<link rel="icon" type="image/png" href="site/icon.png">
+<link rel="apple-touch-icon" href="site/icon.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"SoftwareApplication","name":"MyLoot","alternateName":"Mochila","url":"https://myloot.prestesdesign.com.br/",
+  "description":"App grátis e de código aberto para guardar prompts, links, notas e PDFs e organizar tarefas, calendário, hábitos, clientes e finanças no seu próprio computador, com XP, conquistas e mascotes.",
+  "applicationCategory":"ProductivityApplication","applicationSubCategory":"Organização pessoal","operatingSystem":"Windows, macOS, Linux",
+  "softwareVersion":"2.15.1","inLanguage":"pt-BR","isAccessibleForFree":true,"license":"https://opensource.org/licenses/MIT",
+  "downloadUrl":"https://github.com/edirsooo/myloot/archive/refs/heads/main.zip","installUrl":"https://myloot.prestesdesign.com.br/#baixar","codeRepository":"https://github.com/edirsooo/myloot",
+  "image":"https://myloot.prestesdesign.com.br/site/share.jpg","screenshot":["https://myloot.prestesdesign.com.br/site/telas/inicio.webp","https://myloot.prestesdesign.com.br/site/telas/biblioteca.webp","https://myloot.prestesdesign.com.br/site/telas/tarefas.webp","https://myloot.prestesdesign.com.br/site/telas/financeiro.webp"],
+  "featureList":["Biblioteca de prompts, links, notas e PDFs","Busca com Ctrl K","Tarefas, calendário, rotina e modo foco","Clientes e financeiro","IA com Claude Code ou Codex pela própria assinatura","Google Drive, Notion, Trello e celular por QR Code","XP, conquistas, mascotes e música","Desfazer, histórico, lixeira e backup completo"],
+  "offers":{"@type":"Offer","price":"0","priceCurrency":"BRL"},
+  "author":{"@type":"Organization","name":"Prestes Design","url":"https://prestesdesign.com.br"}},
+ {"@type":"WebSite","name":"MyLoot","url":"https://myloot.prestesdesign.com.br/","inLanguage":"pt-BR","publisher":{"@type":"Organization","name":"Prestes Design","url":"https://prestesdesign.com.br","logo":"https://myloot.prestesdesign.com.br/site/prestes.png"}}
+]}
+</script>
 <link rel="preload" href="site/fonts/Poppins-Bold.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="site/site.css">
 </head>
@@ -27,7 +56,7 @@
       <a href="#guardar">Guardar</a><a href="#organizar">Organizar</a><a href="#trabalho">Trabalho</a><a href="#conectar">Conectar</a><a href="#diversao">Diversão</a><a href="#seguranca">Segurança</a>
       <a class="btn btn-sol menu-baixar" href="#baixar">Baixar grátis</a>
     </nav>
-    <button class="som" type="button" aria-pressed="false" aria-label="Tocar a música" title="Tocar a música"><span aria-hidden="true">♪</span></button>
+    <div class="som-box"><button class="som" type="button" aria-pressed="false" aria-label="Tocar a música" title="Tocar a música"><span aria-hidden="true">♪</span></button><input class="vol" type="range" min="0" max="100" value="35" aria-label="Volume da música"></div>
     <button class="pausa" type="button" aria-pressed="false" aria-label="Pausar animações" title="Pausar animações"><span aria-hidden="true">❚❚</span></button>
     <a class="btn btn-sol topo-baixar" href="#baixar">Baixar grátis</a>
     <button class="menu-bt" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir o menu"><span></span><span></span></button>

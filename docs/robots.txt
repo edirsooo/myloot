@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://myloot.prestesdesign.com.br/sitemap.xml
