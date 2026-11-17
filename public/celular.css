@@ -108,7 +108,7 @@ body.light .pos{color:#0f9b62!important}
 .com-mic{display:flex;align-items:center;gap:8px}
 .com-mic>input,.com-mic>textarea{flex:1;min-width:0}
 .com-mic.topo{align-items:flex-start}
-.qc .mic-in{width:36px;height:36px;font-size:16px}
+.qc .mic-in{width:var(--ctl);height:var(--ctl);font-size:16px}
 /* captura rápida: quando a coluna é estreita, o campo desce para a linha de baixo em vez de ficar espremido */
 .qc{flex-wrap:wrap}
 .qc-linha{display:flex;flex:1 1 420px;gap:8px;align-items:center;min-width:0}
@@ -117,7 +117,7 @@ body.light .pos{color:#0f9b62!important}
 .task .prio{margin-left:auto}             /* numa linha quebrada, prioridade e ✕ ficam à direita */
 .catrow input.ico{flex:0 0 52px;width:52px;padding-left:4px;padding-right:4px} /* o emoji da categoria não divide o espaço com o nome */
 .catrow input.nm{min-width:0}
-.tnew .mic-in{width:40px;height:40px;font-size:16px;align-self:center}
+.tnew .mic-in{width:var(--ctl);height:var(--ctl);font-size:16px;align-self:center}
 .falta{animation:falta .35s ease-in-out;border-color:var(--red)!important;box-shadow:0 0 0 3px rgba(255,72,110,.2)!important}
 @keyframes falta{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
 
@@ -299,7 +299,7 @@ input[type=date]::-webkit-calendar-picker-indicator:hover,input[type=time]::-web
 .hab-sem i.hj{outline:2px solid var(--accent);outline-offset:1px}
 .hab-seq{flex:none;font:700 12px var(--mono);color:var(--faint);min-width:42px;text-align:right}
 .hab-seq.on{color:var(--amber)}
-.hab .icon-btn{flex:none;width:30px;height:30px}
+.hab .icon-btn{flex:none;width:var(--ctl-sm);height:var(--ctl-sm)}
 .rot-ex{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
 .meta-c{border:2px solid var(--edge);border-radius:12px;background:var(--panel2);padding:11px;margin-bottom:9px;display:flex;flex-direction:column;gap:8px}
 .meta-c.ok{border-color:#3cffaa66;background:rgba(60,255,170,.07)}
@@ -405,7 +405,7 @@ body.light .hab-chk{color:#fff}
 .tn-l1{display:flex;gap:8px;align-items:center}
 .tn-l1 input{flex:1;min-width:0;font-size:15px}
 .tn-l1 .btn{flex:none}
-.tn-l1 .mic-in{width:40px;height:40px;font-size:16px}
+.tn-l1 .mic-in{width:var(--ctl);height:var(--ctl);font-size:16px}
 .tn-l2{display:flex;gap:10px 18px;flex-wrap:wrap;align-items:flex-end}
 .tn-op{display:flex;flex-direction:column;min-width:0}
 .tn-op select{width:auto}
@@ -421,3 +421,23 @@ body.light .hab-chk{color:#fff}
 .side-upd:hover{background:var(--accent);color:var(--on-accent)}
 .side-upd[hidden]{display:none}
 @keyframes updPisca{50%{box-shadow:0 0 0 4px var(--accent-soft)}}
+
+/* ===== sistema único de controles (revisão com a taste-skill, v2.9.2) =====
+   Uma altura para campo e botão na mesma linha, um raio para todos os controles, um botão cheio por bloco,
+   botões só de ícone sempre quadrados (nunca esticam), hover que sobe 1 px e clique que afunda. */
+:root{--ctl:40px;--ctl-sm:32px;--r-ctl:10px}
+@media (pointer:coarse){:root{--ctl:44px;--ctl-sm:40px}}
+input[type=text],input[type=search],input[type=date],input[type=number],input[type=time],input[type=email],input[type=tel],input[type=password],select{min-height:var(--ctl);border-radius:var(--r-ctl)}
+.btn{min-height:var(--ctl);border-radius:var(--r-ctl);white-space:nowrap;transition:transform .08s ease-out,filter .1s,box-shadow .08s}
+.btn:hover:not(:disabled){transform:translateY(-1px)}
+.btn:active:not(:disabled){transform:translateY(2px)}
+.btn.sm{min-height:var(--ctl-sm);padding:4px 11px;font-size:12.5px}
+.icon-btn{width:var(--ctl-sm);height:var(--ctl-sm);border-radius:var(--r-ctl);transition:border-color .1s,transform .08s}
+.icon-btn:active{transform:translateY(1px)}
+/* microfone = botão de ícone igual aos outros: quadrado, do tamanho do campo ao lado */
+.mic-in{width:var(--ctl);height:var(--ctl);border-radius:var(--r-ctl);font-size:16px;border-width:2px}
+.mic-in:hover{transform:translateY(-1px)}
+.fld label .mic-in{width:26px;height:26px;border-radius:8px;font-size:12.5px}
+/* numa .row (que estica tudo por padrão), botão só de ícone e botão com tamanho próprio não esticam */
+.row>.mic-in,.row>.icon-btn{flex:0 0 auto;min-width:0}
+.row>.btn[style*="flex:none"]{min-width:0}
