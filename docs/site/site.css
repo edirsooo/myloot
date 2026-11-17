@@ -149,6 +149,10 @@ kbd,code{font:700 .82em var(--mono);background:var(--panel2);border:1px solid va
 .so button{flex:1;min-height:44px;border-radius:10px;border:1px solid var(--edge);background:var(--bg2);color:var(--dim);font:700 14.5px "Poppins",sans-serif;cursor:pointer;transition:transform .15s,background .15s,color .15s}
 .so button:hover{transform:translateY(-2px);color:var(--text)}
 .so button[aria-selected=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.so button{display:flex;align-items:center;justify-content:center;gap:8px}
+.so img{width:auto;height:20px;flex:none}
+.so img.ink{filter:invert(1)}
+.so button[aria-selected=true] img.ink{filter:none}
 .passos{margin:0;padding-left:24px;display:grid;gap:8px}
 .passos li::marker{font:700 14px var(--mono);color:var(--accent2)}
 
@@ -169,6 +173,7 @@ kbd,code{font:700 .82em var(--mono);background:var(--panel2);border:1px solid va
 .trans.on{animation:trans 1.7s ease both;visibility:visible}
 @keyframes trans{0%{opacity:0}14%{opacity:1}76%{opacity:1}100%{opacity:0}}
 .t-cv{position:absolute;left:50%;top:calc(50% + 40px);width:min(360px,60vw);height:min(360px,60vw);transform:translateX(-50%)}
+.trans.varios .t-cv{width:min(980px,96vw);height:min(300px,40vw)}
 .t-parte,.t-nome,.t-sub{position:relative;margin:0;text-align:center}
 .t-parte{font:700 clamp(14px,1.6vw,22px) var(--mono);letter-spacing:.2em;color:var(--cor);margin-bottom:6px}
 .t-nome{font:700 clamp(56px,11vw,170px)/1 "Poppins",sans-serif;color:#fff;text-shadow:10px 10px 0 color-mix(in srgb,var(--cor) 40%,#000);text-transform:uppercase}
@@ -260,6 +265,8 @@ kbd,code{font:700 .82em var(--mono);background:var(--panel2);border:1px solid va
   .selo{font-size:12.5px}
   .palavra{gap:10px}
   .xp{flex-wrap:wrap}
+  .so button{font-size:13.5px;gap:6px;padding:0 6px}
+  .so img{height:17px}
   .feito{margin-left:0!important}
 }
 @media (prefers-reduced-motion:reduce){

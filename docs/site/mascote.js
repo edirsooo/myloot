@@ -49,8 +49,14 @@
       this.lista = null; this.ult = performance.now();
       const passo = (now) => { this.raf = requestAnimationFrame(passo); this.quadro(now); };
       this.raf = requestAnimationFrame(passo);
-      if (!this.visto) { this.visto = true; this.pets.forEach((p) => p.chega()); }
+      // o mascote espera a transição da seção (site.js avisa com 'secao:entra') e cai quando ela está acabando
+      if (!this.visto && !this.sec.dataset.parte) { this.visto = true; this.pets.forEach((p) => p.chega()); }
+      else if (!this.visto && !this.agendado) { this.agendado = true; this.tEspera = setTimeout(() => this.entra(0), 2200); }
     } else cancelAnimationFrame(this.raf);
+  };
+  Palco.prototype.entra = function (atraso) {
+    if (this.visto) return; clearTimeout(this.tEspera); this.agendado = true;
+    this.tEspera = setTimeout(() => { if (this.visto) return; this.visto = true; this.pets.forEach((p) => p.chega()); }, atraso);
   };
   Palco.prototype.quadro = function (now) {
     const dt = Math.min(0.05, (now - this.ult) / 1000 || 0); this.ult = now;
@@ -316,7 +322,10 @@
 
   // ----- liga só os palcos que estão na tela -----
   function inicia() {
-    document.querySelectorAll('[data-palco]').forEach((sec) => palcos.push(new Palco(sec)));
+    document.querySelectorAll('[data-palco]').forEach((sec) => {
+      const p = new Palco(sec); palcos.push(p);
+      sec.addEventListener('secao:entra', (e) => p.entra(e.detail && e.detail.transicao ? 1150 : 0));
+    });
     const io = new IntersectionObserver((es) => es.forEach((e) => { const p = palcos.find((x) => x.sec === e.target); if (p) p.liga(e.isIntersecting); }), { rootMargin: '0px 0px -25% 0px' });
     palcos.forEach((p) => io.observe(p.sec));
     let tr = 0;
