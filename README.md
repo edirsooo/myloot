@@ -20,6 +20,7 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 - ✨ **A IA organiza a fala**: “ligar pro Rafael amanhã às 10, paguei 120 de internet e anotar a ideia do post” vira uma tarefa com data e hora, uma conta paga e uma nota. Usa o Claude Code, o Codex ou a chave da API que você já ligou.
 - 🔄 **Celular e PC juntos**: com os dois abertos, o que muda em um aparece no outro sem apagar nada. Áudio gravado no celular é transcrito pelo PC.
 - 🐞 **Reportar um problema**: no menu e nas Configurações. Abre um formulário já preenchido com o que você escreveu, a versão e os últimos erros.
+- 🎓 **Rever o tutorial**: o botão ao lado do nome de cada tela mostra de novo o passo a passo daquela tela.
 - 🔌 **Conexões**: em Configurações, gere um código para outro programa do seu computador mandar itens para o MyLoot. Ele só acrescenta itens; não lê nem apaga o que você guardou.
 
 ## Novidades da versão 2.4

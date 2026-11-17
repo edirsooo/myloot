@@ -209,3 +209,8 @@ body.remoto .so-pc,body.remoto [data-a=open],body.remoto [data-a=show],body.remo
 .parceiro .tx{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
 .parceiro .tx small{color:var(--dim)}
 @media (max-width:560px){.parceiro{flex-wrap:wrap}}
+
+/* botão de rever o tutorial da tela */
+.tour-btn{flex:none;font-size:16px;width:32px;height:32px;opacity:.9}
+.tour-btn:hover{opacity:1}
+.tour-btn[hidden]{display:none}

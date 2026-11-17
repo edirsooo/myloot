@@ -138,18 +138,19 @@
     card.style.left = x + 'px'; card.style.top = y + 'px';
   }
 
-  M.tour = (pg) => {
+  M.tour = (pg, manual) => {
     const passos = M.TOURS[pg];
     if (!passos || ativo) return;
     if (!passos.some((p) => alvo(p) !== null)) return;
     const fundo = document.createElement('div'), foco = document.createElement('div'), card = document.createElement('div');
     fundo.className = 'tour-fundo'; foco.className = 'tour-foco'; card.className = 'tour-card';
     document.body.append(fundo, foco, card);
-    ativo = { pg, passos, i: -1, els: [fundo, foco, card] };
+    ativo = { pg, passos, i: -1, els: [fundo, foco, card], manual: !!manual };
     card.onclick = (e) => {
       const a = e.target.dataset.a; if (!a) return;
       if (a === 'vai') ir(1); else if (a === 'volta') ir(-1);
-      else { M.db.settings.tourOff = true; fechar(true); M.toast('Tutorial pulado. Para ver de novo: Configurações → Tutorial.'); }
+      else if (ativo.manual) fechar(true); // revendo por conta própria: sair não desliga os tutoriais das outras telas
+      else { M.db.settings.tourOff = true; fechar(true); M.toast('Tutorial pulado. Para ver de novo, toque no 🎓 ao lado do nome da tela.'); }
     };
     addEventListener('resize', pinta); document.addEventListener('keydown', tecla, true);
     ir(1);
@@ -157,7 +158,7 @@
 
   const modalOriginal = M.modal;
   M.modal = function () {
-    if (ativo) { const pg = ativo.pg; fechar(false); M.tourTalvez(pg, 1); }
+    if (ativo) { const pg = ativo.pg, manual = ativo.manual; fechar(false); if (!manual) M.tourTalvez(pg, 1); }
     return modalOriginal.apply(this, arguments);
   };
 
@@ -175,10 +176,13 @@
   };
   const antes = M.onRender;
   let ultima = '';
-  M.onRender = (p) => { if (antes) antes(p); if (p !== ultima) { ultima = p; M.tourTalvez(p); } };
+  M.onRender = (p) => { if (antes) antes(p); const tb = $('#tourBtn'); if (tb) tb.hidden = !M.TOURS[p]; if (p !== ultima) { ultima = p; M.tourTalvez(p); } };
+  // botão 🎓 ao lado do nome da tela: revê o tutorial daquela tela quando a pessoa quiser
+  M.tourRever = () => { if (ativo || M.modalOpen()) return; clearTimeout(espera); SFX.play('click'); M.tour(M.ui.page, true); };
+  { const tb = $('#tourBtn'); if (tb) tb.onclick = M.tourRever; }
 
   M.tourSection = () => `<section class="stat" id="tourSec"><div class="cfg-h">🎓 Tutorial</div>
-    <div class="cfg-row"><span class="l">Explicações de cada tela ${M.hint('Na primeira vez em cada tela, o MyLoot mostra os pontos principais passo a passo.')}</span><button class="btn ghost sm" id="tourDeNovo" style="flex:none">▶️ Ver o tutorial de novo</button></div></section>`;
+    <div class="cfg-row"><span class="l">Explicações de cada tela ${M.hint('Na primeira vez em cada tela, o MyLoot mostra os pontos principais passo a passo. Para rever só uma tela, toque no 🎓 ao lado do nome dela.')}</span><button class="btn ghost sm" id="tourDeNovo" style="flex:none">▶️ Ver o tutorial de novo</button></div></section>`;
   M.tourBind = () => {
     const b = $('#tourDeNovo'); if (!b) return;
     b.onclick = () => { const s = M.db.settings; s.tour = {}; s.tourOff = false; M.save(); ultima = ''; M.go('home'); };
