@@ -173,7 +173,7 @@
   som.addEventListener('click', () => liga(!tocando));
   // o vídeo tem som próprio: ao dar play, a música do site para
   const vid = q('.tela-video video');
-  if (vid && matchMedia('(max-width: 700px) and (orientation: portrait)').matches) vid.poster = 'site/video/apresentacao-2-15-vertical.jpg'; if (vid) vid.addEventListener('play', () => { if (tocando) liga(false); });
+  if (vid && matchMedia('(max-width: 700px) and (orientation: portrait)').matches) vid.poster = 'site/video/apresentacao-2-15-vertical.jpg?v=5'; if (vid) vid.addEventListener('play', () => { if (tocando) liga(false); });
   // quem ligou a música antes volta com ela no primeiro toque ou tecla (o navegador não deixa tocar sozinho)
   let lembra = false; try { lembra = localStorage.getItem('myloot-site-musica') === '1'; } catch (_) {}
   if (lembra) { const um = (e) => { if (e.target.closest && e.target.closest('.som')) return; removeEventListener('pointerdown', um, true); removeEventListener('keydown', um, true); if (!tocando) liga(true); }; addEventListener('pointerdown', um, true); addEventListener('keydown', um, true); }
