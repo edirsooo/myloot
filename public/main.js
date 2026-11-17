@@ -82,10 +82,15 @@
     M.render();
     if (hash.startsWith('item=')) M.openItem(hash.slice(5));
     M.focusPaint();
+    // ordem da abertura: 1) novidades da versão, 2) pop-up das IAs, 3) tutorial (só com tudo fechado)
+    M.inicioPronto = false;
+    const liberaTutorial = () => { M.inicioPronto = true; M.tourTalvez(M.ui.page); };
     if (!M.remoto) {
-      if (!M.db.settings.aiSetupDone) setTimeout(() => { if (!M.modalOpen()) M.iaSetup(); }, 1200);
-      M.mostrarNovidades();
+      const temNovidade = await M.mostrarNovidades();
+      // com novidade na tela, o pop-up das IAs abre quando ela fechar (onClose em atualiza.js)
+      if (!temNovidade && !M.db.settings.aiSetupDone) setTimeout(() => { if (!M.modalOpen()) M.iaSetup(); }, 1200);
       setTimeout(() => M.checarAtualizacao(false), 5000);
     }
+    setTimeout(liberaTutorial, 1800);
   })();
 })();

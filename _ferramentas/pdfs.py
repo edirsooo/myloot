@@ -27,7 +27,7 @@ BAU = 'data:image/png;base64,' + b64(os.path.join(RAIZ, 'public', 'icon.png'))
 def marca_dagua():
     im = Image.open(os.path.join(MARCA, 'prestes-logo.png')).convert('RGBA')
     im = im.resize((520, round(520 * im.height / im.width)), Image.LANCZOS).rotate(28, expand=True, resample=Image.BICUBIC)
-    r, g, b, a = im.split(); a = a.point(lambda v: int(v * 0.075))
+    r, g, b, a = im.split(); a = a.point(lambda v: int(v * 0.07))
     buf = io.BytesIO(); Image.merge('RGBA', (r, g, b, a)).save(buf, 'PNG'); return buf.getvalue(), im.size
 AGUA, AGUA_T = marca_dagua()
 
@@ -97,23 +97,23 @@ CSS = fontes_css() + f"""
 .capa p{{font:400 12pt/1.6 Poppins;color:#aab2cf;max-width:135mm;margin:0}}
 .capa .pe{{position:absolute;left:20mm;right:20mm;bottom:13mm;display:flex;justify-content:space-between;align-items:flex-end;font:400 8.5pt Poppins;color:#7f88a8;z-index:2}}
 .capa .pe img{{height:15mm}} .capa .pe a{{color:{LARANJA};text-decoration:none;font-weight:600}}
-.corpo{{color:#171a28;font:400 10.2pt/1.6 Poppins}}
-h1.tit{{font:800 15pt/1.25 Poppins;margin:0 0 5mm;color:#0c1020}}
-h2{{font:700 11.5pt/1.3 Poppins;margin:7mm 0 3mm;padding-left:9px;border-left:4px solid {LARANJA};color:#0c1020;break-after:avoid}}
+.corpo{{color:#dfe3f1;font:400 10.2pt/1.6 Poppins}}
+h1.tit{{font:800 15pt/1.25 Poppins;margin:0 0 5mm;color:#fff}}
+h2{{font:700 11.5pt/1.3 Poppins;margin:7mm 0 3mm;padding-left:9px;border-left:4px solid {CIANO};color:#fff;break-after:avoid}}
 p{{margin:0 0 2.6mm}} p.cl b,p.sub b{{color:{LARANJA}}} p.sub{{padding-left:6mm}} p.perg{{font-weight:600;margin-bottom:1.5mm;break-after:avoid}}
-.ph{{background:#fff3e6;border-bottom:1.5px dashed {LARANJA};padding:0 4px;border-radius:3px;color:#a04d00;font-weight:500}}
+.ph{{background:rgba(255,126,0,.13);border-bottom:1.5px dashed {LARANJA};padding:0 4px;border-radius:3px;color:#ffb36b;font-weight:500}}
 ul{{margin:0 0 3mm;padding-left:5.5mm}} li{{margin-bottom:1.2mm}} li::marker{{color:{LARANJA}}}
-.q{{display:flex;gap:3mm;margin-bottom:3mm;break-inside:avoid}} .q>span{{flex:none;width:6.5mm;height:6.5mm;border-radius:2mm;background:{LARANJA};color:#fff;font:700 8.5pt/6.5mm Poppins;text-align:center;margin-top:.4mm}}
-.q>div{{flex:1}} .q p{{font-weight:600;margin-bottom:1mm}}
-.lin{{border-bottom:1px solid #c5cad9;height:7.5mm}}
-.campo{{display:flex;align-items:flex-end;gap:3mm;margin-bottom:2.5mm;break-inside:avoid}} .campo span{{font-weight:600;white-space:nowrap}} .campo i{{flex:1;border-bottom:1px solid #c5cad9;height:5mm}}
-.ops{{display:flex;flex-wrap:wrap;gap:2mm 5mm;margin:0 0 3.5mm}} .ops span{{display:flex;align-items:center;gap:2mm}} .ops i,.chk i{{width:3.6mm;height:3.6mm;border:1.4px solid #6b7391;border-radius:1mm;flex:none;display:inline-block}}
-.nota{{background:#f2f6ff;border-left:4px solid {CIANO};border-radius:0 3mm 3mm 0;padding:3mm 4mm;margin:4mm 0;font-size:9.3pt;color:#3a4160;break-inside:avoid}}
-.bolha{{background:#eefbf0;border:1px solid #bfe8c6;border-radius:4mm 4mm 4mm 1mm;padding:3mm 4mm;margin:0 0 3mm;max-width:92%;break-inside:avoid}}
-table{{width:100%;border-collapse:collapse;margin:0 0 4mm;font-size:9.3pt}} th,td{{border:1px solid #cfd4e2;padding:2mm 3mm;text-align:left;height:8mm}} th{{background:#fff3e6;font-weight:700}}
-.chk{{border:1.5px solid {LARANJA};border-radius:4mm;padding:4mm 5mm;margin-top:6mm;break-inside:avoid}} .chk h3{{margin:0 0 2.5mm;font:700 10.5pt Poppins;color:{LARANJA}}} .chk div{{display:flex;gap:2.5mm;align-items:center;margin-bottom:1.6mm}}
-.sig{{display:flex;gap:12mm;margin:14mm 0 4mm;break-inside:avoid}} .sig div{{flex:1;text-align:center;font:600 9pt Poppins}} .sig i{{display:block;border-top:1px solid #333;margin-bottom:2mm}}
-.fim{{display:flex;gap:4mm;align-items:center;background:#090c16;color:#c9cfe6;border-radius:4mm;padding:4mm 5mm;margin-top:9mm;font-size:8.8pt;line-height:1.5;break-inside:avoid}}
+.q{{display:flex;gap:3mm;margin-bottom:3mm;break-inside:avoid}} .q>span{{flex:none;width:6.5mm;height:6.5mm;border-radius:2mm;background:{LARANJA};color:#1a0d00;font:700 8.5pt/6.5mm Poppins;text-align:center;margin-top:.4mm}}
+.q>div{{flex:1}} .q p{{font-weight:600;margin-bottom:1mm;color:#fff}} p.perg,.campo span{{color:#fff}}
+.lin{{border-bottom:1px solid #3a4568;height:7.5mm}}
+.campo{{display:flex;align-items:flex-end;gap:3mm;margin-bottom:2.5mm;break-inside:avoid}} .campo span{{font-weight:600;white-space:nowrap}} .campo i{{flex:1;border-bottom:1px solid #3a4568;height:5mm}}
+.ops{{display:flex;flex-wrap:wrap;gap:2mm 5mm;margin:0 0 3.5mm}} .ops span{{display:flex;align-items:center;gap:2mm}} .ops i,.chk i{{width:3.6mm;height:3.6mm;border:1.4px solid #7f89ad;border-radius:1mm;flex:none;display:inline-block}}
+.nota{{background:#0f2433;border:1px solid #1d5d78;border-radius:3mm;padding:3mm 4mm;margin:4mm 0;font-size:9.3pt;color:#bfe9f7;break-inside:avoid}}
+.bolha{{background:#12261f;border:1px solid #23573f;color:#e3f6ea;border-radius:4mm 4mm 4mm 1mm;padding:3mm 4mm;margin:0 0 3mm;max-width:92%;break-inside:avoid}}
+table{{width:100%;border-collapse:collapse;margin:0 0 4mm;font-size:9.3pt}} th,td{{border:1px solid #2c3656;padding:2mm 3mm;text-align:left;height:8mm}} th{{background:#18213b;color:#fff;font-weight:700}}
+.chk{{background:#121a30;border:1.5px solid #2a3556;border-radius:4mm;padding:4mm 5mm;margin-top:6mm;break-inside:avoid}} .chk h3{{margin:0 0 2.5mm;font:700 10.5pt Poppins;color:{LARANJA}}} .chk div{{display:flex;gap:2.5mm;align-items:center;margin-bottom:1.6mm}}
+.sig{{display:flex;gap:12mm;margin:14mm 0 4mm;break-inside:avoid}} .sig div{{flex:1;text-align:center;font:600 9pt Poppins}} .sig i{{display:block;border-top:1px solid #8a93b5;margin-bottom:2mm}}
+.fim{{display:flex;gap:4mm;align-items:center;background:#121a30;border:1.5px solid #2a3556;color:#c9cfe6;border-radius:4mm;padding:4mm 5mm;margin-top:9mm;font-size:8.8pt;line-height:1.5;break-inside:avoid}}
 .fim img{{width:13mm;height:13mm;border-radius:3mm;image-rendering:pixelated}} .fim b{{color:#fff}} .fim a{{color:{LARANJA};text-decoration:none;font-weight:600}}
 """
 
@@ -130,7 +130,7 @@ def corpo_html(it, tipo):
     return f'<!doctype html><meta charset="utf-8"><style>@page{{size:A4;margin:22mm 17mm 20mm}}{CSS}</style><div class="corpo">{corpo(it, tipo)}</div>'
 
 def faixa(lado_esq, lado_dir, topo):
-    return f"""<div style="width:100%;font-family:'Segoe UI',Arial,sans-serif;font-size:9.5px;color:#7a8199;padding:0 17mm;display:flex;justify-content:space-between;align-items:center;{'margin-top:5mm' if topo else 'margin-bottom:4mm'}">
+    return f"""<div style="width:100%;font-family:'Segoe UI',Arial,sans-serif;font-size:9.5px;color:#8a92b2;padding:0 17mm;display:flex;justify-content:space-between;align-items:center;{'margin-top:5mm' if topo else 'margin-bottom:4mm'}">
 <span>{lado_esq}</span><span>{lado_dir}</span></div>"""
 
 async def gerar(so=''):
@@ -146,13 +146,14 @@ async def gerar(so=''):
                 capa = await pg.pdf(format='A4', print_background=True, margin=dict(top='0', bottom='0', left='0', right='0'))
                 await pg.set_content(corpo_html(it, tipo), wait_until='load')
                 corpo_pdf = await pg.pdf(format='A4', print_background=True, display_header_footer=True, prefer_css_page_size=True,
-                    header_template=faixa(E(it['titulo']), '<span style="color:#ff7e00">■</span> <b style="color:#3a4160">by Prestes Design</b>', True),
+                    header_template=faixa(E(it['titulo']), '<span style="color:#ff7e00">■</span> <b style="color:#c9cfe6">by Prestes Design</b>', True),
                     footer_template=faixa('<b style="color:#ff7e00">prestesdesign.com.br</b> · feito com MyLoot', '<span class="pageNumber"></span> / <span class="totalPages"></span>', False))
                 doc = pymupdf.open(stream=capa, filetype='pdf'); miolo = pymupdf.open(stream=corpo_pdf, filetype='pdf')
                 for pagina in miolo:   # marca d'água por baixo do texto + links clicáveis no topo e no rodapé
                     W, H = pagina.rect.width, pagina.rect.height
                     w = W * 0.82; h = w * AGUA_T[1] / AGUA_T[0]
                     pagina.insert_image(pymupdf.Rect((W - w) / 2, (H - h) / 2, (W + w) / 2, (H + h) / 2), stream=AGUA, overlay=False)
+                    pagina.draw_rect(pagina.rect, color=None, fill=(11 / 255, 15 / 255, 28 / 255), overlay=False)   # inserido por último = fica no fundo
                     for r in (pymupdf.Rect(40, H - 44, 260, H - 14), pymupdf.Rect(W - 190, 10, W - 40, 40)):
                         pagina.insert_link({'kind': pymupdf.LINK_URI, 'from': r, 'uri': SITE})
                 doc.insert_pdf(miolo)

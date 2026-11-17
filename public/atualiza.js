@@ -8,6 +8,9 @@
     if (r.erro) { if (manual) M.toast('⚠️ Não consegui olhar o GitHub: ' + r.erro); return; }
     if (!r.temNova) { if (manual) { SFX.play('coin'); M.toast(`✅ Você já está na versão mais nova (${r.atual}).`); } return; }
     if (!manual && M.db.settings.updPulada === r.nova) return;
+    const nums = (x) => String(x || '0').split('.').map((n) => parseInt(n, 10) || 0);
+    const acima = (x, y) => { const a = nums(x), b = nums(y); for (let i = 0; i < 3; i++) if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0); return false; };
+    r.novidades = (r.novidades || []).concat(...Object.keys(r.historico || {}).filter((v) => acima(v, r.atual)).sort((x, y) => (acima(x, y) ? -1 : 1)).map((v) => r.historico[v]));
     if (M.modalOpen() && !manual) { setTimeout(() => M.checarAtualizacao(false), 15000); return; }
     const m = M.modal(`<div class="modal-h"><h2>🎁 Saiu o MyLoot ${esc(r.nova)}</h2><button class="icon-btn" id="x">✕</button></div>
       <div class="modal-b"><p style="margin:0;color:var(--dim)">Você está na versão ${esc(r.atual)}. O que tem de novo:</p>
@@ -44,19 +47,26 @@
   M.mostrarNovidades = async () => {
     let v; try { v = await M.api('/api/versao'); } catch (_) { return; }
     const s = M.db.settings;
-    if (s.versaoVista === v.versao) return;
+    if (s.versaoVista === v.versao) return false;
     const jaUsava = s.versaoVista || s.aiSetupDone; // instalação nova não precisa do resumo
-    s.versaoVista = v.versao; M.save();
-    if (!jaUsava || !(v.novidades || []).length) return;
+    s.versaoVistaAntes = s.versaoVista; s.versaoVista = v.versao; M.save();
+    // junta as novidades de todas as versões que a pessoa pulou (ex.: da 2.3 direto para a 2.4.1)
+    const num = (x) => String(x || '0').split('.').map((n) => parseInt(n, 10) || 0);
+    const maior = (x, y) => { const a = num(x), b = num(y); for (let i = 0; i < 3; i++) if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0); return false; };
+    const lista = (v.novidades || []).slice();
+    Object.keys(v.historico || {}).sort((x, y) => (maior(x, y) ? -1 : 1)).forEach((ver) => { if (!s.versaoVistaAntes || maior(ver, s.versaoVistaAntes)) lista.push(...v.historico[ver]); });
+    v.novidades = lista;
+    if (!jaUsava || !(v.novidades || []).length) return false;
     const abrir = () => {
-      if (M.modalOpen()) return setTimeout(abrir, 4000);
+      if (M.modalOpen()) return setTimeout(abrir, 1500);
       const m = M.modal(`<div class="modal-h"><h2>🎉 MyLoot atualizado: versão ${esc(v.versao)}</h2><button class="icon-btn" id="x">✕</button></div>
         <div class="modal-b"><p style="margin:0;color:var(--dim)">Olha o que entrou agora:</p>${M.listaNovidades(v.novidades)}
-        <div class="row" style="justify-content:flex-end"><button class="btn" id="ok" style="flex:none">Bora usar! 🚀</button></div></div>`, { small: true });
+        <div class="row" style="justify-content:flex-end"><button class="btn" id="ok" style="flex:none">Bora usar! 🚀</button></div></div>`, { small: true, onClose: () => { if (!M.db.settings.aiSetupDone) setTimeout(M.iaSetup, 300); } });
       SFX.play('ach'); FX.burst(null, null, 60, 9);
       $('#x', m).onclick = M.closeModal; $('#ok', m).onclick = M.closeModal;
     };
-    setTimeout(abrir, 900);
+    abrir();
+    return true;
   };
 
   M.versaoSection = () => `<section class="stat"><div class="cfg-h">Versão</div>

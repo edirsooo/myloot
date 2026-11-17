@@ -34,7 +34,7 @@ async function checar(ROOT, forcar) {
   const loc = local(ROOT);
   let rem;
   try { rem = JSON.parse((await baixar(URL_VERSAO + '?t=' + Date.now())).replace(/^\uFEFF/, '')); } catch (e) { return { atual: loc.versao, erro: e.message }; }
-  const r = { atual: loc.versao, nova: rem.versao, temNova: maior(rem.versao, loc.versao), novidades: rem.novidades || [], data: rem.data || '', git: fs.existsSync(path.join(ROOT, '.git')) };
+  const r = { atual: loc.versao, nova: rem.versao, temNova: maior(rem.versao, loc.versao), novidades: rem.novidades || [], historico: rem.historico || {}, data: rem.data || '', git: fs.existsSync(path.join(ROOT, '.git')) };
   cache = { em: Date.now(), r };
   return r;
 }

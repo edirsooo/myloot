@@ -1,14 +1,20 @@
 {
-  "versao": "2.4.0",
+  "versao": "2.4.1",
   "data": "2026-11-16",
   "novidades": [
-    "📱 Use no celular: ligue a chave e aponte a câmera para o QR Code",
-    "👥 Clientes: contatos, funil e atalhos de WhatsApp, e-mail, Trello e pasta",
-    "💰 Financeiro: fluxo de caixa, contas que repetem, parcelas e calculadora de preço",
-    "💼 Kits prontos: 23 materiais (briefings, contratos, proposta, vendas e lançamento), com PDF",
-    "🎓 Tutorial guiado: cada tela explica os pontos principais na primeira vez",
-    "⏰ Tarefas que repetem e lembretes com horário",
-    "🔒 Backup com senha e exportação para o Obsidian",
-    "💻 Agora também roda no Mac e no Linux"
-  ]
+    "🪟 O aviso de versão nova agora aparece primeiro; o tutorial começa só depois que você fechar",
+    "📄 PDFs dos materiais com páginas escuras, no estilo dos guias da Prestes Design"
+  ],
+  "historico": {
+    "2.4.0": [
+      "📱 Use no celular: ligue a chave e aponte a câmera para o QR Code",
+      "👥 Clientes: contatos, funil e atalhos de WhatsApp, e-mail, Trello e pasta",
+      "💰 Financeiro: fluxo de caixa, contas que repetem, parcelas e calculadora de preço",
+      "💼 Kits prontos: 23 materiais (briefings, contratos, proposta, vendas e lançamento), com PDF",
+      "🎓 Tutorial guiado: cada tela explica os pontos principais na primeira vez",
+      "⏰ Tarefas que repetem e lembretes com horário",
+      "🔒 Backup com senha e exportação para o Obsidian",
+      "💻 Agora também roda no Mac e no Linux"
+    ]
+  }
 }

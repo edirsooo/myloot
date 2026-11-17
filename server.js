@@ -501,6 +501,28 @@ setInterval(lembretes, 30000);
 setTimeout(lembretes, 5000);
 
 // ---------- pacotes de conteúdo (pasta exemplos/): entram uma vez só, sem duplicar ----------
+// pacote já instalado: se um arquivo dele mudou (ex.: PDF refeito), troca a cópia do anexo pela nova.
+// Só mexe em anexo com o mesmo nome do arquivo do pacote, nos itens que vieram do pacote.
+function atualizarArquivosDoPacote(db, p, dir) {
+  let mudou = false;
+  (p.itens || []).forEach((it, i) => {
+    const item = db.items.find((x) => x.id === p.id + '-' + i);
+    if (!item) return;
+    for (const a of it.arquivos || []) {
+      const src = path.join(dir, path.basename(p.pasta || ''), path.basename(a));
+      const anexo = item.attachments.find((x) => x.name === a);
+      if (!anexo || !fs.existsSync(src)) continue;
+      const dst = path.join(ANX, path.basename(anexo.file || ''));
+      try {
+        const novo = fs.statSync(src).size;
+        if (fs.existsSync(dst) && fs.statSync(dst).size === novo) continue;
+        fs.copyFileSync(src, dst); anexo.size = novo; mudou = true;
+      } catch (_) {}
+    }
+  });
+  return mudou;
+}
+
 function applyPacks(db) {
   const dir = path.join(ROOT, 'exemplos');
   let changed = false;
@@ -510,7 +532,8 @@ function applyPacks(db) {
   for (const f of packs) {
     let p;
     try { p = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); } catch (_) { continue; }
-    if (!p.id || db.packs.includes(p.id)) continue;
+    if (p.id && db.packs.includes(p.id)) { if (atualizarArquivosDoPacote(db, p, dir)) changed = true; continue; }
+    if (!p.id) continue;
     if (p.categoria && !db.categories.find((c) => c.id === p.categoria.id)) db.categories.push(p.categoria);
     const now = Date.now();
     (p.itens || []).forEach((it, i) => {

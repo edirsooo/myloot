@@ -155,15 +155,21 @@
     ir(1);
   };
 
+  const modalOriginal = M.modal;
+  M.modal = function () {
+    if (ativo) { const pg = ativo.pg; fechar(false); M.tourTalvez(pg, 1); }
+    return modalOriginal.apply(this, arguments);
+  };
+
   // começa sozinho na primeira vez em cada tela (espera fechar janelas abertas)
   let espera = 0;
   M.tourTalvez = (pg, vez) => {
     clearTimeout(espera);
     const s = M.db.settings;
-    if (ativo || s.tourOff || (s.tour || {})[pg] || !M.TOURS[pg]) return;
+    if (!M.inicioPronto || ativo || s.tourOff || (s.tour || {})[pg] || !M.TOURS[pg]) return;
     espera = setTimeout(() => {
       if (M.ui.page !== pg || ativo) return;
-      if (M.modalOpen() || !$('#levelup').hidden || document.querySelector('.rd-full')) { if ((vez || 0) < 60) M.tourTalvez(pg, (vez || 0) + 1); return; }
+      if (M.modalOpen() || !$('#levelup').hidden || document.querySelector('.rd-full')) { if ((vez || 0) < 600) M.tourTalvez(pg, (vez || 0) + 1); return; }
       M.tour(pg);
     }, vez ? 2000 : 900);
   };
