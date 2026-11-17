@@ -2,7 +2,7 @@
 (function () {
   const { esc, $, $$ } = M;
   const PAGES = [
-    ['home', '🏠', 'Início'], ['lib', '📦', 'Biblioteca'], ['tasks', '✅', 'Tarefas'], ['cal', '🗓️', 'Calendário'], ['clients', '👥', 'Clientes'], ['tools', '🧰', 'Ferramentas'],
+    ['home', '🏠', 'Início'], ['lib', '📦', 'Biblioteca'], ['tasks', '✅', 'Tarefas'], ['cal', '🗓️', 'Calendário'], ['clients', '👥', 'Clientes'], ['fin', '💰', 'Financeiro'], ['tools', '🧰', 'Ferramentas'],
     ['ach', '🏆', 'Conquistas'], ['trash', '🗑️', 'Lixeira'], ['cfg', '⚙️', 'Configurações'],
   ];
 
@@ -49,6 +49,7 @@
     if (e.key === '/') { e.preventDefault(); M.openSearch(); }
     else if (e.key.toLowerCase() === 'n') { e.preventDefault(); M.novoComModelo(); }
     else if (e.key.toLowerCase() === 'l') M.go('clients');
+    else if (e.key.toLowerCase() === 'm') M.go('fin');
     else if (e.key.toLowerCase() === 'h') M.go('home');
     else if (e.key.toLowerCase() === 'c') M.go('cal');
     else if (e.key.toLowerCase() === 'f') M.focusToggle();
@@ -83,6 +84,7 @@
     M.focusPaint();
     if (!M.remoto) {
       if (!M.db.settings.aiSetupDone) setTimeout(() => { if (!M.modalOpen()) M.iaSetup(); }, 1200);
+      M.mostrarNovidades();
       setTimeout(() => M.checarAtualizacao(false), 5000);
     }
   })();

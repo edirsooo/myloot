@@ -37,7 +37,7 @@ function defaults() {
     version: DB_VERSION,
     settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, confetti: true, gamify: true, dailyGoal: 50,
       view: 'grid', boardBy: 'status', aiModel: 'claude-opus-5-5', drive: { on: false, path: '' } },
-    categories: [], items: [], tasks: [], trash: [], clients: [],
+    categories: [], items: [], tasks: [], trash: [], clients: [], fin: [],
     game: { xp: 0, log: {}, streak: { last: '', count: 0 }, achievements: {}, counters: {}, goalDays: 0 },
   };
 }
@@ -84,7 +84,12 @@ function migrate(raw) {
   out.settings.drive = Object.assign({}, d.settings.drive, (raw.settings || {}).drive || {});
   out.game = Object.assign({}, d.game, raw.game || {});
   out.game.streak = Object.assign({}, d.game.streak, out.game.streak || {});
-  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients']) if (!Array.isArray(out[k])) out[k] = [];
+  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin']) if (!Array.isArray(out[k])) out[k] = [];
+  out.fin.forEach((f) => {
+    f.id = f.id || uid(); f.tipo = f.tipo === 'saida' ? 'saida' : 'entrada'; f.valor = Math.round((Number(f.valor) || 0) * 100) / 100;
+    f.data = /^\d{4}-\d\d-\d\d$/.test(f.data || '') ? f.data : today(); f.pago = !!f.pago;
+    for (const k of ['desc', 'pagoEm', 'cat', 'client', 'forma', 'serie', 'parc', 'obs']) f[k] = f[k] || '';
+  });
   out.clients.forEach((c) => {
     c.id = c.id || uid(); c.nome = c.nome || ''; c.status = c.status || 'ativo';
     for (const k of ['empresa', 'email', 'whats', 'insta', 'site', 'trello', 'pasta', 'notas']) c[k] = c[k] || '';
@@ -344,16 +349,21 @@ function callClaude(key, model, system, user) {
 // ---------- IAs locais: Claude Code e Codex (usam a assinatura já logada no computador, sem chave da API) ----------
 const IA_CMD = { claude: 'claude --version', codex: 'codex --version' };
 const iaCache = {};
+// sem travar o servidor: a checagem roda em paralelo e o app continua respondendo enquanto isso
+const iaRodando = {};
 function iaInfo(nome, force) {
-  if (iaCache[nome] && !force) return iaCache[nome];
-  try {
-    const out = cp.execSync(IA_CMD[nome], { encoding: 'utf8', timeout: 15000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
-    const v = (out.match(/\d+\.\d+[\d.]*/) || [''])[0];
-    iaCache[nome] = { ok: !!out.trim(), versao: v };
-  } catch (_) { iaCache[nome] = { ok: false }; }
-  return iaCache[nome];
+  if (iaCache[nome] && !force) return Promise.resolve(iaCache[nome]);
+  if (iaRodando[nome]) return iaRodando[nome];
+  iaRodando[nome] = new Promise((ok) => {
+    cp.exec(IA_CMD[nome], { encoding: 'utf8', timeout: 15000, windowsHide: true }, (err, out) => {
+      out = String(out || '');
+      iaCache[nome] = err || !out.trim() ? { ok: false } : { ok: true, versao: (out.match(/\d+\.\d+[\d.]*/) || [''])[0] };
+      delete iaRodando[nome];
+      ok(iaCache[nome]);
+    });
+  });
+  return iaRodando[nome];
 }
-const claudeCodeInfo = (force) => iaInfo('claude', force);
 const pastaIA = (n) => { const d = path.join(require('os').tmpdir(), 'myloot-' + n); fs.mkdirSync(d, { recursive: true }); return d; };
 function callCodex(system, user) {
   return new Promise((ok, no) => {
@@ -473,6 +483,17 @@ function lembretes() {
     if (min < h * 60 + m || min > h * 60 + m + 180 || avisados.includes(k)) continue;
     notify('⏰ ' + t.text, `Lembrete do MyLoot · hoje às ${t.hora}`);
     avisados.push(k); mudou = true;
+  }
+  // contas a pagar e a receber que vencem hoje: um aviso só, a partir das 9h
+  if (agora.getHours() >= 9) {
+    const hojeFin = (db.fin || []).filter((f) => !f.pago && f.data === hoje);
+    const k = 'fin|' + hoje;
+    if (hojeFin.length && !avisados.includes(k)) {
+      const pagar = hojeFin.filter((f) => f.tipo === 'saida'), receber = hojeFin.filter((f) => f.tipo === 'entrada');
+      const R = (L) => 'R$ ' + L.reduce((s, f) => s + f.valor, 0).toFixed(2).replace('.', ',');
+      notify('💰 Contas de hoje', [pagar.length ? `${pagar.length} a pagar (${R(pagar)})` : '', receber.length ? `${receber.length} a receber (${R(receber)})` : ''].filter(Boolean).join(' · '));
+      avisados.push(k); mudou = true;
+    }
   }
   if (mudou) { avisados = avisados.slice(-500); try { fs.writeFileSync(AVISOS, JSON.stringify(avisados)); } catch (_) {} }
 }
@@ -634,7 +655,7 @@ async function app(req, res) {
       if (p === '/api/notify-test' && req.method === 'POST') { notify('🎁 MyLoot', 'É assim que o aviso do foco aparece.'); return send(res, 200, { ok: true }); }
       if (p === '/api/ai/status') {
         const f = u.searchParams.get('checar') === '1';
-        const claude = iaInfo('claude', f), codex = iaInfo('codex', f);
+        const [claude, codex] = await Promise.all([iaInfo('claude', f), iaInfo('codex', f)]);
         return send(res, 200, { temChave: !!readSecrets().anthropicKey, modelos: AI_MODELS, code: claude, claude, codex });
       }
       if (p === '/api/ai/key' && req.method === 'POST') {
@@ -651,7 +672,8 @@ async function app(req, res) {
         // qual IA: a escolhida no pedido, ou a das Configurações; "auto" pega a primeira ligada e instalada
         const st = readDB().db.settings, ligadas = st.aiTools || {};
         let pref = b.via || st.aiVia || 'auto'; if (pref === 'code') pref = 'claude';
-        const pode = (n) => ligadas[n] !== false && iaInfo(n).ok;
+        const tem = { claude: (await iaInfo('claude')).ok, codex: (await iaInfo('codex')).ok };
+        const pode = (n) => ligadas[n] !== false && tem[n];
         let via = pref === 'api' ? 'api' : pref === 'auto' ? (['claude', 'codex'].find(pode) || 'api') : (pode(pref) ? pref : null);
         if (!via) return send(res, 400, { erro: (pref === 'codex' ? 'O Codex' : 'O Claude Code') + ' não está instalado ou está desligado nas Configurações.' });
         if (via === 'api' && !key) return send(res, 400, { erro: 'Nenhuma IA encontrada. Instale o Claude Code ou o Codex, ou coloque uma chave da API do Claude nas Configurações.' });

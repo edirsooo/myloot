@@ -1,0 +1,141 @@
+{
+ "id": "kit-lancamento-v1",
+ "pasta": "kit",
+ "categoria": {
+  "id": "c-lancamento",
+  "name": "Kit de lançamento",
+  "icon": "🚀",
+  "color": "#3ad7ff"
+ },
+ "itens": [
+  {
+   "tipo": "nota",
+   "titulo": "Avatar: para quem é o produto",
+   "descricao": "Nicho, público, dores, desejos e o grande resultado prometido.",
+   "conteudo": "NICHO: [ex.: emagrecimento]\nSUBNICHO: [ex.: mães depois dos 35 que não têm tempo de academia]\n\nQUEM É (resumo em até 4 linhas)\n[ ]\n\nDADOS\nIdade: [ ]  Gênero: [ ]  Renda: [ ]  Profissão: [ ]  Onde mora: [ ]\nOnde passa o tempo na internet: [ ]\n\n10 DORES (o que incomoda hoje)\n1.\n2.\n3.\n\n10 DESEJOS (o que quer conquistar)\n1.\n2.\n3.\n\n10 MEDOS (o que teme que aconteça)\n1.\n2.\n\n10 CRENÇAS QUE TRAVAM (\"isso não é pra mim porque…\")\n1.\n2.\n\nGRANDE RESULTADO (o destino que o produto promete, em uma frase)\n[ ]\n\nPESQUISA: mande um formulário para quem já é cliente ou seguidor com 5 perguntas abertas:\n1. Qual sua maior dificuldade com [tema]?\n2. O que você já tentou e não deu certo?\n3. Se tivesse uma varinha mágica, o que resolveria?\n4. O que te impediria de comprar um curso/serviço sobre isso?\n5. Quanto você acha justo pagar por uma solução completa?",
+   "etiquetas": [
+    "lancamento",
+    "avatar",
+    "estrategia"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Avatar para quem é o produto.pdf"
+   ]
+  },
+  {
+   "tipo": "instrucao",
+   "titulo": "Árvore de objeções",
+   "descricao": "Como transformar cada \"não\" do cliente em argumento.",
+   "conteudo": "PASSO A PASSO (faça para cada objeção)\n1. Escreva a objeção com as palavras do cliente.\n2. Mostre que entende: \"Faz sentido pensar assim, eu também já pensei…\"\n3. Dê um argumento lógico (número, comparação, exemplo).\n4. Mostre uma prova: alguém que pensava igual e conseguiu.\n\nOBJEÇÕES MAIS COMUNS\n- Preço: \"Está caro.\" → compare com o custo de continuar com o problema.\n- Tempo: \"Não tenho tempo.\" → mostre quanto tempo leva por dia/semana.\n- Confiança: \"Será que funciona?\" → depoimentos, garantia, resultados.\n- Capacidade: \"Não vou conseguir.\" → casos de pessoas parecidas que conseguiram.\n- Momento: \"Agora não é a hora.\" → o que se perde esperando.\n\nTABELA\nObjeção | Empatia | Argumento | Prova\n[ ] | [ ] | [ ] | [ ]\n[ ] | [ ] | [ ] | [ ]\n\nUse as respostas nas aulas, na página de vendas, nos stories e no WhatsApp.",
+   "etiquetas": [
+    "lancamento",
+    "objecoes",
+    "vendas"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Árvore de objeções.pdf"
+   ]
+  },
+  {
+   "tipo": "nota",
+   "titulo": "Oferta e garantia",
+   "descricao": "Monte uma oferta difícil de recusar.",
+   "conteudo": "PRODUTO: [nome]\nGRANDE RESULTADO: [o que a pessoa conquista]\nPARA QUEM É / PARA QUEM NÃO É: [ ] / [ ]\n\nO QUE ESTÁ INCLUSO (com o valor percebido de cada parte)\n- Entrega principal: [ ] — R$ [ ]\n- Bônus 1 (resolve uma objeção): [ ] — R$ [ ]\n- Bônus 2 (acelera o resultado): [ ] — R$ [ ]\n- Bônus de ação rápida (só para os primeiros): [ ]\n\nÂNCORA: comparar com [o que a pessoa gastaria de outro jeito] — R$ [ ]\nPREÇO: R$ [ ] à vista ou [N]x de R$ [ ]\nFORMAS DE PAGAMENTO: [ ]\n\nGARANTIA\n- Incondicional de [7] dias (obrigatória por lei em compras online).\n- Opcional, condicional de [N] dias: se a pessoa [cumprir as tarefas X, Y] e não [alcançar o resultado Z], você [devolve o dinheiro / dá uma consultoria extra].\nEscreva as condições de forma clara, simples e possível de comprovar.\n\nDEPOIS DA COMPRA (upsell): [oferta complementar]",
+   "etiquetas": [
+    "lancamento",
+    "oferta",
+    "vendas"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Oferta e garantia.pdf"
+   ]
+  },
+  {
+   "tipo": "nota",
+   "titulo": "Seu método em 3 passos",
+   "descricao": "Dê nome e estrutura ao que você ensina ou entrega.",
+   "conteudo": "DE ONDE VEM SEU MÉTODO (escolha o que mais combina)\n( ) Descobri algo pouco conhecido\n( ) Olhei algo comum de outro jeito\n( ) Superei uma situação muito difícil\n( ) Resolvi um problema que ninguém resolvia bem\n( ) Tenho resultados muito acima da média\n\nHISTÓRIA EM 5 LINHAS\n[ ]\n\nNOME DO MÉTODO: [ex.: Método 3C]\nDIFERENCIAL: [o que ele tem que os outros não têm]\n\nESTRUTURA\nPasso 1 — [nome]: [o que a pessoa faz e consegue]\nPasso 2 — [nome]: [ ]\nPasso 3 — [nome]: [ ]",
+   "etiquetas": [
+    "lancamento",
+    "metodo",
+    "estrategia"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Seu método em 3 passos.pdf"
+   ]
+  },
+  {
+   "tipo": "instrucao",
+   "titulo": "Cronograma de lançamento",
+   "descricao": "Do aquecimento ao fim das vendas, com metas.",
+   "conteudo": "NOME DO EVENTO: [ ]\nMETAS: investimento R$ [ ] · leads [ ] · vendas [ ] · faturamento R$ [ ]\n\nDATAS\nAquecimento (conteúdo do tema): de [ ] a [ ]\nCaptação de inscritos: de [ ] a [ ]\nAula 1: [ ]   Aula 2: [ ]   Aula 3: [ ]\nAbertura do carrinho: [ ] às [ ]\nLembretes de última hora: [ ]\nFechamento do carrinho: [ ] às [ ]\nDepois: pesquisa com quem não comprou e debriefing em [ ]\n\nDica: coloque cada data como tarefa no MyLoot, com lembrete no horário.",
+   "etiquetas": [
+    "lancamento",
+    "planejamento"
+   ],
+   "checklist": [
+    "Avatar e oferta prontos",
+    "Página de captura no ar",
+    "Grupo/canal de WhatsApp criado",
+    "Anúncios aprovados",
+    "Aulas gravadas ou roteirizadas",
+    "Página de vendas no ar",
+    "Checkout testado (compra de teste)",
+    "Mensagens de pós-compra prontas",
+    "Debriefing marcado"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Cronograma de lançamento.pdf"
+   ]
+  },
+  {
+   "tipo": "instrucao",
+   "titulo": "Roteiro das aulas (aula 1, 2 e 3)",
+   "descricao": "Estrutura das três aulas gratuitas antes da abertura de vendas.",
+   "conteudo": "AULA 1 — A OPORTUNIDADE (mostrar que é possível)\n- Gancho: o grande resultado em uma frase + prova rápida\n- Sua história curta (por que você pode ensinar isso)\n- O que a pessoa vai aprender nas 3 aulas\n- Conteúdo: o erro comum e a nova forma de ver o problema\n- Casos de pessoas que conseguiram\n- Tarefa para a próxima aula + chamada para a aula 2\n\nAULA 2 — O CAMINHO (mostrar como)\n- Recapitulação da aula 1\n- Os 3 passos do seu método (sem ensinar todos os detalhes)\n- Quebra das 3 maiores objeções\n- Mais provas\n- Chamada para a aula 3 (\"amanhã eu mostro como fazer isso com acompanhamento\")\n\nAULA 3 — A EXPERIÊNCIA DE COMO É (preparar a oferta)\n- Um passo prático aplicado ao vivo (a pessoa sente o resultado)\n- Perguntas e respostas\n- Visão do futuro: como fica a vida depois\n- Anúncio: data e hora da abertura das vendas + o que vem na oferta\n\nVÍDEO DE VENDAS (abertura do carrinho)\nGancho → problema → solução (método) → provas → o que está incluso → bônus → preço e âncora → garantia → urgência real (prazo/vagas) → chamada para comprar → perguntas frequentes",
+   "etiquetas": [
+    "lancamento",
+    "roteiro",
+    "video"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Roteiro das aulas (aula 1, 2 e 3).pdf"
+   ]
+  },
+  {
+   "tipo": "nota",
+   "titulo": "Textos das páginas do lançamento",
+   "descricao": "Captura, obrigado e vendas: o que escrever em cada uma.",
+   "conteudo": "PÁGINA DE CAPTURA\nTítulo: [o grande resultado sem a maior dor]\nSubtítulo: Aulas gratuitas de [data] a [data] para [avatar]\n3 tópicos do que vai aprender\nBotão: Quero participar de graça\nRodapé: sua foto + 1 linha de autoridade\n\nPÁGINA DE OBRIGADO\n\"Inscrição confirmada! Falta 1 passo:\" → botão para entrar no grupo do WhatsApp\nPedido: responder a pesquisa de 5 perguntas (link)\nDatas e horários das aulas\n\nPÁGINA DE VENDAS (de cima para baixo)\n1. Título + vídeo de vendas\n2. Para quem é\n3. O que você vai conquistar\n4. O que está incluso (com os bônus)\n5. Depoimentos\n6. Quem é você\n7. Preço, âncora e formas de pagamento\n8. Garantia\n9. Perguntas frequentes\n10. Botão de compra repetido a cada 2 seções\n\nMENSAGENS DEPOIS DA COMPRA\nPagamento aprovado: boas-vindas + como acessar + próximos passos + oferta complementar (se houver)\nBoleto/PIX gerado: link do pagamento + prazo + \"qualquer dúvida, me chama aqui\"",
+   "etiquetas": [
+    "lancamento",
+    "copy",
+    "paginas"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Textos das páginas do lançamento.pdf"
+   ]
+  },
+  {
+   "tipo": "instrucao",
+   "titulo": "Links com UTM e etiquetas de leads",
+   "descricao": "Saiba de onde veio cada inscrito e cada venda.",
+   "conteudo": "O QUE É UTM\nPedacinhos no fim do link que contam ao Google Analytics/plataforma de onde a pessoa veio.\nFormato: https://seusite.com/?utm_source=ORIGEM&utm_medium=TIPO&utm_campaign=CAMPANHA&utm_content=DETALHE\n\nPADRÃO SUGERIDO (minúsculas, sem acento, com hífen)\nBio do Instagram: utm_source=instagram&utm_medium=organico&utm_content=bio\nStories: utm_source=instagram&utm_medium=organico&utm_content=stories\nDirect: utm_source=instagram&utm_medium=organico&utm_content=direct\nTikTok bio: utm_source=tiktok&utm_medium=organico&utm_content=bio\nGrupo de WhatsApp: utm_source=whatsapp&utm_medium=organico&utm_content=grupo\nE-mail: utm_source=email&utm_medium=organico&utm_content=lista\nAnúncio Meta (público frio): utm_source=meta&utm_medium=pago&utm_content=frio\nAnúncio Meta (público quente): utm_source=meta&utm_medium=pago&utm_content=quente\nYouTube Ads: utm_source=youtube&utm_medium=pago\nGoogle pesquisa: utm_source=google&utm_medium=pago&utm_content=search\nutm_campaign: nome curto do lançamento + mês/ano, ex.: lanc-nov26\n\nETIQUETAS (TAGS) DE LEADS\nMesmo padrão: [SIGLA]_[MÊS]_[ANO]_[ORGANICO ou PAGO]_[REDE]_[DETALHE]\nEx.: L3C_11_26_PG_META_FRIO · L3C_11_26_ORG_IG_BIO\nCompradores: CHECKOUT_[SIGLA]_[MÊS]_[ANO]_[ORIGEM]\n\nDica: guarde cada link pronto como item Link no MyLoot, com a etiqueta do lançamento.",
+   "etiquetas": [
+    "lancamento",
+    "trafego",
+    "utm"
+   ],
+   "arquivos": [
+    "Links com UTM e etiquetas de leads.pdf"
+   ]
+  }
+ ]
+}

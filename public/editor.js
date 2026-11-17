@@ -2,6 +2,9 @@
 (function () {
   const { esc, $, $$ } = M;
   M.cur = null; // item aberto
+  // materiais que vêm prontos (kits e modelos): são exemplos para a pessoa adaptar
+  M.ehMaterial = (it) => /^(kit-|modelos-)/.test(it.id) || ['c-negocio', 'c-lancamento'].includes(it.cat);
+  M.PROMPT_MARCA = 'Utilize este documento como referência e adapte o conteúdo para a minha empresa. Mantenha a estrutura e as informações relevantes, mas personalize a linguagem, a apresentação e a identidade visual para a minha marca. Minha empresa: [NOME E O QUE FAZ]. Cores e fontes: [SE TIVER]. Tom de voz: [EX.: próximo e direto]. Entregue pronto para eu enviar ao meu cliente.';
 
   M.createItem = (o, defer) => {
     const it = M.newItem(Object.assign({ cat: M.ui.cat || '', type: M.ui.type || 'nota' }, o));
@@ -86,6 +89,7 @@
           <div class="fld"><label>Checklist</label><div id="eCheck"></div></div>
           <div class="fld"><label>Links</label><div id="eLinks"></div></div>
           <div class="fld"><label>Anexos ${M.hint('Arraste arquivos para cá. Eles são copiados para a pasta data/anexos.')}</label><div id="eAtt"></div><div id="ePrev"></div></div>
+          ${M.ehMaterial(it) ? `<div class="dica-ia"><b>💡 Dica: personalize este documento com IA</b><p>Este material é um exemplo de referência (o PDF vem com a identidade da Prestes Design). Use como ponto de partida: mande o texto ou o PDF para o Claude, o Codex ou outra IA e peça para adaptar à sua marca, à sua identidade visual, à sua linguagem e às suas necessidades.</p><div class="cmd" id="ePromptIA">${esc(M.PROMPT_MARCA)}</div><button class="btn sm ghost" id="eCopiaIA">📋 Copiar comando</button></div>` : ''}
         </div>`;
       bind();
       drawCheck(); drawLinks(); drawAtt(); drawAi();
@@ -140,6 +144,7 @@
       $('#eDel', m).onclick = () => { M.closeModal(); M.trashItem(it); };
       $('#eFav', m).onclick = () => { it.fav = !it.fav; touch(); SFX.play(it.fav ? 'star' : 'click'); $('#eFav', m).textContent = it.fav ? '⭐' : '☆'; };
       $('#eCopy', m).onclick = () => M.copyItem(it);
+      if ($('#eCopiaIA', m)) $('#eCopiaIA', m).onclick = () => { navigator.clipboard.writeText(M.PROMPT_MARCA).catch(() => {}); SFX.play('copy'); M.toast('📋 Comando copiado. Cole na sua IA junto com o documento.'); };
       $('#eTypes', m).onclick = (e) => { const x = e.target.closest('.slot'); if (!x) return; it.type = x.dataset.t; touch(); SFX.play('click'); draw(); };
       $('#eTitle', m).oninput = (e) => {
         it.title = e.target.value; touch();

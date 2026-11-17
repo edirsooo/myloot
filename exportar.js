@@ -70,6 +70,13 @@ function markdown(db, h) { // h = { itemToMd, TYPE_DIR, slug, safeName, ANX, ane
     T.push(`- [${t.done ? 'x' : ' '}] ${t.text}${t.date ? ' 📅 ' + t.date : ''}${t.hora ? ' ⏰ ' + t.hora : ''}${t.rep ? ' 🔁 ' + t.rep : ''}${t.client ? ' 👤 ' + nomeCli(t.client) : ''}`);
   }
   md('Tarefas.md', T.join('\n') + '\n');
+  if ((db.fin || []).length) { // financeiro em CSV (abre no Excel e no Google Planilhas)
+    const q = (s) => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
+    const L = [['Data', 'Tipo', 'Descrição', 'Categoria', 'Cliente', 'Forma', 'Valor', 'Situação', 'Parcela'].map(q).join(';')];
+    [...db.fin].sort((a, b) => a.data.localeCompare(b.data)).forEach((f) => L.push([f.data, f.tipo === 'entrada' ? 'Entrada' : 'Saída', f.desc, f.cat, nomeCli(f.client), f.forma,
+      (f.tipo === 'entrada' ? f.valor : -f.valor).toFixed(2).replace('.', ','), f.pago ? 'Pago' : 'Pendente', f.parc].map(q).join(';')));
+    out.push({ nome: 'Financeiro.csv', dados: Buffer.from('﻿' + L.join('\r\n'), 'utf8') });
+  }
   md('LEIA-ME.md', `# Exportado do MyLoot\n\nCada item é um arquivo .md, numa pasta por tipo, com os anexos ao lado.\nPara usar no Obsidian: extraia este ZIP e abra a pasta como cofre (Abrir pasta como cofre).\n\nExportado em ${new Date().toLocaleString('pt-BR')}.\n`);
   return zip(out);
 }

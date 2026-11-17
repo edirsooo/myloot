@@ -1,0 +1,278 @@
+{
+ "id": "kit-negocio-v1",
+ "pasta": "kit",
+ "categoria": {
+  "id": "c-negocio",
+  "name": "Kit do negócio",
+  "icon": "💼",
+  "color": "#ff7e00"
+ },
+ "itens": [
+  {
+   "tipo": "nota",
+   "titulo": "Briefing — Social Media",
+   "descricao": "Perguntas para começar a gestão das redes de um cliente novo.",
+   "conteudo": "DADOS DO CLIENTE\nNome:\nEmpresa / marca:\nWhatsApp:\nE-mail:\nInstagram / site:\n\nSOBRE O NEGÓCIO\n1. O que a empresa vende e para quem?\n2. Há quanto tempo está no mercado?\n3. O que faz vocês serem escolhidos no lugar dos concorrentes? (o diferencial)\n4. Cite 3 concorrentes (diretos ou indiretos) e 3 perfis que você admira.\n5. Os produtos/serviços são: ( ) físicos  ( ) online  ( ) presenciais\nAtende: ( ) só a cidade  ( ) o estado  ( ) o Brasil todo\n\nPÚBLICO\n6. Quem é o cliente ideal? (idade, cidade, profissão, o que ele busca)\n7. Quais as 3 maiores dúvidas ou objeções que ele tem antes de comprar?\n\nREDES HOJE\n8. Em quais redes vocês estão? ( ) Instagram ( ) TikTok ( ) Facebook ( ) YouTube ( ) LinkedIn ( ) Outra:\n9. O perfil do Instagram é comercial? Já comprou seguidores ou usou automação?\n10. Tem fotos e vídeos em boa qualidade? Alguém da equipe topa aparecer nos vídeos?\n\nOBJETIVO\n11. O principal objetivo agora é: ( ) vender mais ( ) ser mais conhecido ( ) engajar quem já segue ( ) lançar algo novo\n12. Como vamos saber que deu certo daqui a 3 meses? (ex.: X mensagens por semana no WhatsApp)\n13. Frequência desejada: ___ posts e ___ stories por semana\n14. Pretende investir em anúncios? ( ) já invisto ( ) quero começar ( ) não por agora\nVerba mensal para anúncios:\n\nIDENTIDADE\n15. Já tem logo e identidade visual? Cores e fontes:\n16. Alguma cor, assunto ou palavra que NÃO pode aparecer?\nComo a marca deve soar? (marque até 3)\n( ) Moderna   ( ) Séria   ( ) Divertida   ( ) Elegante\n( ) Acolhedora   ( ) Ousada   ( ) Técnica   ( ) Jovem / descolada\nPRAZOS E APROVAÇÃO\nPara quando você precisa?\nQuem aprova o material (nome e WhatsApp)?\n\nQuer acrescentar mais alguma coisa?\n\n(As informações deste briefing são usadas só para este trabalho.)",
+   "etiquetas": [
+    "briefing",
+    "social-media",
+    "clientes"
+   ],
+   "modelo": true,
+   "favorito": true,
+   "arquivos": [
+    "Briefing - Social Media.pdf"
+   ]
+  },
+  {
+   "tipo": "nota",
+   "titulo": "Briefing — Design de Posts",
+   "descricao": "Para pacotes de artes avulsas ou mensais.",
+   "conteudo": "DADOS DO CLIENTE\nNome:\nEmpresa / marca:\nWhatsApp:\nE-mail:\nInstagram / site:\n\n1. O que a empresa faz e qual é o público?\n2. Quais produtos/serviços vão aparecer nas artes?\n3. Qual mensagem principal o cliente precisa entender ao ver um post?\n4. Formatos: ( ) Quadrado 1:1  ( ) Retrato 4:5  ( ) Stories/Reels 9:16  ( ) Horizontal 16:9  ( ) Carrossel\n5. Quantas artes e com qual frequência?\n6. Vai imprimir alguma arte? (se sim, tamanho e gráfica)\n7. Identidade visual: cores, fontes, logo (mande os arquivos)\n8. Marcas ou perfis que servem de referência visual:\n9. O texto das artes vem pronto ou eu escrevo?\nComo a marca deve soar? (marque até 3)\n( ) Moderna   ( ) Séria   ( ) Divertida   ( ) Elegante\n( ) Acolhedora   ( ) Ousada   ( ) Técnica   ( ) Jovem / descolada\nPRAZOS E APROVAÇÃO\nPara quando você precisa?\nQuem aprova o material (nome e WhatsApp)?\n\nQuer acrescentar mais alguma coisa?\n\n(As informações deste briefing são usadas só para este trabalho.)",
+   "etiquetas": [
+    "briefing",
+    "design",
+    "clientes"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Briefing - Design de Posts.pdf"
+   ]
+  },
+  {
+   "tipo": "nota",
+   "titulo": "Briefing — Identidade Visual",
+   "descricao": "Para criar logo e identidade de uma marca.",
+   "conteudo": "DADOS DO CLIENTE\nNome:\nEmpresa / marca:\nWhatsApp:\nE-mail:\nInstagram / site:\n\n1. O que a empresa faz, há quanto tempo e para quem?\n2. Qual é a história da marca? Por que ela existe?\n3. Cite 3 concorrentes e o que você acha do visual deles.\n4. Marcas (de qualquer área) que você admira visualmente:\n5. Que sensação a marca deve passar em 3 palavras?\n6. Preferência de cores? Alguma cor proibida?\n7. Tem slogan? Vai precisar de um?\n8. Onde a marca vai aparecer mais? ( ) redes sociais ( ) fachada ( ) embalagem ( ) uniforme ( ) site ( ) veículo\n9. Precisa de manual da marca (guia de uso das cores, fontes e versões do logo)? ( ) Sim ( ) Não\n10. Itens de papelaria: ( ) cartão de visita ( ) papel timbrado ( ) assinatura de e-mail ( ) envelope ( ) pasta ( ) crachá ( ) outro:\nComo a marca deve soar? (marque até 3)\n( ) Moderna   ( ) Séria   ( ) Divertida   ( ) Elegante\n( ) Acolhedora   ( ) Ousada   ( ) Técnica   ( ) Jovem / descolada\nPRAZOS E APROVAÇÃO\nPara quando você precisa?\nQuem aprova o material (nome e WhatsApp)?\n\nQuer acrescentar mais alguma coisa?\n\n(As informações deste briefing são usadas só para este trabalho.)",
+   "etiquetas": [
+    "briefing",
+    "identidade-visual",
+    "clientes"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Briefing - Identidade Visual.pdf"
+   ]
+  },
+  {
+   "tipo": "nota",
+   "titulo": "Briefing — Criação de Site",
+   "descricao": "Para sites institucionais, landing pages e lojas.",
+   "conteudo": "DADOS DO CLIENTE\nNome:\nEmpresa / marca:\nWhatsApp:\nE-mail:\nInstagram / site:\n\n1. O que a empresa faz e para quem?\n2. Qual o objetivo do site? ( ) mostrar a empresa ( ) gerar contatos no WhatsApp ( ) vender online ( ) captar inscrições\n3. Já tem site e domínio (endereço .com.br)? Qual? Quem tem o acesso?\n4. Páginas desejadas: ( ) Início ( ) Sobre ( ) Serviços ( ) Portfólio ( ) Depoimentos ( ) Blog ( ) Contato ( ) Loja ( ) outra:\n5. Já tem textos, fotos e logo? Quem vai mandar?\n6. Sites que você gosta (e o que gosta em cada um):\n7. Precisa de: ( ) formulário ( ) botão de WhatsApp ( ) agenda online ( ) pagamento ( ) área de membros ( ) outro idioma\n8. Quem vai atualizar o site depois?\n9. Cores preferidas e cores proibidas:\nComo a marca deve soar? (marque até 3)\n( ) Moderna   ( ) Séria   ( ) Divertida   ( ) Elegante\n( ) Acolhedora   ( ) Ousada   ( ) Técnica   ( ) Jovem / descolada\nPRAZOS E APROVAÇÃO\nPara quando você precisa?\nQuem aprova o material (nome e WhatsApp)?\n\nQuer acrescentar mais alguma coisa?\n\n(As informações deste briefing são usadas só para este trabalho.)",
+   "etiquetas": [
+    "briefing",
+    "site",
+    "clientes"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Briefing - Criação de Site.pdf"
+   ]
+  },
+  {
+   "tipo": "instrucao",
+   "titulo": "Contrato — Gestão de redes sociais (mensal)",
+   "descricao": "Modelo para serviço recorrente. Troque tudo o que está entre colchetes.",
+   "conteudo": "CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE GESTÃO DE REDES SOCIAIS\n\nCONTRATANTE: [NOME OU RAZÃO SOCIAL], CPF/CNPJ [NÚMERO], endereço [ENDEREÇO], e-mail [E-MAIL].\nCONTRATADO(A): [SEU NOME OU EMPRESA], CPF/CNPJ [NÚMERO], endereço [ENDEREÇO], e-mail [E-MAIL].\n\n1. OBJETO\n1.1. Gestão das redes [@PERFIL] no [Instagram / Facebook / TikTok], incluindo:\na) planejamento mensal de conteúdo, enviado para aprovação até o dia [DIA] do mês anterior;\nb) criação de [Nº] posts e [Nº] stories por semana, com legenda;\nc) agendamento e publicação nos dias combinados;\nd) relatório mensal simples com os principais números e próximos passos.\n1.2. Não estão incluídos (e podem ser orçados à parte): verba de anúncios, gestão de tráfego pago, fotos e vídeos externos, atendimento de mensagens (direct/WhatsApp), impressos e sites.\n\n2. PRAZO\n2.1. Vigência de [3/6/12] meses a partir da assinatura, renovando automaticamente por igual período se nenhuma parte avisar o contrário com 30 dias de antecedência.\n\n3. VALOR E PAGAMENTO\n3.1. Valor mensal de R$ [VALOR], pago até o dia [DIA] de cada mês por [PIX / boleto / transferência].\n3.2. Atraso: multa de 2% sobre a parcela, juros de 1% ao mês e correção pelo [IPCA]. Com mais de [15] dias de atraso, o serviço pode ser pausado até a regularização.\n3.3. O valor é reajustado a cada 12 meses pelo [IPCA], ou em comum acordo.\n\n4. APROVAÇÕES E AJUSTES\n4.1. O CONTRATANTE aprova o planejamento e as artes em até [2] dias úteis. Sem resposta nesse prazo, o material é considerado aprovado.\n4.2. Cada material inclui até [2] rodadas de ajuste. Mudanças de tema depois da aprovação contam como peça nova.\n4.3. O CONTRATANTE envia informações, fotos e acessos necessários a tempo; atrasos dele mudam os prazos na mesma medida.\n\n5. RESPONSABILIDADES\n5.1. Do CONTRATADO: entregar o combinado com qualidade e no prazo, cuidar da imagem do CONTRATANTE e manter sigilo do que souber do negócio.\n5.2. Do CONTRATANTE: pagar em dia, responder às aprovações e responder pelas informações, preços, promoções e materiais que fornecer.\n5.3. Resultados como seguidores, alcance e vendas dependem de fatores externos (algoritmo, mercado, produto, preço, atendimento) e não são garantidos.\n\n6. ACESSOS E SEGURANÇA\n6.1. O acesso às contas será dado como colaborador/parceiro sempre que a plataforma permitir. Senhas, quando necessárias, são trocadas pelo CONTRATANTE ao fim do contrato.\n\n7. DIREITOS E PORTFÓLIO\n7.1. Após o pagamento, as artes produzidas podem ser usadas pelo CONTRATANTE nas suas redes e materiais.\n7.2. O CONTRATADO pode mostrar os trabalhos no seu portfólio, salvo pedido contrário por escrito.\n\n8. DADOS PESSOAIS (LGPD)\n8.1. As partes tratam os dados pessoais trocados só para cumprir este contrato e os protegem de acesso indevido.\n\n9. RESCISÃO\n9.1. Qualquer parte pode encerrar com aviso de 30 dias, pagando os serviços já prestados no período.\n9.2. Descumprimento grave permite encerrar na hora, por escrito.\n\n10. FORO\n10.1. Fica eleito o foro de [CIDADE/UF].\n\n[CIDADE], [DATA].\n\n_____________________________  _____________________________\nCONTRATANTE                     CONTRATADO(A)\n\nAtenção: modelo de referência. Para valores altos ou casos específicos, revise com um advogado.",
+   "etiquetas": [
+    "contrato",
+    "social-media",
+    "clientes"
+   ],
+   "checklist": [
+    "Preencher os colchetes",
+    "Conferir entregáveis com o que foi vendido",
+    "Enviar para assinatura (ex.: gov.br, Clicksign, ZapSign)",
+    "Guardar o PDF assinado na pasta do cliente"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Contrato - Gestão de redes sociais (mensal).pdf"
+   ]
+  },
+  {
+   "tipo": "instrucao",
+   "titulo": "Contrato — Projeto (posts, identidade visual ou site)",
+   "descricao": "Modelo para trabalhos com começo e fim. Troque tudo o que está entre colchetes.",
+   "conteudo": "CONTRATO DE PRESTAÇÃO DE SERVIÇOS — PROJETO\n\nCONTRATANTE: [NOME OU RAZÃO SOCIAL], CPF/CNPJ [NÚMERO], endereço [ENDEREÇO], e-mail [E-MAIL].\nCONTRATADO(A): [SEU NOME OU EMPRESA], CPF/CNPJ [NÚMERO], endereço [ENDEREÇO], e-mail [E-MAIL].\n\n1. OBJETO\n1.1. Criação de [descreva: pacote de Nº artes / identidade visual / site com Nº páginas], conforme o briefing aprovado, com as entregas:\n- [entrega 1, ex.: logo nas versões principal, horizontal e ícone]\n- [entrega 2, ex.: manual da marca em PDF]\n- [entrega 3, ex.: arquivos em PNG, PDF e editável]\n1.2. Para site: domínio, hospedagem e licenças de plugins/temas são pagos pelo CONTRATANTE, salvo se escrito aqui: [ ].\n\n2. ETAPAS E PRAZO\n2.1. Briefing → proposta/rascunho em até [Nº] dias úteis → ajustes → entrega final em até [Nº] dias úteis após a aprovação.\n2.2. Os prazos contam a partir do pagamento da entrada e do envio de todo o material pelo CONTRATANTE.\n\n3. VALOR E PAGAMENTO\n3.1. Valor total de R$ [VALOR]: [50%] na assinatura e [50%] na entrega final, por [PIX / boleto / transferência].\n3.2. Os arquivos finais são entregues após a quitação.\n3.3. Atraso: multa de 2%, juros de 1% ao mês e correção pelo [IPCA].\n\n4. AJUSTES\n4.1. Estão incluídas [2] rodadas de ajuste. Ajustes extras ou mudança de direção depois da aprovação são orçados à parte.\n4.2. Sem resposta do CONTRATANTE por [15] dias, o projeto é pausado; a retomada entra na fila de trabalhos.\n\n5. DIREITOS\n5.1. Após a quitação, o CONTRATANTE recebe os direitos de uso do material final para a finalidade contratada.\n5.2. Rascunhos e opções não escolhidas continuam do CONTRATADO.\n5.3. O CONTRATADO pode mostrar o trabalho no portfólio, salvo pedido contrário por escrito.\n\n6. RESPONSABILIDADES\n6.1. O CONTRATANTE responde pelos textos, imagens e informações que enviar.\n6.2. O CONTRATADO usa fontes, imagens e recursos com licença adequada.\n\n7. DADOS PESSOAIS (LGPD)\n7.1. Dados trocados são usados só para este projeto e protegidos.\n\n8. CANCELAMENTO\n8.1. Se o CONTRATANTE cancelar, a entrada não é devolvida e as etapas já feitas são cobradas proporcionalmente.\n\n9. FORO\n9.1. Fica eleito o foro de [CIDADE/UF].\n\n[CIDADE], [DATA].\n\n_____________________________  _____________________________\nCONTRATANTE                     CONTRATADO(A)\n\nAtenção: modelo de referência. Para valores altos ou casos específicos, revise com um advogado.",
+   "etiquetas": [
+    "contrato",
+    "projeto",
+    "clientes"
+   ],
+   "checklist": [
+    "Preencher os colchetes",
+    "Listar as entregas exatas",
+    "Receber a entrada antes de começar",
+    "Guardar o PDF assinado na pasta do cliente"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Contrato - Projeto (posts, identidade visual ou site).pdf"
+   ]
+  },
+  {
+   "tipo": "nota",
+   "titulo": "Proposta comercial",
+   "descricao": "Estrutura de proposta curta, que mostra valor antes do preço.",
+   "conteudo": "PROPOSTA PARA [NOME DO CLIENTE] — [SERVIÇO]\nVálida até [DATA]\n\n1. O QUE ENTENDI DO SEU MOMENTO\n[2 ou 3 frases com o problema e o objetivo que o cliente contou na conversa. Use as palavras dele.]\n\n2. O QUE VOU FAZER\n- [Entrega 1 e o benefício dela]\n- [Entrega 2 e o benefício dela]\n- [Entrega 3 e o benefício dela]\n\n3. COMO FUNCIONA\nSemana 1: [ ]   Semana 2: [ ]   Entrega: [ ]\n\n4. RESULTADOS DE QUEM JÁ TRABALHOU COMIGO\n[1 ou 2 casos curtos, com número e antes/depois, ou depoimento]\n\n5. INVESTIMENTO\nOpção 1 — [nome]: [o que inclui] — R$ [ ]\nOpção 2 — [nome, a recomendada]: [o que inclui] — R$ [ ]\nOpção 3 — [nome, a completa]: [o que inclui] — R$ [ ]\nPagamento: [PIX / cartão em até Nx / entrada + parcelas]\n\n6. PRÓXIMO PASSO\nResponda \"vamos\" e eu envio o contrato. Começamos em até [Nº] dias.",
+   "etiquetas": [
+    "proposta",
+    "vendas",
+    "clientes"
+   ],
+   "checklist": [
+    "Personalizar o item 1 com as palavras do cliente",
+    "Mandar 3 opções de preço",
+    "Combinar a data do retorno",
+    "Lembrar no dia combinado"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Proposta comercial.pdf"
+   ]
+  },
+  {
+   "tipo": "instrucao",
+   "titulo": "Roteiro de call de vendas",
+   "descricao": "Passo a passo para conversar com um cliente e fechar sem empurrar.",
+   "conteudo": "ANTES DA CALL\n- Olhe as redes e o site do cliente. Anote 2 elogios sinceros e 2 oportunidades.\n- Não mande preço antes da conversa: \"Para te passar um valor justo, preciso entender o seu projeto. Leva 20 minutos.\"\n\n1. QUEBRAR O GELO (2 min)\nAgradeça o tempo. Pergunte algo leve e real (o negócio, a cidade, uma postagem recente).\n\n2. CONTEXTO (1 min)\n\"A ideia hoje é eu entender o seu momento e, se fizer sentido, te mostrar como posso ajudar. Combinado?\"\n\n3. QUEM VOCÊ É (1 min)\nTempo de mercado, quantos clientes, 1 resultado concreto. Curto: a estrela é o cliente.\n\n4. DIAGNÓSTICO (10 min) — fale pouco, escute muito\n- Como está hoje? O que já tentou?\n- O que mais te incomoda nisso?\n- Se nada mudar em 6 meses, o que acontece?\n- Como seria o cenário ideal?\nNunca interrompa. Anote as palavras exatas que a pessoa usa.\n\n5. CAMINHO (5 min)\nMostre o plano em 3 passos, usando as palavras dela. Deixe claro o que muda.\n\n6. TRÊS PERGUNTAS DE CONFIRMAÇÃO\n- Faz sentido tudo o que conversamos?\n- Você acredita que esse caminho resolve?\n- Está disposto(a) a investir tempo e dinheiro nisso agora?\n\n7. OFERTA E PREÇO\nApresente a opção recomendada primeiro. Diga o preço e fique em silêncio.\nDesconto nunca sem troca: aumente a entrega, mude o prazo ou peça pagamento à vista.\n\n8. FECHAMENTO\n\"Posso te mandar o contrato ainda hoje?\"\nSe a pessoa for pensar: combine dia e hora para o retorno e registre no MyLoot (tarefa com lembrete).\n\nDEPOIS\nMande o resumo da conversa e a proposta por WhatsApp no mesmo dia.",
+   "etiquetas": [
+    "vendas",
+    "call",
+    "clientes"
+   ],
+   "checklist": [
+    "Pesquisar o cliente antes",
+    "Anotar as palavras dele",
+    "Enviar resumo + proposta no mesmo dia",
+    "Criar tarefa de retorno com lembrete"
+   ],
+   "favorito": true,
+   "arquivos": [
+    "Roteiro de call de vendas.pdf"
+   ]
+  },
+  {
+   "tipo": "nota",
+   "titulo": "Mensagens prontas de WhatsApp",
+   "descricao": "Prospecção, retorno, fechamento, cobrança gentil, renovação e depoimento.",
+   "conteudo": "PRIMEIRO CONTATO (quem pediu informação)\nOi, [NOME]! Tudo bem? Aqui é [SEU NOME], da [SUA MARCA]. Vi seu interesse em [SERVIÇO]. Para te passar algo do tamanho certo, posso te fazer 3 perguntas rápidas? 🙂\n\nMARCAR A CONVERSA\nPara eu te mandar um valor justo, preciso entender seu projeto. Que tal 20 minutinhos amanhã às [HORA] ou [HORA]?\n\nDEPOIS DA CALL\n[NOME], obrigado pela conversa! Resumindo o que combinamos: [RESUMO]. A proposta está aqui: [LINK/ARQUIVO]. Alguma dúvida?\n\nRETORNO (2 dias depois)\nOi, [NOME]! Conseguiu ver a proposta? Se quiser, ajusto alguma coisa para caber no seu momento.\n\nFECHAMENTO\nVamos fechar? Se topar, já te mando o contrato e reservo sua data na agenda.\n\nÚLTIMO RETORNO (sem resposta)\n[NOME], vou encerrar sua proposta por aqui para não ficar te cobrando. Quando for a hora, é só me chamar. Sucesso! 🙌\n\nLEMBRETE DE PAGAMENTO (no dia)\nOi, [NOME]! Passando para lembrar que hoje vence a parcela de [MÊS] (R$ [VALOR]). PIX: [CHAVE]. Obrigado! 🙏\n\nPAGAMENTO EM ATRASO (gentil)\nOi, [NOME], tudo bem? Não encontrei o pagamento de [MÊS] (R$ [VALOR], vencido em [DATA]). Aconteceu alguma coisa? Se precisar, combinamos uma nova data.\n\nRENOVAÇÃO\n[NOME], nosso contrato completa [Nº] meses em [DATA]. Separei um resumo dos resultados: [LINK]. Para o próximo ciclo, sugiro [IDEIA]. Seguimos juntos?\n\nPEDIR DEPOIMENTO\n[NOME], posso te pedir um favor? Um depoimento curtinho (áudio, vídeo ou texto) sobre como foi trabalhar comigo me ajuda muito. Pode ser em 3 frases: como estava antes, o que fizemos e como está agora. 🙏",
+   "etiquetas": [
+    "whatsapp",
+    "vendas",
+    "clientes"
+   ],
+   "favorito": true,
+   "arquivos": [
+    "Mensagens prontas de WhatsApp.pdf"
+   ]
+  },
+  {
+   "tipo": "nota",
+   "titulo": "Onboarding de cliente novo",
+   "descricao": "Tudo o que fazer depois que o cliente fecha.",
+   "conteudo": "Cliente: [NOME]\nData de início: [DATA]\nServiço: [ ]\n\nUse o checklist abaixo. Ao terminar, ligue este item ao cliente (campo Cliente) e marque como Concluído.",
+   "etiquetas": [
+    "onboarding",
+    "clientes"
+   ],
+   "checklist": [
+    "Contrato assinado e guardado",
+    "Primeiro pagamento recebido (lance no Financeiro)",
+    "Cadastrar o cliente em Clientes",
+    "Criar a pasta do cliente (use a instrução \"Criar pastas padrão para clientes\")",
+    "Receber o briefing preenchido",
+    "Receber logo, fontes, fotos e acessos (como colaborador)",
+    "Criar o grupo de WhatsApp ou canal de aprovação",
+    "Combinar o dia fixo de aprovação",
+    "Criar as tarefas recorrentes do cliente",
+    "Mandar mensagem de boas-vindas com o cronograma"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Onboarding de cliente novo.pdf"
+   ]
+  },
+  {
+   "tipo": "nota",
+   "titulo": "Debriefing de projeto",
+   "descricao": "Fechamento do projeto: o que deu certo, o que melhorar e próximos passos.",
+   "conteudo": "Cliente: [NOME]   Projeto: [ ]   Período: [DE] a [ATÉ]\n\n1. OBJETIVO COMBINADO\n[O que tínhamos que entregar e alcançar]\n\n2. O QUE FOI ENTREGUE\n- [ ]\n\n3. RESULTADOS (com números)\nAntes: [ ]   Depois: [ ]\n\n4. O QUE FUNCIONOU MELHOR\n- [ ]\n\n5. O QUE PODE MELHORAR (dos dois lados)\n- [ ]\n\n6. APRENDIZADOS PARA OS PRÓXIMOS PROJETOS\n- [ ]\n\n7. PRÓXIMOS PASSOS SUGERIDOS\n- [ ] (aqui mora a renovação ou o próximo projeto)",
+   "etiquetas": [
+    "debriefing",
+    "relatorio",
+    "clientes"
+   ],
+   "checklist": [
+    "Preencher com números reais",
+    "Apresentar ao cliente em call curta",
+    "Pedir depoimento",
+    "Oferecer o próximo passo"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Debriefing de projeto.pdf"
+   ]
+  },
+  {
+   "tipo": "nota",
+   "titulo": "Relatório mensal para o cliente",
+   "descricao": "Uma página: números, destaques e plano do próximo mês.",
+   "conteudo": "RELATÓRIO DE [MÊS/ANO] — [CLIENTE]\n\nNÚMEROS DO MÊS (e a variação sobre o mês anterior)\nSeguidores: [ ] ([+/-]%)\nAlcance: [ ] ([+/-]%)\nInterações: [ ] ([+/-]%)\nCliques no link / mensagens: [ ] ([+/-]%)\nVendas ou pedidos atribuídos (se houver): [ ]\nAnúncios: investido R$ [ ] · resultado [ ] · custo por resultado R$ [ ]\n\nDESTAQUES\n1. Post que mais funcionou: [ ] — por quê: [ ]\n2. Post que menos funcionou: [ ] — o que aprendemos: [ ]\n\nPLANO PARA O PRÓXIMO MÊS\n- [Teste 1]\n- [Teste 2]\n- [O que precisamos do cliente: fotos, depoimentos, promoções…]",
+   "etiquetas": [
+    "relatorio",
+    "social-media",
+    "clientes"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Relatório mensal para o cliente.pdf"
+   ]
+  },
+  {
+   "tipo": "nota",
+   "titulo": "Planejamento de conteúdo do mês",
+   "descricao": "Calendário do mês com equilíbrio entre os 4 tipos de post.",
+   "conteudo": "MÊS: [ ]   CLIENTE: [ ]   VERBA DE ANÚNCIOS: R$ [ ]\n\nEQUILÍBRIO SUGERIDO\n40% Conteúdo (ensina, ajuda, tira dúvida)\n25% Marca (bastidores, história, valores, equipe)\n20% Proximidade (enquete, pergunta, depoimento, humor)\n15% Promocional (oferta, produto, chamada para comprar)\n\nDATAS IMPORTANTES DO MÊS\n- [ ]\n\nSEMANA 1\nSeg: [tipo] — [tema] — [formato: carrossel/vídeo/imagem]\nQua: [ ]\nSex: [ ]\n\nSEMANA 2\nSeg: [ ]\nQua: [ ]\nSex: [ ]\n\nSEMANA 3\nSeg: [ ]\nQua: [ ]\nSex: [ ]\n\nSEMANA 4\nSeg: [ ]\nQua: [ ]\nSex: [ ]\n\nSTATUS: na fila → em produção → aprovado → agendado → postado",
+   "etiquetas": [
+    "conteudo",
+    "planejamento",
+    "social-media"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Planejamento de conteúdo do mês.pdf"
+   ]
+  },
+  {
+   "tipo": "instrucao",
+   "titulo": "Raio-X do negócio",
+   "descricao": "Questionário de diagnóstico para entender um negócio antes de propor algo.",
+   "conteudo": "O NEGÓCIO\n1. Há quanto tempo existe? Como e por que nasceu?\n2. Em 3 adjetivos, como quer ser visto no mercado?\n3. Como chegam os clientes hoje? (indicação, Instagram, Google, anúncios, loja física…)\n4. Como é a venda? 100% online, parte online e parte presencial, só presencial?\n5. Faturamento médio por mês e margem de lucro aproximada:\n6. Quantos clientes a mais dá para atender sem contratar ninguém?\n7. Além do faturamento, que números acompanha? (ticket médio, recompra, cancelamentos…)\n\nCONCORRENTES\n8. Quem são os 5 principais? Como cada um é visto?\n9. Quanto cobram? Que bônus e garantias oferecem?\n10. Por que um cliente escolhe o concorrente em vez de você?\n\nCLIENTES\n11. Quem é o melhor cliente que você já teve? Por que ele é o melhor?\n12. Quais as 3 perguntas que todo cliente faz antes de comprar?\n13. Por que os clientes vão embora?\n\nPRÓXIMOS 12 MESES\n14. Qual a meta principal? Qual o maior obstáculo?\n15. Quanto pode investir por mês em marketing?",
+   "etiquetas": [
+    "diagnostico",
+    "clientes",
+    "estrategia"
+   ],
+   "modelo": true,
+   "arquivos": [
+    "Raio-X do negócio.pdf"
+   ]
+  },
+  {
+   "tipo": "instrucao",
+   "titulo": "Como cobrar: valor da sua hora",
+   "descricao": "Use a calculadora no Financeiro e evite cobrar menos do que custa.",
+   "conteudo": "1. Abra Financeiro → 🧮 Calcular preço.\n2. Coloque quanto você quer tirar por mês (pró-labore), quanto gasta para trabalhar (ferramentas, internet, impostos, equipamentos) e quantas horas trabalha por semana.\n3. O MyLoot calcula o valor da sua hora, já com reserva para férias e imprevistos.\n4. Para orçar um projeto: estime as horas de cada etapa (reunião, criação, ajustes, entrega) e multiplique.\n\nDicas\n- Some 20% de margem para ajustes e conversas que ninguém conta.\n- Preço mensal fechado (pacote) costuma ser melhor que cobrar por hora: venda o resultado, não o tempo.\n- Reajuste uma vez por ano e avise com 30 dias.",
+   "etiquetas": [
+    "preco",
+    "financeiro",
+    "vendas"
+   ],
+   "arquivos": [
+    "Como cobrar valor da sua hora.pdf"
+   ]
+  }
+ ]
+}

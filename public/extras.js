@@ -13,7 +13,7 @@
       <div class="modal-b"><div class="mod-grid">
         <button class="mod" data-m=""><span>📄</span><b>Em branco</b><small>Começar do zero</small></button>
         ${L.map((it) => `<button class="mod" data-m="${it.id}" style="--c:${M.type(it.type).color}"><span>${M.type(it.type).em}</span><b>${esc((it.title || 'Sem título').replace(/^modelo:?\s*/i, ''))}</b><small>${esc(it.desc || M.type(it.type).name)}</small></button>`).join('')}
-      </div><small style="color:var(--faint)">Para criar um modelo, abra um item e ligue “📐 Usar como modelo”.</small></div>`, { small: true });
+      </div><small style="color:var(--faint)">Os modelos são exemplos: adapte para a sua marca (dentro de cada um tem uma dica para fazer isso com IA). Para criar o seu, abra um item e ligue “📐 Usar como modelo”.</small></div>`, { small: true });
     $('#x', m).onclick = M.closeModal;
     m.onclick = (e) => {
       const b = e.target.closest('[data-m]'); if (!b) return;

@@ -146,6 +146,7 @@
             ${its.map((it) => `<div class="rowi" data-it="${it.id}" style="--c:${M.type(it.type).color}"><span class="ic">${M.type(it.type).em}</span><b>${esc(it.title || 'Sem título')}</b><button class="xbtn" data-solta="${it.id}" title="Desligar do cliente">✕</button></div>`).join('') || '<small style="color:var(--faint)">Nenhum item ligado.</small>'}
             <div class="row" style="margin-top:8px;gap:8px"><button class="btn sm" id="cItNovo" style="flex:none">＋ Novo item</button>${M.modelos().length ? '<button class="btn sm ghost" id="cItMod" style="flex:none">📐 Usar modelo</button>' : ''}
               ${soltos.length ? `<select id="cItLiga" style="flex:1;min-width:160px"><option value="">🔗 Ligar item que já existe…</option>${soltos.slice(0, 300).map((i) => `<option value="${i.id}">${M.type(i.type).em} ${esc(i.title || 'Sem título')}</option>`).join('')}</select>` : ''}</div></div>
+          ${M.finDoCliente(c)}
           <div class="row" style="gap:8px"><button class="btn ghost sm" id="cTrello" style="flex:none">📤 Enviar para o Trello</button>${M.hint('Cria um cartão com os contatos, as anotações e as tarefas abertas na lista que você conectou em Configurações → Integrações.')}</div>
         </div>`;
       bind();
@@ -176,6 +177,7 @@
       if ($('#cItMod', m)) $('#cItMod', m).onclick = () => M.novoComModelo({ client: c.id });
       if ($('#cItLiga', m)) $('#cItLiga', m).onchange = (e) => { const it = M.db.items.find((i) => i.id === e.target.value); if (it) { it.client = c.id; it.updated = Date.now(); M.save(); SFX.play('drop'); draw(); } };
       $('#cTrello', m).onclick = () => enviarTrello(c);
+      $('#cFin', m).onclick = () => M.finEditar({ tipo: 'entrada', client: c.id, desc: 'Pagamento ' + (c.nome || ''), cat: 'Serviço / cliente' });
     }
     draw();
     if (!c.nome) $('#cNome', m).focus();

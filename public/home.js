@@ -37,12 +37,14 @@
     const favs = M.db.items.filter((i) => i.fav).sort((a, b) => b.updated - a.updated).slice(0, 5);
     const recent = [...M.db.items].sort((a, b) => b.updated - a.updated).slice(0, 6);
     const sum = late.length || now.length ? `${now.length} tarefa${now.length === 1 ? '' : 's'} para hoje${late.length ? ` · <b style="color:var(--red)">${late.length} atrasada${late.length === 1 ? '' : 's'}</b>` : ''}` : 'Nada marcado para hoje. Dia livre! 🎉';
+    const contas = M.finHoje ? M.finHoje() : [];
+    const sumFin = contas.length ? ` · <a data-go="fin" style="color:var(--amber);cursor:pointer">💰 ${contas.length} conta${contas.length > 1 ? 's' : ''} para hoje ou atrasada${contas.length > 1 ? 's' : ''}</a>` : '';
     const date = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     const modes = [['tarefa', '✅ Tarefa'], ['nota', '📝 Nota'], ['prompt', '✨ Prompt'], ['link', '🔗 Link']];
     const ph = { tarefa: 'Nova tarefa… (termine com “hoje” ou “amanhã”)', nota: 'Anote uma ideia rápida…', prompt: 'Cole um prompt para guardar…', link: 'Cole um link…' };
     v.innerHTML = `<div class="home-wrap"><div class="home">
       <div class="hero wide"><img class="pix" src="/bau.png" alt="">
-        <div class="grow"><h1>${hi}! 👋</h1><p style="text-transform:capitalize">${date}</p><p>${sum}</p>
+        <div class="grow"><h1>${hi}! 👋</h1><p style="text-transform:capitalize">${date}</p><p>${sum}${sumFin}</p>
           <div class="mini" style="margin-top:12px">${s.gamify ? `<div>Nv ${M.levelOf(g.xp)}<small>${esc(M.levelName(M.levelOf(g.xp)))}</small></div><div>🔥 ${$('#hudStreak b').textContent}<small>dias seguidos</small></div>` : ''}<div>${M.db.items.length}<small>itens no loot</small></div><div>${open.length}<small>tarefas abertas</small></div></div>
         </div>
         ${s.gamify ? `<div class="ring" style="--p:${pct}" title="Meta de hoje: ${dayXp} / ${s.dailyGoal} XP"><span>${pct}%<small>META</small></span></div>` : ''}

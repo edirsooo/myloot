@@ -11,7 +11,7 @@
     if (M.modalOpen() && !manual) { setTimeout(() => M.checarAtualizacao(false), 15000); return; }
     const m = M.modal(`<div class="modal-h"><h2>🎁 Saiu o MyLoot ${esc(r.nova)}</h2><button class="icon-btn" id="x">✕</button></div>
       <div class="modal-b"><p style="margin:0;color:var(--dim)">Você está na versão ${esc(r.atual)}. O que tem de novo:</p>
-      <ul style="margin:0;padding-left:20px;display:grid;gap:6px">${r.novidades.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>
+      ${M.listaNovidades(r.novidades)}
       ${r.git ? '<p style="margin:0;color:var(--yellow,#ffbe46)">Esta pasta é uma cópia de desenvolvimento (Git). Atualize com <code>git pull</code>.</p>'
         : '<p style="margin:0;color:var(--dim)">Seus itens, anexos, tarefas e chaves ficam como estão: a atualização só troca os arquivos do app.</p>'}
       <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn ghost" id="dep" style="flex:none">Depois</button>${r.git ? '' : '<button class="btn" id="ok" style="flex:none">⬇️ Atualizar agora</button>'}</div></div>`, { small: true });
@@ -33,6 +33,31 @@
     };
     setTimeout(tenta, 2000);
   }
+
+  // lista de novidades com o emoji em destaque (o versao.json já traz cada linha começando com emoji)
+  M.listaNovidades = (L) => `<div class="novs">${(L || []).map((n) => {
+    const m = String(n).match(/^(\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*)\s*(.*)$/u);
+    return `<div class="nov"><span>${m ? m[1] : '✨'}</span><p>${esc(m ? m[2] : n)}</p></div>`;
+  }).join('')}</div>`;
+
+  // depois de atualizar: mostra uma vez o resumo do que entrou nesta versão
+  M.mostrarNovidades = async () => {
+    let v; try { v = await M.api('/api/versao'); } catch (_) { return; }
+    const s = M.db.settings;
+    if (s.versaoVista === v.versao) return;
+    const jaUsava = s.versaoVista || s.aiSetupDone; // instalação nova não precisa do resumo
+    s.versaoVista = v.versao; M.save();
+    if (!jaUsava || !(v.novidades || []).length) return;
+    const abrir = () => {
+      if (M.modalOpen()) return setTimeout(abrir, 4000);
+      const m = M.modal(`<div class="modal-h"><h2>🎉 MyLoot atualizado: versão ${esc(v.versao)}</h2><button class="icon-btn" id="x">✕</button></div>
+        <div class="modal-b"><p style="margin:0;color:var(--dim)">Olha o que entrou agora:</p>${M.listaNovidades(v.novidades)}
+        <div class="row" style="justify-content:flex-end"><button class="btn" id="ok" style="flex:none">Bora usar! 🚀</button></div></div>`, { small: true });
+      SFX.play('ach'); FX.burst(null, null, 60, 9);
+      $('#x', m).onclick = M.closeModal; $('#ok', m).onclick = M.closeModal;
+    };
+    setTimeout(abrir, 900);
+  };
 
   M.versaoSection = () => `<section class="stat"><div class="cfg-h">Versão</div>
     <div class="cfg-row"><span class="l">MyLoot <span id="verAtual" style="font:700 12px var(--mono)">…</span> ${M.hint('O app olha o GitHub quando abre e avisa quando sai versão nova. A atualização troca só os arquivos do app: seus itens, anexos e chaves (pasta data) ficam como estão.')}</span><button class="btn ghost sm" id="verChk" style="flex:none">🔎 Procurar atualização</button></div></section>`;

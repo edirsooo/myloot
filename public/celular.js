@@ -110,11 +110,4 @@
     desenha();
   };
 
-  // ----- Configurações → Salvar da web (botão para a barra de favoritos) -----
-  M.webSection = () => {
-    const js = `javascript:(()=>{const s=getSelection().toString();open('${location.origin}/?salvar=1&url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title)+'&text='+encodeURIComponent(s),'_blank')})()`;
-    return `<section class="stat"><div class="cfg-h">📥 Salvar da web</div>
-      <div class="cfg-row"><span class="l">Botão "Salvar no MyLoot" ${M.hint('Arraste o botão laranja para a barra de favoritos do navegador. Em qualquer site, clique nele: o link (e o texto que você selecionou) vira um item.')}</span><a class="btn sm" href="${esc(js)}" onclick="event.preventDefault();M.toast('Arraste este botão para a barra de favoritos 👆')" style="flex:none;text-decoration:none">📥 Salvar no MyLoot</a></div>
-      <small style="color:var(--dim);display:block;margin-top:6px">No celular: copie o link (Instagram: ⋯ → Copiar link) e cole na caixa do Início, ou em ＋ Novo → Link.</small></section>`;
-  };
 })();

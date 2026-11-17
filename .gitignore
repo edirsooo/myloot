@@ -4,3 +4,6 @@ data/
 *.tmp
 .claude/
 __pycache__/
+
+# propostas e rascunhos internos
+_propostas/

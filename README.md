@@ -2,7 +2,7 @@
 
 # MyLoot
 
-**Seu inventário pessoal.** Um app que roda no seu próprio computador para guardar e achar rápido PDFs, prompts, comandos, links, notas, tarefas e clientes — com cara de joguinho: XP, níveis, missões, sons e confete.
+**Seu inventário pessoal.** Um app que roda no seu próprio computador para guardar e achar rápido PDFs, prompts, comandos, links, notas, tarefas, clientes e o seu financeiro — com cara de joguinho: XP, níveis, missões, sons e confete.
 
 Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona no **Windows, Mac e Linux**, e dá para usar **no celular** pela rede de casa.
 
@@ -14,6 +14,16 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.4
+
+| No celular, por QR Code | Clientes |
+|---|---|
+| ![Usar no celular](docs/img/novidades/02-celular-qr-code.png) | ![Clientes](docs/img/novidades/03-clientes.png) |
+
+| Financeiro | Kit do negócio |
+|---|---|
+| ![Financeiro](docs/img/novidades/06-financeiro.png) | ![Kit do negócio](docs/img/novidades/08-kit-do-negocio.png) |
+
 ## O que tem dentro
 
 - **Mapa de conexões** na tela inicial, no estilo do Obsidian: cada item vira uma bolinha colorida pelo tipo e se liga sozinho a outros por etiquetas, categoria e menções (`[[Título]]`). Passe o mouse para ver as ligações, clique para abrir e amplie em tela cheia.
@@ -23,9 +33,11 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 - **Anexos:** arraste um arquivo para a janela e ele vira um item. Dá para pré-visualizar e abrir no programa do computador.
 - **Clientes (mini CRM):** contato, WhatsApp, e-mail, Instagram, status do funil (prospect, ativo, pausado, encerrado), link do quadro do Trello e a pasta do cliente com um clique. As tarefas e os itens de cada cliente ficam juntos na ficha dele. Ótimo para social media e freelancer.
 - **No celular:** ligue "Usar no celular" nas Configurações, aponte a câmera para o QR Code e pronto. Protegido por um código, só na sua rede. Dá para adicionar à tela inicial como um app.
+- **Financeiro:** fluxo de caixa do mês com entradas e saídas, o que já foi pago/recebido e o que falta, contas que repetem todo mês, parcelas, pagamentos por cliente, gráfico dos últimos 6 meses, calculadora de valor da hora e planilha em CSV. O computador avisa das contas do dia.
+- **Kit do negócio e Kit de lançamento:** 23 materiais prontos, cada um com texto editável e um PDF: briefings (social media, posts, identidade visual, site), contratos, proposta comercial, roteiro de call de vendas, mensagens de WhatsApp, onboarding, debriefing, relatório mensal, planejamento de conteúdo, avatar, objeções, oferta, cronograma e roteiro de lançamento. São **exemplos de referência** (os PDFs levam a identidade da Prestes Design): adapte para a sua marca, e cada material traz uma dica de como fazer isso com IA.
+- **Tutorial guiado:** na primeira vez em cada tela, o MyLoot destaca os pontos principais passo a passo. Dá para pular e rever depois nas Configurações.
 - **Modelos:** briefing de cliente, roteiro de Reels, checklist de post e reunião. Qualquer item pode virar modelo.
 - **Instruções prontas:** prompts para o Claude Code ou o Codex organizarem seus arquivos (Downloads, fotos, repetidos, área de trabalho, pastas de clientes), sempre mostrando o plano antes e sem apagar nada.
-- **Salvar da web:** um botão na barra de favoritos manda qualquer site (e o texto selecionado) para o MyLoot.
 - **Leitor em blocos:** arquivos `.md` e `.txt` abrem formatados em cartões fáceis de ler, com botão de copiar nos trechos de código.
 - **Tarefas e calendário:** escreva "pagar conta amanhã" e a data entra sozinha. Tarefas podem **repetir** (todo dia, dias úteis, semana, mês) e ter **lembrete com horário**, que avisa no computador mesmo com o navegador fechado.
 - **Modo foco:** timer que continua contando com o navegador fechado e avisa na área de trabalho.
@@ -98,7 +110,7 @@ O computador precisa estar ligado com o MyLoot aberto. No Windows, se aparecer o
 |---|---|
 | `Ctrl+K` ou `/` | Buscar em tudo ou dar um comando |
 | `N` | Novo item |
-| `H` `B` `T` `C` `L` | Início, Biblioteca, Tarefas, Calendário, Clientes |
+| `H` `B` `T` `C` `L` `M` | Início, Biblioteca, Tarefas, Calendário, Clientes, Financeiro |
 | `F` | Começar ou parar o foco |
 | Clique direito no cartão (no celular: segurar o dedo) | Abrir, copiar, favoritar, enviar ao Notion/Trello, mover, duplicar, lixeira |
 

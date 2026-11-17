@@ -53,13 +53,18 @@
     const R = (n) => 5 + Math.sqrt(n.deg) * 2.4;
     let W = 0, H = 0, dpr = 1, cam = { x: 0, y: 0, k: 1 }, hover = null, drag = null, pan = null, alpha = 1, raf = 0, fitted = false;
     // posição inicial em espiral
-    nodes.forEach((n, i) => { const a = i * 2.4, r = 14 * Math.sqrt(i + 1); n.x = Math.cos(a) * r; n.y = Math.sin(a) * r; n.vx = n.vy = 0; });
+    const mem = M._gpos || (M._gpos = {});
+    let lembrados = 0;
+    nodes.forEach((n, i) => { const o = mem[n.id]; if (o) { n.x = o.x; n.y = o.y; lembrados++; } else { const a = i * 2.4, r = 14 * Math.sqrt(i + 1); n.x = Math.cos(a) * r; n.y = Math.sin(a) * r; } n.vx = n.vy = 0; });
+    if (nodes.length && lembrados >= nodes.length * 0.8) alpha = 0.12; // já estava arrumado: só um ajuste fino
+    const guardar = () => { nodes.forEach((n) => { mem[n.id] = { x: n.x, y: n.y }; }); };
+    let sujo = true; // só redesenha quando algo mudou (economiza processador com o mapa parado)
 
     const resize = () => {
       const b = host.getBoundingClientRect(); dpr = devicePixelRatio || 1;
       W = b.width; H = b.height; cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
-      if (!fitted) { cam.x = W / 2; cam.y = H / 2; }
-      kick(0.3);
+      if (!fitted) { cam.x = W / 2; cam.y = H / 2; if (lembrados && W > 20) { fit(); fitted = 2; } }
+      kick(lembrados ? 0.05 : 0.3); sujo = true;
     };
     const ro = new ResizeObserver(resize); ro.observe(host);
 
@@ -115,9 +120,10 @@
     }
 
     function loop() {
-      if (!host.isConnected) { ro.disconnect(); return; }
-      if (alpha > 0.02 || drag) { for (let i = 0; i < 2; i++) step(); if (!fitted && alpha < 0.35) { fit(); fitted = 1; } if (fitted === 1 && alpha < 0.03) { fit(); fitted = 2; } }
-      draw(); raf = requestAnimationFrame(loop);
+      if (!host.isConnected) { ro.disconnect(); guardar(); return; }
+      if (alpha > 0.02 || drag) { for (let i = 0; i < 2; i++) step(); if (!fitted && alpha < 0.35) { fit(); fitted = 1; } if (fitted === 1 && alpha < 0.03) { fit(); fitted = 2; guardar(); } sujo = true; }
+      if (sujo) { draw(); sujo = false; }
+      raf = requestAnimationFrame(loop);
     }
     function kick(a) { alpha = Math.max(alpha, a); }
 
@@ -142,26 +148,27 @@
       if (n) { drag = n; kick(0.3); } else pan = { x: e.clientX - cam.x, y: e.clientY - cam.y };
     };
     cv.onpointermove = (e) => {
+      sujo = true;
       const p = toWorld(e);
       if (drag) { drag.x = p.x; drag.y = p.y; drag.vx = drag.vy = 0; moved = true; kick(0.2); return; }
       if (pan) { cam.x = e.clientX - pan.x; cam.y = e.clientY - pan.y; moved = true; return; }
       const n = pick(p); hover = n; cv.style.cursor = n ? 'pointer' : 'grab'; showTip(n, p);
     };
     cv.onpointerup = (e) => {
-      const n = drag; drag = null; pan = null;
+      const n = drag; drag = null; pan = null; sujo = true; guardar();
       if (n && !moved) { SFX.play('click'); if (opt.onOpen) opt.onOpen(); M.openItem(n.id); }
     };
-    cv.onpointerleave = () => { if (!drag) { hover = null; tip.hidden = true; } };
+    cv.onpointerleave = () => { if (!drag) { hover = null; tip.hidden = true; sujo = true; } };
     cv.onwheel = (e) => {
-      e.preventDefault();
+      e.preventDefault(); sujo = true;
       const b = cv.getBoundingClientRect(), sx = e.clientX - b.left, sy = e.clientY - b.top;
       const k = Math.min(5, Math.max(0.2, cam.k * (e.deltaY < 0 ? 1.12 : 0.89)));
       cam.x = sx - ((sx - cam.x) / cam.k) * k; cam.y = sy - ((sy - cam.y) / cam.k) * k; cam.k = k;
     };
-    cv.ondblclick = (e) => { if (!pick(toWorld(e))) fit(); };
+    cv.ondblclick = (e) => { if (!pick(toWorld(e))) { fit(); sujo = true; } };
 
     resize(); loop();
-    const api = { nodes, edges, fit, toScreen: (n) => ({ x: cam.x + n.x * cam.k, y: cam.y + n.y * cam.k }) };
+    const api = { nodes, edges, fit: () => { fit(); sujo = true; }, toScreen: (n) => ({ x: cam.x + n.x * cam.k, y: cam.y + n.y * cam.k }) };
     host._g = api; // usado pelas capturas de tela do vídeo
     return api;
   };
