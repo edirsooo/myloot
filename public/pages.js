@@ -66,7 +66,6 @@
       <section class="stat"><div class="cfg-h">🎮 Diversão</div>
         <div class="cfg-row"><span class="l">Pontos e níveis ${M.hint('Desligando, somem o XP, a meta, a sequência e o level up. Suas conquistas ficam guardadas.')}</span>${M.sw('cGame', s.gamify)}</div>
         <div class="cfg-row"><span class="l">Sons de jogo ${M.hint('Sons curtinhos feitos no próprio navegador.')}</span>${M.sw('cSnd', s.sounds)}</div>
-        <div class="cfg-row"><span class="l">Volume da música de fundo ${M.hint('A música liga e desliga no botão 🔈 do topo. As faixas ficam na pasta public/musica do MyLoot.')}</span><input type="range" id="cMusV" min="0.05" max="1" step="0.05" value="${s.musicaVol || 0.25}" style="max-width:160px"></div>
         <div class="cfg-row"><span class="l">Confete ${M.hint('Explosão de quadradinhos ao subir de nível ou concluir algo.')}</span>${M.sw('cConf', s.confetti)}</div>
         <div class="cfg-row"><span class="l">Meta do dia (XP) ${M.hint('Quantos pontos você quer fazer por dia.')}</span><input type="number" id="cGoal" min="10" max="500" step="10" value="${s.dailyGoal}" style="width:90px"></div>
       </section>
@@ -99,8 +98,6 @@
     $('#cCompact').onchange = (e) => { set('compact', e.target.checked); SFX.play('click'); };
     $('#cGame').onchange = (e) => { set('gamify', e.target.checked); M.renderHud(); SFX.play('click'); };
     $('#cSnd').onchange = (e) => { set('sounds', e.target.checked); SFX.play('coin'); };
-    $('#cMusV').oninput = (e) => { if (M.musica) M.musica.volume(+e.target.value); };
-    $('#cMusV').onchange = (e) => set('musicaVol', +e.target.value);
     $('#cConf').onchange = (e) => { set('confetti', e.target.checked); FX.burst(null, null, 30); };
     $('#cGoal').onchange = (e) => { set('dailyGoal', Math.max(10, Math.min(500, +e.target.value || 50))); M.renderHud(); };
 
@@ -113,14 +110,33 @@
     M.suporteBind();
     M.cnxBind();
 
-    // menu das seções (à esquerda no computador, em cima no celular): um clique leva até o cartão
+    // menu das seções, no jeito do Canva e da Hostinger: grupos à esquerda (em cima no celular) e uma seção por vez à direita
+    const GRUPOS = [['Geral', /Aparência|Diversão|Categorias|Tutorial|Atalhos/], ['Conectar', /celular|IA \(|Notion|Conexões|Drive/], ['Sistema', /backup|Versão|Ajuda|Servidor/]];
+    const DESC = { 'Aparência': 'Tema, tamanho das letras e modo compacto.', 'Diversão': 'Pontos, níveis, sons, confete e a meta do dia.', 'Categorias': 'Crie, renomeie e pinte as categorias da Biblioteca.',
+      'Tutorial': 'Reveja a explicação de cada tela.', 'Atalhos do teclado': 'Teclas para ir mais rápido.', 'Usar no celular': 'Abra o MyLoot no celular pela rede Wi-Fi de casa.',
+      'IA (Claude e Codex)': 'Escolha a IA que melhora, corrige e resume seus textos.', 'Notion e Trello': 'Mande itens para o Notion e para o Trello com um clique.',
+      'Conexões': 'Deixe outros programas do computador mandarem itens ao MyLoot.', 'Google Drive': 'Copie tudo para a sua pasta do Drive.',
+      'Dados e backup': 'Baixe, restaure e exporte tudo o que você guardou.', 'Versão': 'Veja a versão e procure atualização.', 'Ajuda e problemas': 'Relate um problema ou peça ajuda.', 'Servidor': 'Onde o MyLoot está rodando neste computador.' };
     const secs = $$('#cfgCols section.stat').filter((x) => x.offsetParent !== null);
-    $('#cfgMenu').innerHTML = secs.map((x, i) => { if (!x.id) x.id = 'cfgS' + i; const h = x.querySelector('.cfg-h'); return `<button data-s="${x.id}">${esc(((h && h.firstChild && h.firstChild.textContent) || '').trim())}</button>`; }).join('');
-    $('#cfgMenu').onclick = (e) => {
-      const b = e.target.closest('[data-s]'); if (!b) return;
-      const x = document.getElementById(b.dataset.s); if (!x) return;
-      x.scrollIntoView({ block: 'center', behavior: 'smooth' }); x.classList.remove('pisca'); void x.offsetWidth; x.classList.add('pisca'); SFX.play('click');
+    const nomeSec = (x) => { const h = x.querySelector('.cfg-h'); return ((h && h.firstChild && h.firstChild.textContent) || '').trim(); };
+    const semEmoji = (s) => s.replace(/^[^\p{L}]+/u, '').trim();
+    secs.forEach((x, i) => { if (!x.id) x.id = 'cfgS' + i; });
+    const grupoDe = (x) => (GRUPOS.find(([, re]) => re.test(nomeSec(x))) || ['Mais'])[0];
+    const ordem = [...GRUPOS.map((g) => g[0]), 'Mais'];
+    $('#cfgMenu').innerHTML = ordem.map((g) => { const L = secs.filter((x) => grupoDe(x) === g); return L.length ? `<div class="cfg-gt">${g}</div>` + L.map((x) => `<button data-s="${x.id}">${esc(nomeSec(x))}</button>`).join('') : ''; }).join('');
+    $('#cfgCols').classList.add('uma');
+    const topo = document.createElement('div'); topo.className = 'cfg-topo'; $('#cfgCols').prepend(topo);
+    const mostra = (id, som) => {
+      const x = secs.find((s) => s.id === id) || secs[0]; if (!x) return;
+      M.ui.cfgSec = nomeSec(x);
+      secs.forEach((s) => { s.style.display = s === x ? '' : 'none'; });
+      $$('#cfgMenu [data-s]').forEach((b) => b.classList.toggle('on', b.dataset.s === x.id));
+      const n = semEmoji(nomeSec(x));
+      topo.innerHTML = `<h2>${esc(nomeSec(x))}</h2>${DESC[n] ? `<p>${esc(DESC[n])}</p>` : ''}`;
+      if (som) SFX.play('click');
     };
+    mostra((secs.find((s) => nomeSec(s) === M.ui.cfgSec) || secs[0] || {}).id);
+    $('#cfgMenu').onclick = (e) => { const b = e.target.closest('[data-s]'); if (b) mostra(b.dataset.s, true); };
 
     function drawCats() {
       $('#cCats').innerHTML = M.db.categories.map((c) => `<div class="catrow" data-id="${c.id}"><input type="text" class="ico" value="${esc(c.icon)}" maxlength="4"><input type="text" class="nm" value="${esc(c.name)}"><input type="color" value="${c.color}"><button class="xbtn" title="Apagar categoria">✕</button></div>`).join('') || '<small style="color:var(--faint)">Nenhuma categoria ainda.</small>';

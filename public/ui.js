@@ -83,14 +83,31 @@
     document.body.classList.remove('menu'); // no celular o menu lateral fica por cima das janelas: fecha antes de abrir qualquer uma
     ov.innerHTML = `<div class="modal ${opt.small ? 'sm' : ''}">${html}</div>`;
     ov.classList.add('on');
-    ov.onmousedown = (e) => { if (e.target === ov) M.closeModal(); };
+    ov.onmousedown = (e) => { if (e.target === ov) M.fecharPeloUsuario(); };
     onClose = opt.onClose || null;
+    sujo = false;
     return ov.firstElementChild;
   };
+  // ----- não perder o que foi digitado -----
+  // Fichas de item e de cliente guardam rascunho sozinhas. As janelas pequenas com botão de salvar (tarefa, lançamento, hábito, meta)
+  // não têm rascunho: se a pessoa mudou algo e tenta sair pelo ✕, Esc ou clicando fora, a janela pergunta antes de fechar.
+  let sujo = false;
+  const temSalvar = (m) => !m.querySelector('#eX,#cX') && [...m.querySelectorAll('button')].some((b) => /Salvar|Lançar|Adicionar/.test(b.textContent));
+  const marca = (e) => { const m = e.target.closest && e.target.closest('#overlay.on .modal'); if (m && e.target.matches('input,textarea,select') && e.target.type !== 'search' && temSalvar(m)) sujo = true; };
+  document.addEventListener('input', marca, true); document.addEventListener('change', marca, true);
+  const avisaSujo = (m) => {
+    if (m.querySelector('.sair-aviso')) return M.falta(m.querySelector('.sair-aviso'), '✍️ Salve ou escolha “Sair sem salvar”');
+    const d = document.createElement('div'); d.className = 'sair-aviso';
+    d.innerHTML = '<span>✍️ Você mudou algo aqui e ainda não salvou.</span><span class="sa-b"><button type="button" class="btn ghost sm" data-sa="fica">Continuar editando</button><button type="button" class="btn danger sm" data-sa="sai">Sair sem salvar</button></span>';
+    m.prepend(d); d.scrollIntoView({ block: 'nearest' });
+    d.onclick = (e) => { const a = e.target.dataset.sa; if (a === 'fica') d.remove(); if (a === 'sai') { sujo = false; const x = m.querySelector('.modal-h #x'); if (x) x.click(); else M.closeModal(); } };
+  };
+  M.fecharPeloUsuario = () => { const m = $('#overlay.on .modal'); if (m && sujo && temSalvar(m)) return avisaSujo(m); const x = m && m.querySelector('.modal-h #x,.modal-h #eX,.modal-h #cX'); if (x) x.click(); else M.closeModal(); };
+  document.addEventListener('click', (e) => { const x = e.target.closest && e.target.closest('#overlay.on .modal-h #x'); if (!x || !sujo) return; const m = x.closest('.modal'); if (!temSalvar(m)) return; e.stopPropagation(); e.preventDefault(); avisaSujo(m); }, true);
   M.closeModal = () => {
     const ov = $('#overlay');
     if (!ov.classList.contains('on')) return;
-    ov.classList.remove('on'); ov.innerHTML = '';
+    ov.classList.remove('on'); ov.innerHTML = ''; sujo = false;
     const f = onClose; onClose = null;
     if (f) f();
     // janela aberta de dentro da ficha de um cliente (tarefa, lançamento, modelos, confirmação): ao fechar de qualquer jeito

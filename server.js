@@ -35,7 +35,7 @@ const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(3
 function defaults() {
   return {
     version: DB_VERSION,
-    settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, musica: false, musicaVol: 0.25, confetti: true, gamify: true, dailyGoal: 50,
+    settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, musica: false, musicaVol: 0.2, confetti: true, gamify: true, dailyGoal: 50,
       view: 'grid', boardBy: 'status', aiModel: 'claude-opus-5-5', drive: { on: false, path: '' } },
     categories: [], items: [], tasks: [], trash: [], clients: [], fin: [], habits: [], goals: [],
     game: { xp: 0, log: {}, streak: { last: '', count: 0 }, achievements: {}, counters: {}, goalDays: 0 },

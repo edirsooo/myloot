@@ -14,6 +14,12 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.11
+- **Player de música:** clicar (ou passar o mouse) no 🔈 do topo abre um pop-up com tocar/pausar, faixa anterior e próxima e o volume, que começa em 20%.
+- **Configurações em seções:** menu agrupado em Geral, Conectar e Sistema; a tela mostra uma seção por vez, com título e explicação.
+- **Menu lateral em grupos:** Organização, Gestão, Extras e Sistema, sem barra de rolagem (ele encolhe em telas baixas).
+- **Sem perder o que digitou:** nas janelas de tarefa, lançamento, hábito e meta, sair pelo ✕, Esc ou clicando fora depois de mudar algo mostra “Continuar editando” ou “Sair sem salvar”. Itens e clientes continuam com rascunho automático.
+
 ## Novidades da versão 2.10
 - **Mais fácil saber onde clicar:** as abas da Biblioteca (Tipo), dos Clientes (Status) e das Ferramentas (Grupo) têm rótulo e sublinhado; cada cartão mostra “Abrir →” e cada cliente “Abrir ficha →”. A Biblioteca ganhou uma frase dizendo para que serve, e a troca Grade/Lista/Tabela/Quadro fica separada dos filtros.
 - **Tarefas:** título em cima, data e prioridade embaixo, ✕ na mesma linha; as colunas Atrasadas, Hoje e Próximas têm cor e contador. Em **Repetir** dá para escolher os dias da semana (ex.: seg, qua e sex).

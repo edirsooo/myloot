@@ -527,3 +527,93 @@ a.btn{text-decoration:none}
 
 .rep-dias{margin-top:10px}
 .rep-dias[hidden]{display:none}
+
+/* player da música de fundo: pop-up leve abaixo do 🔈 */
+.mus{position:relative;display:flex}
+.mus-pop{position:absolute;top:calc(100% + 10px);right:-40px;z-index:60;width:248px;padding:12px 14px 12px;border-radius:14px;background:color-mix(in srgb,var(--panel) 92%,transparent);border:1px solid var(--edge2);box-shadow:0 14px 34px #0008;backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:8px;animation:musIn .14s ease-out}
+.mus-pop[hidden]{display:none}
+.mus-pop::before{content:'';position:absolute;top:-6px;right:58px;width:10px;height:10px;transform:rotate(45deg);background:inherit;border-left:1px solid var(--edge2);border-top:1px solid var(--edge2)}
+@keyframes musIn{from{opacity:0;transform:translateY(-4px)}}
+.mus-topo{display:flex;justify-content:space-between;align-items:center;font:700 10.5px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+.mus-nome{font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mus-ctl{display:flex;justify-content:center;align-items:center;gap:10px}
+.mus-ctl button{width:36px;height:36px;border-radius:50%;border:1px solid var(--edge2);background:var(--bg2);color:var(--text);cursor:pointer;font-size:14px;display:grid;place-items:center;transition:transform .08s,border-color .1s}
+.mus-ctl button:hover{border-color:var(--accent);transform:translateY(-1px)}
+.mus-ctl button.play{width:44px;height:44px;background:var(--accent);border-color:var(--accent);color:#1a0d00;font-size:16px}
+.mus-vol{display:flex;align-items:center;gap:8px;font-size:13px}
+.mus-vol input{flex:1;accent-color:var(--accent);min-height:0}
+.mus-vol b{font:700 11px var(--mono);color:var(--dim);min-width:34px;text-align:right}
+@media (max-width:560px){.mus-pop{position:fixed;top:64px;right:10px;left:auto}.mus-pop::before{display:none}}
+/* Configurações mais leves: tudo continua à vista, com menos bordas, sombras e peso */
+.cfg-menu{background:none;border:0;box-shadow:none;padding:4px 0}
+.cfg-menu button{font-weight:500;padding:6px 10px;border-left:2px solid transparent;border-radius:0 8px 8px 0}
+.cfg-menu button:hover{border-left-color:var(--accent)}
+.cfg-cols section.stat{background:color-mix(in srgb,var(--panel) 70%,transparent);border:1px solid var(--edge);box-shadow:none;border-radius:14px;padding:14px 16px}
+.cfg-cols .cfg-h{color:var(--dim);font-size:11.5px;letter-spacing:.06em;margin-bottom:8px}
+.cfg-cols .cfg-row{padding:9px 0;border-bottom-color:color-mix(in srgb,var(--edge) 55%,transparent)}
+.cfg-cols .cfg-row .l{font-weight:500;color:var(--text)}
+.cfg-cols .btn{min-height:var(--ctl-sm);box-shadow:none;font-weight:600;font-size:13px}
+.cfg-cols .btn:not(.ghost):not(.danger){background:color-mix(in srgb,var(--accent) 16%,var(--panel));color:var(--text);border:1px solid color-mix(in srgb,var(--accent) 55%,transparent)}
+.cfg-cols .btn.ghost{border-width:1px}
+.cfg-cols .sw .t{width:38px;height:22px;border-width:1px;border-radius:99px}
+.cfg-cols .sw .t::after{width:16px;height:16px;top:2px;left:2px;border-radius:50%}
+.cfg-cols .sw input:checked+.t::after{left:18px}
+.cfg-cols input[type=text],.cfg-cols input[type=number],.cfg-cols input[type=password],.cfg-cols select{border-width:1px;background:color-mix(in srgb,var(--bg2) 80%,transparent)}
+
+/* Configurações em uma seção por vez (menu agrupado à esquerda, como Canva e Hostinger) */
+.cfg-wrap{grid-template-columns:220px minmax(0,1fr)}
+.cfg-gt{font:700 10.5px var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--faint);padding:12px 10px 4px}
+.cfg-gt:first-child{padding-top:4px}
+.cfg-menu button.on{background:var(--accent-soft);color:var(--text);border-left-color:var(--accent);font-weight:600}
+.cfg-cols.uma{columns:auto;max-width:760px}
+.cfg-cols.uma section.stat{margin:0;padding:18px 20px}
+.cfg-cols.uma section.stat>.cfg-h:first-child{display:none}
+.cfg-topo{margin:2px 0 14px}
+.cfg-topo h2{margin:0;font-size:22px}
+.cfg-topo p{margin:4px 0 0;color:var(--dim);font-size:13.5px}
+@media (max-width:900px){.cfg-gt{display:none}.cfg-menu button{border-left:0;border-radius:99px;border:1px solid var(--edge)}.cfg-menu button.on{border-color:var(--accent)}}
+
+.mus-pop::after{content:"";position:absolute;left:0;right:0;top:-12px;height:12px}
+
+/* o topo (e o pop-up da música) fica por cima de tudo da tela; só modais e avisos passam na frente */
+#hud{position:relative;z-index:90}
+.mus-pop{background:var(--panel);z-index:95}
+
+/* menu lateral em grupos (Organização, Gestão, Extras, Sistema) */
+.nav-g{font:700 10.5px var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--faint);padding:10px 12px 2px}
+#nav{gap:2px}
+#nav .nav-i{padding-top:7px;padding-bottom:7px}
+
+/* aviso antes de sair de uma janela com mudanças não salvas */
+.sair-aviso{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px;background:color-mix(in srgb,var(--amber,#ffb020) 16%,var(--panel));border-bottom:1px solid var(--edge2);font-weight:600;font-size:13.5px}
+.sair-aviso .sa-b{display:flex;gap:8px}
+
+@media (max-width:700px){.cfg-cols .cfg-row{flex-wrap:wrap}.cfg-cols .seg{max-width:100%;flex-wrap:wrap}.cfg-cols.uma section.stat{padding:14px}}
+
+@media (max-width:900px){.cfg-wrap{grid-template-columns:minmax(0,1fr)}.cfg-cols.uma{max-width:100%}.cfg-menu{gap:6px}}
+/* menu lateral sem rolagem: mais justo, e encolhe em telas baixas */
+@media (min-width:901px){
+  #side{gap:8px;padding:12px 12px 10px}
+  #nav{overflow:hidden;gap:1px;padding:0 2px}
+  #nav .nav-i{padding:6px 12px;font-size:14px}
+  .nav-i .em{font-size:16px}
+  .nav-g{padding:8px 12px 1px}
+  .side-foot{gap:6px}
+  .side-foot .btn{min-height:36px;padding-top:5px;padding-bottom:5px}
+  .side-foot .btn.big{min-height:40px}
+}
+@media (min-width:901px) and (max-height:800px){
+  #nav .nav-i{padding:4px 12px;font-size:13.5px}
+  .nav-g{padding:5px 12px 0;font-size:10px}
+  .brand .cube{transform:rotateX(-24deg) rotateY(35deg) scale(.8);margin:0 6px 0 2px}
+  .side-foot .btn{min-height:32px;font-size:13px}
+  .side-foot .btn.big{min-height:36px}
+  .side-bug,.credit{font-size:11px}
+}
+@media (min-width:901px) and (max-height:680px){
+  #nav .nav-i{padding:2px 12px;font-size:13px}
+  .nav-g{padding:3px 12px 0}
+  .brand small,.credit{display:none}
+}
+
+@media (min-width:901px) and (max-height:680px){.side-foot .side-bug{display:none}#nav .nav-i{padding:1px 12px}.side-foot .btn,.side-foot .btn.big{min-height:30px}}
