@@ -39,6 +39,7 @@
   $('#btnSearch').onclick = M.openSearch;
   $('#btnVoz').onclick = () => M.voz();
   $('#btnBug').onclick = () => M.reportar();
+  $('#btnUpd').onclick = () => { document.body.classList.remove('menu'); M.checarAtualizacao(true); };
   $('#menuBtn').onclick = () => document.body.classList.toggle('menu');
   $('#main').addEventListener('click', () => document.body.classList.remove('menu'));
 

@@ -214,3 +214,9 @@ body.remoto .so-pc,body.remoto [data-a=open],body.remoto [data-a=show],body.remo
 .tour-btn{flex:none;font-size:16px;width:32px;height:32px;opacity:.9}
 .tour-btn:hover{opacity:1}
 .tour-btn[hidden]{display:none}
+
+/* selo de versão nova no menu */
+.side-upd{background:var(--accent-soft);border:2px solid var(--accent);color:var(--text);font:700 12.5px var(--f);border-radius:10px;padding:7px 8px;cursor:pointer;animation:updPisca 2.4s ease-in-out infinite}
+.side-upd:hover{background:var(--accent);color:var(--on-accent)}
+.side-upd[hidden]{display:none}
+@keyframes updPisca{50%{box-shadow:0 0 0 4px var(--accent-soft)}}

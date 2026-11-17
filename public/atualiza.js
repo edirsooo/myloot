@@ -2,10 +2,21 @@
 (function () {
   const { esc, $ } = M;
 
+  // o app procura versão nova ao abrir e, com a aba aberta, de hora em hora (e quando a pessoa volta para a aba)
+  let ultimaChecagem = 0;
+  const HORA = 3600e3;
+  const horaDeOlhar = () => !M.remoto && M.db && !document.hidden && ultimaChecagem && Date.now() - ultimaChecagem > HORA;
+  setInterval(() => { if (horaDeOlhar()) M.checarAtualizacao(false); }, 5 * 60e3);
+  document.addEventListener('visibilitychange', () => { if (horaDeOlhar()) M.checarAtualizacao(false); });
+
   M.checarAtualizacao = async (manual) => {
     let r;
+    ultimaChecagem = Date.now();
     try { r = await M.api('/api/atualizacao' + (manual ? '?forcar=1' : '')); } catch (e) { if (manual) M.toast('⚠️ ' + e.message); return; }
     if (r.erro) { if (manual) M.toast('⚠️ Não consegui olhar o GitHub: ' + r.erro); return; }
+    // selo no menu: fica aparecendo enquanto houver versão nova, mesmo para quem clicou em "Depois"
+    const selo = $('#btnUpd');
+    if (selo) { selo.hidden = !r.temNova; if (r.temNova) selo.textContent = '🎁 Saiu a versão ' + r.nova; }
     if (!r.temNova) { if (manual) { SFX.play('coin'); M.toast(`✅ Você já está na versão mais nova (${r.atual}).`); } return; }
     if (!manual && M.db.settings.updPulada === r.nova) return;
     const nums = (x) => String(x || '0').split('.').map((n) => parseInt(n, 10) || 0);

@@ -30,7 +30,7 @@ function local(ROOT) { try { return JSON.parse(fs.readFileSync(path.join(ROOT, '
 
 let cache = null;
 async function checar(ROOT, forcar) {
-  if (cache && !forcar && Date.now() - cache.em < 6 * 3600e3) return cache.r;
+  if (cache && !forcar && Date.now() - cache.em < 50 * 60e3) return cache.r; // guarda a resposta por 50 min (o app pergunta de hora em hora)
   const loc = local(ROOT);
   let rem;
   try { rem = JSON.parse((await baixar(URL_VERSAO + '?t=' + Date.now())).replace(/^\uFEFF/, '')); } catch (e) { return { atual: loc.versao, erro: e.message }; }
