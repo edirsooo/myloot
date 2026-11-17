@@ -84,6 +84,7 @@
     }
     let st; try { st = await M.api('/api/rede'); } catch (e) { box.textContent = e.message; return; }
     const desenha = () => {
+      if (!box.isConnected) return; // a pessoa já saiu desta tela
       box.innerHTML = `<div class="cfg-row"><span class="l">Liberar na rede Wi-Fi de casa ${M.hint('O celular precisa estar no mesmo Wi-Fi que este computador, e o MyLoot precisa estar aberto aqui. Quem não tiver o código não entra.')}</span>${M.sw('celOn', st.on)}</div>
       ${st.on ? (st.ips.length ? `<div class="cel">
           <div class="cel-qr">${M.qrSvg(st.link, 200)}</div>

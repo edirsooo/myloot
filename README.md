@@ -14,6 +14,10 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.12
+- **Tutoriais em vídeo:** em Configurações → Tutorial há 5 vídeos de 30 a 40 segundos: MyLoot no celular em casa, fora de casa com o Tailscale, backup, IA e contas fixas e parcelas. No celular eles abrem na versão vertical.
+- **iPhone:** o topo respeita a área do relógio e da ilha, e o app ocupa a altura toda quando aberto pela tela inicial.
+
 ## Novidades da versão 2.11
 - **Player de música:** clicar (ou passar o mouse) no 🔈 do topo abre um pop-up com tocar/pausar, faixa anterior e próxima e o volume, que começa em 20%.
 - **Configurações em seções:** menu agrupado em Geral, Conectar e Sistema; a tela mostra uma seção por vez, com título e explicação.

@@ -1,13 +1,17 @@
 {
-  "versao": "2.11.0",
+  "versao": "2.12.0",
   "data": "2026-11-17",
   "novidades": [
-    "🔊 Player de música no topo: escolha a faixa (anterior e próxima), pause e ajuste o volume, que começa em 20%",
-    "⚙️ Configurações mais leves: menu em grupos (Geral, Conectar, Sistema) e uma seção por vez",
-    "🧭 Menu lateral em grupos (Organização, Gestão, Extras, Sistema) e sem barra de rolagem",
-    "🛟 Mudou algo numa tarefa, lançamento, hábito ou meta e foi sair sem salvar? O MyLoot avisa antes de fechar"
+    "🎬 Tutoriais em vídeo em Configurações → Tutorial: celular em casa, fora de casa com o Tailscale, backup, IA e contas fixas",
+    "📱 iPhone: o topo não fica mais atrás do relógio e a tela ocupa a altura toda"
   ],
   "historico": {
+    "2.11.0": [
+      "🔊 Player de música no topo: escolha a faixa (anterior e próxima), pause e ajuste o volume, que começa em 20%",
+      "⚙️ Configurações mais leves: menu em grupos (Geral, Conectar, Sistema) e uma seção por vez",
+      "🧭 Menu lateral em grupos (Organização, Gestão, Extras, Sistema) e sem barra de rolagem",
+      "🛟 Mudou algo numa tarefa, lançamento, hábito ou meta e foi sair sem salvar? O MyLoot avisa antes de fechar"
+    ],
     "2.10.0": [
       "👉 Mais fácil saber onde clicar: abas com sublinhado e rótulo (Tipo, Status, Grupo), cartões com “Abrir →” e “Abrir ficha →”",
       "✅ Tarefas mais limpas: título em cima, data e prioridade embaixo, e as colunas Atrasadas, Hoje e Próximas com cor e contador",

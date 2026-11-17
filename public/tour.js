@@ -188,10 +188,28 @@
   M.tourRever = () => { if (ativo || M.modalOpen()) return; clearTimeout(espera); SFX.play('click'); M.tour(M.ui.page, true); };
   { const tb = $('#tourBtn'); if (tb) tb.onclick = M.tourRever; }
 
+  // tutoriais em vídeo (public/tutoriais/<chave>.mp4 horizontal e <chave>-v.mp4 vertical)
+  const VIDEOS = [
+    ['celular', '📱', 'MyLoot no celular, em casa', 'QR Code, código e como virar aplicativo.', '0:38'],
+    ['tailscale', '🌍', 'Fora de casa com o Tailscale', 'Abra o MyLoot no 4G ou no trabalho, de graça.', '0:40'],
+    ['backup', '💾', 'Backup: nunca perca nada', 'Baixar, proteger com senha, restaurar e exportar.', '0:32'],
+    ['ia', '🤖', 'IA para melhorar seus textos', 'Claude ou Codex que você já tem, sem custo extra.', '0:33'],
+    ['financeiro', '💰', 'Contas fixas e parcelas', 'Repita todo mês ou divida em parcelas.', '0:31'],
+  ];
   M.tourSection = () => `<section class="stat" id="tourSec"><div class="cfg-h">💡 Tutorial</div>
-    <div class="cfg-row"><span class="l">Explicações de cada tela ${M.hint('Na primeira vez em cada tela, o MyLoot mostra os pontos principais passo a passo. Para rever só uma tela, clique em “? Tutorial” ao lado do nome dela.')}</span><button class="btn ghost sm" id="tourDeNovo" style="flex:none">▶️ Ver o tutorial de novo</button></div></section>`;
+    <div class="cfg-row"><span class="l">Explicações de cada tela ${M.hint('Na primeira vez em cada tela, o MyLoot mostra os pontos principais passo a passo. Para rever só uma tela, clique em “? Tutorial” ao lado do nome dela.')}</span><button class="btn ghost sm" id="tourDeNovo" style="flex:none">▶️ Ver o tutorial de novo</button></div>
+    <div class="tut-t">🎬 Tutoriais em vídeo <small>curtinhos, de 30 a 40 segundos</small></div>
+    <div class="tut-lista">${VIDEOS.map(([k, em, t, d, s]) => `<button type="button" class="tut-item" data-tut="${k}"><span class="tut-em">${em}</span><span class="tut-tx"><b>${t}</b><small>${d}</small></span><span class="tut-d">▶ ${s}</span></button>`).join('')}</div></section>`;
+  M.verTutorial = (k) => {
+    const v = VIDEOS.find((x) => x[0] === k); if (!v) return;
+    const vert = matchMedia('(max-width:700px)').matches;
+    const m = M.modal(`<div class="modal-h"><h2>${v[1]} ${v[2]}</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b tut-video"><video src="/tutoriais/${k}${vert ? '-v' : ''}.mp4" controls autoplay playsinline></video></div>`);
+    m.querySelector('#x').onclick = M.closeModal;
+    if (M.musica && M.musica.ligada()) { M.musica.desligar(); M.toast('🔈 Pausei a música de fundo para o vídeo.'); }
+  };
   M.tourBind = () => {
     const b = $('#tourDeNovo'); if (!b) return;
+    document.querySelectorAll('#tourSec [data-tut]').forEach((x) => { x.onclick = () => M.verTutorial(x.dataset.tut); });
     b.onclick = () => { const s = M.db.settings; s.tour = {}; s.tourOff = false; M.save(); ultima = ''; M.go('home'); };
   };
 })();
