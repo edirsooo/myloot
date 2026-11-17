@@ -35,9 +35,9 @@ const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(3
 function defaults() {
   return {
     version: DB_VERSION,
-    settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, musica: false, musicaVol: 0.2, confetti: true, gamify: true, dailyGoal: 50,
+    settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, musica: false, musicaVol: 0.2, musicaLoop: false, confetti: true, gamify: true, dailyGoal: 50,
       view: 'grid', boardBy: 'status', aiModel: 'claude-opus-5-5', drive: { on: false, path: '' } },
-    categories: [], items: [], tasks: [], trash: [], clients: [], fin: [], habits: [], goals: [],
+    categories: [], items: [], tasks: [], trash: [], clients: [], fin: [], habits: [], goals: [], tools: [],
     game: { xp: 0, log: {}, streak: { last: '', count: 0 }, achievements: {}, counters: {}, goalDays: 0 },
   };
 }
@@ -69,7 +69,7 @@ function migrate(raw) {
   out.settings.drive = Object.assign({}, d.settings.drive, (raw.settings || {}).drive || {});
   out.game = Object.assign({}, d.game, raw.game || {});
   out.game.streak = Object.assign({}, d.game.streak, out.game.streak || {});
-  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin', 'habits', 'goals']) if (!Array.isArray(out[k])) out[k] = [];
+  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin', 'habits', 'goals', 'tools']) if (!Array.isArray(out[k])) out[k] = [];
   out.fin.forEach((f) => {
     f.id = f.id || uid(); f.tipo = f.tipo === 'saida' ? 'saida' : 'entrada'; f.valor = Math.round((Number(f.valor) || 0) * 100) / 100;
     f.data = /^\d{4}-\d\d-\d\d$/.test(f.data || '') ? f.data : today(); f.pago = !!f.pago;

@@ -18,14 +18,18 @@
     const el = document.createElement('div');
     el.className = 'toast';
     el.innerHTML = `<span>${esc(msg)}</span>`;
-    if (undo) {
-      const b = document.createElement('button');
-      b.className = 'btn'; b.textContent = 'Desfazer';
-      b.onclick = () => { undo(); el.remove(); };
-      el.appendChild(b);
-    }
     $('#toasts').appendChild(el);
-    setTimeout(() => el.remove(), undo ? 6500 : 2800);
+    if (!undo) { setTimeout(() => el.remove(), 2800); return; }
+    // aviso com Desfazer: fica 5 segundos, com uma barrinha mostrando o tempo; o mouse em cima segura o aviso
+    const b = document.createElement('button');
+    b.className = 'btn'; b.textContent = 'Desfazer';
+    b.onclick = () => { el.remove(); undo(); };
+    el.appendChild(b);
+    let t = 0;
+    const conta = () => { el.classList.remove('com-undo'); void el.offsetWidth; el.classList.add('com-undo'); clearTimeout(t); t = setTimeout(() => el.remove(), 5000); };
+    el.onmouseenter = () => { clearTimeout(t); el.classList.remove('com-undo'); };
+    el.onmouseleave = conta;
+    conta();
   };
 
   // campo obrigatório vazio: avisa, balança o campo e põe o cursor nele (o botão nunca fica "mudo")

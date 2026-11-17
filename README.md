@@ -14,6 +14,12 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.13
+- **Minhas ferramentas:** a tela de Ferramentas tem duas abas. Em "Minhas ferramentas" você adiciona qualquer site ou programa (nome, link, para que serve, grupo), edita e remove. Em "Recomendadas" ficam as sugestões que vêm com o MyLoot; "Salvar" copia uma delas para as suas.
+- **Histórico de ações:** o botão 🕘 no topo mostra o que você fez desde que abriu o app (criou, mudou, concluiu, apagou, anexou), com Desfazer e Refazer em cada linha. `Ctrl + Z` desfaz a última ação e `Ctrl + Y` refaz. No celular o histórico fica no menu "Mais" e na Lixeira. A lista vale enquanto o app está aberto; a Lixeira continua guardando o que foi apagado.
+- **Desfazer em 5 segundos:** todo aviso que aparece depois de uma ação tem o botão Desfazer, com uma barrinha mostrando o tempo.
+- **Repetir a música:** botão 🔁 no player para ficar na mesma faixa.
+
 ## Novidades da versão 2.12
 - **Tutoriais em vídeo:** em Configurações → Tutorial há 5 vídeos de 30 a 40 segundos: MyLoot no celular em casa, fora de casa com o Tailscale, backup, IA e contas fixas e parcelas. No celular eles abrem na versão vertical.
 - **iPhone:** o topo respeita a área do relógio e da ilha, e o app ocupa a altura toda quando aberto pela tela inicial.

@@ -6,7 +6,7 @@
   // ----- lixeira -----
   M.pages.trash = () => {
     const v = $('#view'), T = M.db.trash;
-    if (!T.length) { v.innerHTML = '<div class="empty"><div class="big">🧹</div><h3>Lixeira vazia</h3><p>O que você apagar fica aqui para dar para voltar atrás.</p></div>'; return; }
+    if (!T.length) { v.innerHTML = '<div class="empty"><div class="big">🧹</div><h3>Lixeira vazia</h3><p>O que você apagar fica aqui para dar para voltar atrás.</p><button class="btn ghost sm" data-hist style="margin-top:12px">🕘 Ver o histórico de ações</button></div>'; return; }
     // um painel por tipo, lado a lado: o olho não precisa atravessar a tela para achar o botão
     const GR = [['item', '📦 Itens'], ['task', '✅ Tarefas'], ['client', '👥 Clientes'], ['fin', '💰 Lançamentos']];
     const tipo = (e) => (['item', 'client', 'fin'].includes(e.kind) ? e.kind : 'task');
@@ -19,7 +19,7 @@
       return `<div class="lix-row"><span class="em">${em}</span><div class="tx"><b>${esc(nome)}</b><small>${esc(sub)} · apagado em ${quando(e.at)}</small></div>
         <button class="btn sm" data-r="${it.id}" title="Devolve para o lugar de onde saiu">↩ Restaurar</button><button class="xbtn" data-x="${it.id}" title="Apagar de vez (não dá para desfazer)" aria-label="Apagar de vez">✕</button></div>`;
     };
-    v.innerHTML = `<div class="toolbar"><button class="btn danger sm" id="empty">🧹 Esvaziar lixeira</button>
+    v.innerHTML = `<div class="toolbar"><button class="btn danger sm" id="empty">🧹 Esvaziar lixeira</button><button class="btn ghost sm" data-hist title="Tudo o que você fez nesta sessão, com desfazer e refazer">🕘 Histórico de ações</button>
         <span style="color:var(--dim)">${T.length} ${T.length === 1 ? 'coisa apagada' : 'coisas apagadas'}</span>${M.hint('O que você apaga fica aqui até esvaziar a lixeira. “Restaurar” devolve para o lugar de onde saiu; o ✕ apaga só aquela coisa de vez.')}</div>
       <div class="lix-grid">${GR.map(([k, n]) => { const L = T.filter((e) => tipo(e) === k); return L.length ? `<section class="panel"><h4>${n} <span class="rot-n">${L.length}</span></h4>${L.map(linha).join('')}</section>` : ''; }).join('')}</div>`;
     v.onclick = async (e) => {

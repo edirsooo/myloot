@@ -32,6 +32,7 @@
       <button class="btn ghost" id="btnVoz">🎙️ Criar por voz <kbd>V</kbd></button>
       <button class="btn ghost" id="btnSearch">🔍 Buscar <kbd>Ctrl K</kbd></button>
       <button class="side-upd" id="btnUpd" hidden></button>
+      <button class="side-bug side-hist" data-hist>🕘 Histórico de ações</button>
       <button class="side-bug" id="btnBug">🐞 Reportar um problema</button>
       <a class="credit" href="https://prestesdesign.com.br" target="_blank" rel="noopener" title="Conheça a Prestes Design"><img src="/prestes.png" alt=""><span>feito por <b>prestes design</b></span></a>
     </div>
@@ -46,12 +47,13 @@
       <button class="tour-btn" id="tourBtn" title="Rever o tutorial desta tela" aria-label="Rever o tutorial desta tela" hidden><i>?</i><span>Tutorial</span></button>
       <div class="hud-grow"></div>
       <div class="focus" id="focus" title="Timer de foco: clique para começar. Role a bolinha do mouse para mudar o tempo."><span class="dot"></span>⏱ <b id="focusT">25:00</b> <span class="lb">foco</span></div>
+      <button type="button" class="hud-chip hud-hist" id="histBtn" title="Histórico de ações: desfazer e refazer (Ctrl + Z desfaz a última)" aria-label="Histórico de ações">🕘</button>
       <div class="mus" id="mus">
         <button type="button" class="hud-chip hud-mus" id="musBtn" title="Música de fundo" aria-label="Música de fundo" aria-haspopup="dialog" aria-expanded="false" aria-pressed="false">🔈</button>
         <div class="mus-pop" id="musPop" role="dialog" aria-label="Música de fundo" hidden>
           <div class="mus-topo"><span class="mus-lab">Música de fundo</span><span class="mus-cont" id="musCont"></span></div>
           <div class="mus-nome" id="musNome">…</div>
-          <div class="mus-ctl"><button type="button" data-m="ant" title="Música anterior" aria-label="Música anterior">⏮</button><button type="button" data-m="play" id="musPlay" class="play" title="Tocar" aria-label="Tocar ou pausar">▶</button><button type="button" data-m="prox" title="Próxima música" aria-label="Próxima música">⏭</button></div>
+          <div class="mus-ctl"><button type="button" data-m="ant" title="Música anterior" aria-label="Música anterior">⏮</button><button type="button" data-m="play" id="musPlay" class="play" title="Tocar" aria-label="Tocar ou pausar">▶</button><button type="button" data-m="prox" title="Próxima música" aria-label="Próxima música">⏭</button><button type="button" data-m="loop" id="musLoop" class="rep" title="Repetir só esta música" aria-label="Repetir só esta música" aria-pressed="false">🔁</button></div>
           <label class="mus-vol"><span aria-hidden="true">🔉</span><input type="range" id="musVol" min="0" max="1" step="0.05" value="0.2" aria-label="Volume da música"><b id="musPct">20%</b></label>
         </div>
       </div>
@@ -96,6 +98,7 @@
 <script src="/rotina.js"></script>
 <script src="/conexoes.js"></script>
 <script src="/suporte.js"></script>
+<script src="/historico.js"></script>
 <script src="/musica.js"></script>
 <script src="/tour.js"></script>
 <script src="/main.js"></script>

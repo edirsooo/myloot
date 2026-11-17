@@ -1,5 +1,5 @@
 // Música de fundo: trilhas da pasta public/musica num player leve no topo.
-// Clicar no 🔈 (ou passar o mouse) abre um pop-up com tocar/pausar, faixa anterior/próxima e volume (começa em 20%).
+// Clicar no 🔈 (ou passar o mouse) abre um pop-up com tocar/pausar, faixa anterior/próxima, repetir a mesma música e volume (começa em 20%).
 // O navegador só deixa tocar som depois de um clique; se a música estava ligada, ela volta no primeiro clique.
 (function () {
   let lista = null, i = 0, el = null;
@@ -19,7 +19,8 @@
   function audio() {
     if (el) return el;
     el = new Audio(); el.preload = 'none';
-    el.onended = () => troca(1);
+    // com "repetir" ligado a mesma música recomeça; sem ele, vai para a próxima
+    el.onended = () => { if (S().musicaLoop) { el.currentTime = 0; el.play().catch(() => {}); } else troca(1); };
     el.onplay = el.onpause = pinta;
     return el;
   }
@@ -32,6 +33,7 @@
     const n = $('#musNome'); if (n) n.textContent = lista && lista.length ? nomeDe(lista[i]) : 'Sem músicas na pasta';
     const v = $('#musVol'), pc = $('#musPct'); if (v && document.activeElement !== v) v.value = vol(); if (pc) pc.textContent = Math.round(vol() * 100) + '%';
     const c = $('#musCont'); if (c) c.textContent = lista && lista.length ? `${i + 1} de ${lista.length}` : '';
+    const r = $('#musLoop'); if (r) { const lp = !!S().musicaLoop; r.textContent = lp ? '🔂' : '🔁'; r.classList.toggle('on', lp); r.setAttribute('aria-pressed', lp ? 'true' : 'false'); r.title = lp ? 'Repetindo só esta música (clique para voltar a tocar todas)' : 'Repetir só esta música'; }
   }
   async function tocar(salvar = true) {
     const L = await carrega();
@@ -70,6 +72,10 @@
     const b = e.target.closest('#musBtn');
     if (b) { if (pop().hidden || porHover) { porHover = false; abre(false); } else fecha(); return; }
     const m = e.target.closest('#musPop [data-m]');
+    if (m && m.dataset.m === 'loop') {
+      if (M.db) { const lp = M.db.settings.musicaLoop = !M.db.settings.musicaLoop; M.save(); M.toast(lp ? '🔂 Vou repetir só esta música.' : '🔁 Voltei a tocar todas as músicas.'); }
+      pinta(); return;
+    }
     if (m) { const a = m.dataset.m; if (a === 'play') M.musica.ligada() ? pausar() : tocar(); else troca(a === 'prox' ? 1 : -1); return; }
     if (pop() && !pop().hidden && !e.target.closest('#mus')) fecha();
   });

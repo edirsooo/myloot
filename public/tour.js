@@ -72,9 +72,11 @@
       { s: '#fCsv', t: 'Leve para a planilha', d: 'Baixe o mês em CSV para abrir no Excel ou no Google Planilhas, ou mandar para o contador.' },
     ],
     tools: [
-      { s: '#fG', t: 'Central de ferramentas', d: 'Links de IAs de imagem e vídeo e de programas gratuitos, separados por grupo.' },
+      { s: '.tool-abas', t: 'Suas e recomendadas', d: 'Em “Minhas ferramentas” ficam as que você adicionou ou salvou. Em “Recomendadas” estão as sugestões que já vêm no MyLoot.' },
+      { s: '#fNova', t: 'Adicione as suas', d: 'Inclua qualquer site ou programa que você usa: nome, link e para que serve.' },
+      { s: '#fG', t: 'Separadas por grupo', d: 'IAs de imagem e vídeo, programas gratuitos e extras. Clique num grupo para filtrar.' },
       { s: '#fQ', t: 'Busque', d: 'Digite o nome ou o que você quer fazer.' },
-      { s: '#fRes .card', t: 'Abra ou guarde', d: 'Abra o site ou clique em ＋ Guardar para levar o link para a sua Biblioteca.' },
+      { s: '#fRes .card', t: 'Abra, salve ou edite', d: 'Abra o site, clique em ⭐ Salvar para levar a ferramenta para as suas e edite ou remova quando quiser.' },
     ],
     cfg: [
       { s: '#celSec', t: 'Usar no celular', d: 'Ligue a chave, aponte a câmera do celular para o QR Code e use o MyLoot no mesmo Wi-Fi.' },
