@@ -1,9 +1,11 @@
 {
-  "versao": "2.4.1",
+  "versao": "2.5.0",
   "data": "2026-11-16",
   "novidades": [
-    "🪟 O aviso de versão nova agora aparece primeiro; o tutorial começa só depois que você fechar",
-    "📄 PDFs dos materiais com páginas escuras, no estilo dos guias da Prestes Design"
+    "🎙️ Crie falando: grave um áudio (ou mande um do WhatsApp) e ele vira nota, tarefa ou conta",
+    "✨ A IA separa o que você falou em vários itens de uma vez",
+    "🔄 Celular e PC abertos juntos: o que você muda em um aparece no outro, sem perder nada",
+    "🐞 Botão para reportar um problema ou mandar uma sugestão"
   ],
   "historico": {
     "2.4.0": [
@@ -16,5 +18,9 @@
       "🔒 Backup com senha e exportação para o Obsidian",
       "💻 Agora também roda no Mac e no Linux"
     ]
+  },
+  "suporte": {
+    "email": "",
+    "whatsapp": ""
   }
 }

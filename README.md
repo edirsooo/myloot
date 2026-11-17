@@ -14,6 +14,13 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.5
+
+- 🎙️ **Crie falando**: aperte o microfone (ou a tecla `V`), fale, e o que você disse vira nota, tarefa ou conta. Também aceita áudio do WhatsApp. A transcrição roda no seu computador (Whisper no navegador); na primeira vez ele baixa o motor de voz, uns 80 MB.
+- ✨ **A IA organiza a fala**: “ligar pro Rafael amanhã às 10, paguei 120 de internet e anotar a ideia do post” vira uma tarefa com data e hora, uma conta paga e uma nota. Usa o Claude Code, o Codex ou a chave da API que você já ligou.
+- 🔄 **Celular e PC juntos**: com os dois abertos, o que muda em um aparece no outro sem apagar nada. Áudio gravado no celular é transcrito pelo PC.
+- 🐞 **Reportar um problema**: no menu e nas Configurações, já com a versão e os últimos erros.
+
 ## Novidades da versão 2.4
 
 | No celular, por QR Code | Clientes |
@@ -110,6 +117,7 @@ O computador precisa estar ligado com o MyLoot aberto. No Windows, se aparecer o
 |---|---|
 | `Ctrl+K` ou `/` | Buscar em tudo ou dar um comando |
 | `N` | Novo item |
+| `V` | Criar por voz |
 | `H` `B` `T` `C` `L` `M` | Início, Biblioteca, Tarefas, Calendário, Clientes, Financeiro |
 | `F` | Começar ou parar o foco |
 | Clique direito no cartão (no celular: segurar o dedo) | Abrir, copiar, favoritar, enviar ao Notion/Trello, mover, duplicar, lixeira |

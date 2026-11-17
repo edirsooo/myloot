@@ -37,6 +37,8 @@
   $('#nav').onclick = (e) => { const b = e.target.closest('[data-p]'); if (b) { SFX.play('click'); M.go(b.dataset.p); } };
   $('#btnNew').onclick = () => { document.body.classList.remove('menu'); M.novoComModelo(); };
   $('#btnSearch').onclick = M.openSearch;
+  $('#btnVoz').onclick = () => M.voz();
+  $('#btnBug').onclick = () => M.reportar();
   $('#menuBtn').onclick = () => document.body.classList.toggle('menu');
   $('#main').addEventListener('click', () => document.body.classList.remove('menu'));
 
@@ -48,6 +50,7 @@
     if (typing || e.ctrlKey || e.altKey || e.metaKey || M.modalOpen()) return;
     if (e.key === '/') { e.preventDefault(); M.openSearch(); }
     else if (e.key.toLowerCase() === 'n') { e.preventDefault(); M.novoComModelo(); }
+    else if (e.key.toLowerCase() === 'v') { e.preventDefault(); M.voz(); }
     else if (e.key.toLowerCase() === 'l') M.go('clients');
     else if (e.key.toLowerCase() === 'm') M.go('fin');
     else if (e.key.toLowerCase() === 'h') M.go('home');
@@ -90,6 +93,7 @@
       // com novidade na tela, o pop-up das IAs abre quando ela fechar (onClose em atualiza.js)
       if (!temNovidade && !M.db.settings.aiSetupDone) setTimeout(() => { if (!M.modalOpen()) M.iaSetup(); }, 1200);
       setTimeout(() => M.checarAtualizacao(false), 5000);
+      setTimeout(() => M.vozFila(), 6000); // áudios que chegaram do celular com o PC fechado
     }
     setTimeout(liberaTutorial, 1800);
   })();

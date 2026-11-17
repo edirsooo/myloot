@@ -116,6 +116,7 @@ body.remoto .so-pc,body.remoto [data-a=open],body.remoto [data-a=show],body.remo
   #toasts{bottom:calc(84px + env(safe-area-inset-bottom))}
   #menuBtn{display:none}
   .side-foot .credit{display:none}
+  #side{overflow-y:auto;padding-bottom:calc(86px + env(safe-area-inset-bottom))} /* o rodapé do menu não fica atrás da barra de baixo */
 
   /* janelas ocupam a tela toda */
   #overlay{padding:0}
@@ -170,3 +171,28 @@ body.remoto .so-pc,body.remoto [data-a=open],body.remoto [data-a=show],body.remo
 @media (max-width:700px){.fin-row .fx b{white-space:normal}.fin-row{gap:8px;padding:8px 4px}.fin-grid .panel h4 .seg{margin-left:0!important;max-width:100%;overflow-x:auto}.fin-grid .panel{padding:12px 10px}}
 
 .stat a:not(.btn){color:var(--accent2)}
+
+/* ----- criar por voz ----- */
+.voz-topo{display:flex;gap:18px;align-items:center}
+.voz-mic{position:relative;flex:none;width:86px;height:86px;border-radius:50%;border:3px solid var(--edge2);background:var(--panel2);display:grid;place-items:center;cursor:pointer;font-size:34px;box-shadow:var(--shadow);padding:0}
+.voz-mic span{position:relative;z-index:1}
+.voz-mic i{position:absolute;inset:-7px;border-radius:50%;background:var(--accent-soft);border:2px solid var(--accent);transform:scale(0);transition:transform .08s linear;pointer-events:none}
+.voz-mic.on{border-color:var(--red);background:rgba(255,72,110,.16);animation:vozPulso 1.3s ease-in-out infinite}
+.voz-mic:disabled{opacity:.55;cursor:wait}
+@keyframes vozPulso{50%{box-shadow:0 0 0 8px rgba(255,72,110,.18)}}
+.voz-inf{display:flex;flex-direction:column;gap:5px;min-width:0}
+.voz-inf small{color:var(--dim);line-height:1.4}
+#vTx{min-height:96px;width:100%;font-family:var(--f);resize:vertical}
+#vRes{display:flex;flex-direction:column;gap:10px}
+#vRes[hidden]{display:none}
+.voz-chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--dim);cursor:pointer}
+.voz-acoes{flex-wrap:wrap;gap:8px}
+.voz-acoes .btn{flex:none}
+.voz-lista{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.voz-lista label{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:2px solid var(--edge);border-radius:10px;background:var(--panel2);cursor:pointer}
+.voz-lista label span{min-width:0;overflow-wrap:anywhere}
+.voz-lista small{color:var(--dim)}
+.qc-voz{flex:none;padding:8px 11px}
+.side-bug{background:none;border:0;color:var(--faint);font:600 12px var(--f);cursor:pointer;padding:2px 4px}
+.side-bug:hover{color:var(--accent)}
+@media (max-width:560px){.voz-topo{gap:12px}.voz-mic{width:72px;height:72px;font-size:28px}}

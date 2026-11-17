@@ -24,7 +24,7 @@ const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
   '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.pdf': 'application/pdf',
-  '.txt': 'text/plain; charset=utf-8', '.md': 'text/plain; charset=utf-8', '.mp3': 'audio/mpeg', '.wav': 'audio/wav',
+  '.txt': 'text/plain; charset=utf-8', '.md': 'text/plain; charset=utf-8', '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.opus': 'audio/ogg', '.m4a': 'audio/mp4',
   '.mp4': 'video/mp4', '.webm': 'video/webm', '.ttf': 'font/ttf', '.woff2': 'font/woff2',
 };
 
@@ -134,10 +134,13 @@ function readDB() {
   }
 }
 
+// REV muda a cada gravação: o PC e o celular comparam para não salvar um por cima do outro
+let REV = Date.now();
 function writeDB(db) {
   const tmp = DB + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(db, null, 1));
   fs.renameSync(tmp, DB);
+  REV++;
   dailyBackup();
 }
 
@@ -158,9 +161,9 @@ function dailyBackup() {
 }
 
 // ---------- utilitários http ----------
-function send(res, code, body, type) {
+function send(res, code, body, type, extra) {
   const buf = Buffer.isBuffer(body) ? body : Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
-  res.writeHead(code, { 'Content-Type': type || 'application/json; charset=utf-8', 'Content-Length': buf.length, 'Cache-Control': 'no-store' });
+  res.writeHead(code, Object.assign({ 'Content-Type': type || 'application/json; charset=utf-8', 'Content-Length': buf.length, 'Cache-Control': 'no-store' }, extra || {}));
   res.end(buf);
 }
 const readBody = (req, max = 50e6) => new Promise((ok, no) => {
@@ -620,12 +623,16 @@ async function app(req, res) {
       if (p === '/api/db' && req.method === 'GET') {
         const { db, fresh } = readDB();
         if (fresh) writeDB(db);
-        return send(res, 200, db);
+        return send(res, 200, db, null, { 'X-Rev': String(REV) });
       }
+      if (p === '/api/rev') return send(res, 200, { rev: String(REV) });
       if (p === '/api/db' && req.method === 'PUT') {
+        // quem salva manda a REV que leu; se outro aparelho salvou no meio, devolve 409 e o app junta as mudanças
+        const rv = req.headers['x-rev'];
+        if (rv && String(rv) !== String(REV)) return send(res, 409, { erro: 'conflito', rev: String(REV) });
         const body = JSON.parse((await readBody(req)).toString('utf8'));
         writeDB(migrate(body));
-        return send(res, 200, { ok: true });
+        return send(res, 200, { ok: true, rev: String(REV) });
       }
       if (p === '/api/attach' && req.method === 'POST') {
         const name = safeName(u.searchParams.get('name'));

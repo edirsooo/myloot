@@ -48,18 +48,107 @@
     if (!r.ok) throw new Error(j.erro || 'erro ' + r.status);
     return j;
   };
-  M.load = async () => { M.db = await M.api('/api/db'); };
+  // ----- sincronia entre aparelhos (PC e celular abertos ao mesmo tempo) -----
+  // Cada gravação no servidor tem uma REV. Se outro aparelho salvou antes, o servidor recusa (409) e o app junta:
+  // o que só mudou lá entra aqui, o que só mudou aqui vai junto, e o que mudou nos dois fica com a versão daqui.
+  M.rev = '';
+  let base = null; // como o banco estava na última vez que este aparelho e o servidor concordaram
+  const J = (o) => JSON.stringify(o);
+  const chave = (k, o) => (k === 'trash' ? o && o.data && (o.kind + ':' + o.data.id + ':' + o.at) : o && o.id);
+  const ehLista = (k, a) => Array.isArray(a) && a.length > 0 && a.every((o) => o && typeof o === 'object' && chave(k, o));
+  const troca = (alvo, novo) => { for (const x of Object.keys(alvo)) if (!(x in novo)) delete alvo[x]; Object.assign(alvo, novo); };
+  function juntarLista(k, b, l, s) {
+    const bm = new Map((b || []).map((o) => [chave(k, o), o])), lm = new Map((l || []).map((o) => [chave(k, o), o])), sm = new Set();
+    const out = [];
+    for (const so of s || []) {
+      const id = chave(k, so); sm.add(id);
+      const lo = lm.get(id), bo = bm.get(id);
+      if (lo) { if (bo && J(lo) === J(bo)) troca(lo, so); out.push(lo); } // mantém o mesmo objeto (a janela aberta continua apontando para ele)
+      else if (!bo) out.push(so); // novo no outro aparelho
+      // se estava na base e sumiu daqui, foi apagado aqui: fica apagado
+    }
+    for (const lo of l || []) {
+      const id = chave(k, lo); if (sm.has(id)) continue;
+      const bo = bm.get(id);
+      if (!bo || J(lo) !== J(bo)) out.push(lo); // novo aqui, ou mudou aqui depois de apagado lá
+    }
+    if (k === 'trash') out.sort((x, y) => (y.at || 0) - (x.at || 0));
+    return out;
+  }
+  function juntar(b, l, s) { // b = base, l = este aparelho (mudado no lugar), s = servidor
+    for (const k of new Set([...Object.keys(s), ...Object.keys(l)])) {
+      const bv = b[k], lv = l[k], sv = s[k];
+      if (!(k in s)) continue;
+      if (J(lv) === J(sv)) continue;
+      if (J(lv) === J(bv)) { l[k] = sv; continue; }
+      if (J(sv) === J(bv)) continue;
+      if (ehLista(k, lv) || ehLista(k, sv)) l[k] = juntarLista(k, bv, lv, sv);
+      else if (lv && sv && typeof lv === 'object' && typeof sv === 'object' && !Array.isArray(lv)) {
+        for (const x of new Set([...Object.keys(sv), ...Object.keys(lv)])) {
+          const bb = (bv || {})[x];
+          if (J(lv[x]) === J(bb) && x in sv) lv[x] = sv[x];
+        }
+      }
+    }
+  }
+  async function lerServidor() {
+    const r = await fetch('/api/db', { headers: H, cache: 'no-store' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.erro || 'erro ' + r.status);
+    return { db: j, rev: r.headers.get('X-Rev') || '' };
+  }
+  M.load = async () => { const r = await lerServidor(); M.db = r.db; M.rev = r.rev; base = JSON.parse(J(r.db)); };
+  // busca o que mudou no servidor e junta com o que está aqui; devolve true se trouxe novidade
+  let sincronizando = null;
+  M.sincronizar = () => sincronizando || (sincronizando = (async () => {
+    try {
+      const r = await lerServidor();
+      const antes = J(M.db);
+      if (base) juntar(base, M.db, r.db); else Object.assign(M.db, r.db);
+      base = JSON.parse(J(r.db)); M.rev = r.rev;
+      if (J(M.db) !== J(r.db)) M.save(true); // ainda tem mudança daqui para mandar
+      return J(M.db) !== antes;
+    } finally { sincronizando = null; }
+  })());
+  let enviando = false;
+  async function enviar(tentativa = 0) {
+    const corpo = J(M.db);
+    const r = await fetch('/api/db', { method: 'PUT', headers: Object.assign({ 'X-Rev': M.rev }, H), body: corpo });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 409 && tentativa < 3) { await M.sincronizar(); return enviar(tentativa + 1); }
+    if (!r.ok) throw new Error(j.erro || 'erro ' + r.status);
+    M.rev = j.rev || M.rev; base = JSON.parse(corpo);
+  }
+  M.salvando = () => !!saveT || enviando;
+  // olha o servidor a cada 4 s (só com a aba visível e sem janela aberta) e na volta para a aba
+  let mudouFora = false;
+  const ocupado = () => M.modalOpen() || (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '') && document.activeElement.value);
+  async function olhar() {
+    if (document.hidden || !base || M.salvando() || (M.modalOpen && M.modalOpen())) return;
+    try {
+      const { rev } = await M.api('/api/rev');
+      if (rev && rev !== M.rev && !M.salvando()) mudouFora = (await M.sincronizar()) || mudouFora;
+    } catch (_) { return; }
+    if (mudouFora && !ocupado() && M.render) { mudouFora = false; M.render(); if (M.aoSincronizar) M.aoSincronizar(); }
+  }
+  setInterval(olhar, 4000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) olhar(); });
+  window.addEventListener('focus', olhar);
 
   let saveT = 0, driveT = 0;
   M.save = (quick) => {
     clearTimeout(saveT);
     saveT = setTimeout(async () => {
+      saveT = 0;
+      if (enviando) { M.save(); return; } // espera a gravação anterior terminar
+      enviando = true;
       try {
-        await M.api('/api/db', { method: 'PUT', body: JSON.stringify(M.db) });
+        await enviar();
         const dot = M.$('#savedot'); if (dot) { dot.classList.add('on'); setTimeout(() => dot.classList.remove('on'), 900); }
         const d = M.db.settings.drive;
         if (d && d.on && d.path) { clearTimeout(driveT); driveT = setTimeout(() => M.api('/api/drive/sync', { method: 'POST' }).catch(() => {}), 4000); }
       } catch (e) { M.toast('⚠️ Não consegui salvar: ' + e.message); }
+      finally { enviando = false; }
     }, quick ? 0 : 350);
   };
   M.upload = async (file) => {

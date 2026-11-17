@@ -11,9 +11,12 @@
     const nums = (x) => String(x || '0').split('.').map((n) => parseInt(n, 10) || 0);
     const acima = (x, y) => { const a = nums(x), b = nums(y); for (let i = 0; i < 3; i++) if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0); return false; };
     r.novidades = (r.novidades || []).concat(...Object.keys(r.historico || {}).filter((v) => acima(v, r.atual)).sort((x, y) => (acima(x, y) ? -1 : 1)).map((v) => r.historico[v]));
+    // versão só com correções não tem lista própria: mostra os destaques da última versão com novidades
+    let titLista = 'O que tem de novo:';
+    if (!r.novidades.length) { const ult = Object.keys(r.historico || {}).sort((x, y) => (acima(x, y) ? -1 : 1))[0]; if (ult) { r.novidades = r.historico[ult]; titLista = 'Destaques do MyLoot:'; } }
     if (M.modalOpen() && !manual) { setTimeout(() => M.checarAtualizacao(false), 15000); return; }
     const m = M.modal(`<div class="modal-h"><h2>🎁 Saiu o MyLoot ${esc(r.nova)}</h2><button class="icon-btn" id="x">✕</button></div>
-      <div class="modal-b"><p style="margin:0;color:var(--dim)">Você está na versão ${esc(r.atual)}. O que tem de novo:</p>
+      <div class="modal-b"><p style="margin:0;color:var(--dim)">Você está na versão ${esc(r.atual)}. ${titLista}</p>
       ${M.listaNovidades(r.novidades)}
       ${r.git ? '<p style="margin:0;color:var(--yellow,#ffbe46)">Esta pasta é uma cópia de desenvolvimento (Git). Atualize com <code>git pull</code>.</p>'
         : '<p style="margin:0;color:var(--dim)">Seus itens, anexos, tarefas e chaves ficam como estão: a atualização só troca os arquivos do app.</p>'}

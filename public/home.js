@@ -49,7 +49,7 @@
         </div>
         ${s.gamify ? `<div class="ring" style="--p:${pct}" title="Meta de hoje: ${dayXp} / ${s.dailyGoal} XP"><span>${pct}%<small>META</small></span></div>` : ''}
       </div>
-      <div class="qc wide"><div class="seg" id="qcM">${modes.map(([k, n]) => `<button data-m="${k}" class="${qcMode === k ? 'on' : ''}">${n}</button>`).join('')}</div><input type="text" id="qcIn" placeholder="${ph[qcMode]}" autocomplete="off"><button class="btn" id="qcGo">Guardar ↵</button></div>
+      <div class="qc wide"><div class="seg" id="qcM">${modes.map(([k, n]) => `<button data-m="${k}" class="${qcMode === k ? 'on' : ''}">${n}</button>`).join('')}</div><input type="text" id="qcIn" placeholder="${ph[qcMode]}" autocomplete="off"><button class="btn ghost qc-voz" id="qcVoz" title="Criar falando (V)" aria-label="Criar por voz">🎙️</button><button class="btn" id="qcGo">Guardar ↵</button></div>
       <div class="panel"><h4>🌞 Para hoje <a data-go="tasks">ver todas →</a></h4>${[...late, ...now].map(M.taskHTML).join('') || '<div class="empty" style="padding:22px">Tudo em dia ✨</div>'}</div>
       <div class="panel">${s.gamify ? `<h4>🎯 Missões do dia ${M.hint('Complete as três para ganhar um bônus de XP. Zera todo dia.')}</h4>${M.quests().map((q) => `<div class="quest ${q.v >= q.max ? 'ok' : ''}"><span>${q.em} ${q.t}</span><div class="bar"><i style="width:${Math.min(100, (q.v / q.max) * 100)}%"></i></div><small>${q.v >= q.max ? '✔' : q.v + '/' + q.max}</small></div>`).join('')}<div style="height:10px"></div>` : ''}
         <h4>⛏️ Em andamento</h4>${doing.map(rowItem).join('') || '<small style="color:var(--faint)">Nada em andamento.</small>'}</div>
@@ -72,6 +72,7 @@
       M.render(); $('#qcIn').focus();
     };
     $('#qcGo').onclick = save;
+    $('#qcVoz').onclick = () => M.voz();
     input.onkeydown = (e) => { if (e.key === 'Enter') save(); };
     $('#qcM').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; qcMode = b.dataset.m; SFX.play('click'); M.render(); $('#qcIn').focus(); };
     v.onclick = (e) => {
