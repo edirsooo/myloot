@@ -6,6 +6,8 @@
 
 Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona no **Windows, Mac e Linux**, e dá para usar **no celular** pela rede de casa.
 
+🌐 **Site:** https://edirsooo.github.io/myloot/
+
 [![Veja o MyLoot funcionando](docs/img/demo.gif)](docs/video/myloot-tutorial.mp4)
 
 ▶️ **[Tutorial completo com som (3 min 28)](docs/video/myloot-tutorial.mp4)** · [apresentação rápida da versão anterior, quando se chamava Mochila (50 s)](docs/video/mochila.mp4)

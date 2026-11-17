@@ -27,15 +27,18 @@
       <a href="#guardar">Guardar</a><a href="#organizar">Organizar</a><a href="#trabalho">Trabalho</a><a href="#conectar">Conectar</a><a href="#diversao">Diversão</a><a href="#seguranca">Segurança</a>
       <a class="btn btn-sol menu-baixar" href="#baixar">Baixar grátis</a>
     </nav>
+    <button class="som" type="button" aria-pressed="false" aria-label="Tocar a música" title="Tocar a música"><span aria-hidden="true">♪</span></button>
     <button class="pausa" type="button" aria-pressed="false" aria-label="Pausar animações" title="Pausar animações"><span aria-hidden="true">❚❚</span></button>
     <a class="btn btn-sol topo-baixar" href="#baixar">Baixar grátis</a>
     <button class="menu-bt" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir o menu"><span></span><span></span></button>
   </div>
 </header>
 
+<div class="trans" aria-hidden="true"><canvas class="t-cv"></canvas><p class="t-parte"></p><p class="t-nome"></p><p class="t-sub"></p></div>
+
 <main>
   <!-- Abertura: os seis mascotes caem no palco e acenam, como na abertura do app -->
-  <section class="hero" id="inicio" data-palco="claude,gpt,gemini,pinguim,coruja,slime" data-chega="chao" data-tam="1.15" aria-labelledby="h-hero">
+  <section class="hero" id="inicio" data-faixa="game-loop" data-palco="claude,gpt,gemini,pinguim,coruja,slime" data-chega="chao" data-tam="1.15" aria-labelledby="h-hero">
     <div class="cubos" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="wrap hero-in">
       <p class="selo"><span>v2.15</span> Windows, Mac e Linux · no celular pelo Wi-Fi</p>
@@ -52,7 +55,7 @@
   </section>
 
   <!-- 01 Guardar · Claude -->
-  <section class="secao" id="guardar" data-palco="claude" data-inicio="0.78" data-oi="Eu guardo tudo!" aria-labelledby="h-guardar">
+  <section class="secao" id="guardar" data-palco="claude" data-inicio="0.78" data-faixa="save-room-loop" data-parte="1" data-sub="Início · Biblioteca · Busca" style="--cor:#ff7e00" data-oi="Eu guardo tudo!" aria-labelledby="h-guardar">
     <div class="wrap">
       <p class="palavra" aria-hidden="true"><span class="num">01</span><span class="pl" data-letras>Guardar</span></p>
       <div class="grade">
@@ -74,8 +77,8 @@
     </div>
   </section>
 
-  <!-- 02 Organizar · GPT -->
-  <section class="secao par" id="organizar" data-palco="gpt" data-inicio="0.22" data-jeito="digita" data-oi="Bora organizar!" aria-labelledby="h-organizar">
+  <!-- 02 Organizar · Pinguim -->
+  <section class="secao par" id="organizar" data-palco="pinguim" data-inicio="0.22" data-jeito="digita" data-faixa="forest-village-loop" data-parte="2" data-sub="Tarefas · Calendário · Rotina" style="--cor:#3cdc96" data-oi="Bora organizar!" aria-labelledby="h-organizar">
     <div class="wrap">
       <p class="palavra" aria-hidden="true"><span class="num">02</span><span class="pl" data-letras>Organizar</span></p>
       <div class="grade">
@@ -98,7 +101,7 @@
   </section>
 
   <!-- 03 Trabalho · Coruja -->
-  <section class="secao" id="trabalho" data-palco="coruja" data-inicio="0.8" data-jeito="pensa" data-oi="Hora do trabalho!" aria-labelledby="h-trabalho">
+  <section class="secao" id="trabalho" data-palco="coruja" data-inicio="0.8" data-jeito="pensa" data-faixa="bossa-em-16-bit" data-parte="3" data-sub="Clientes · Financeiro" style="--cor:#3abeff" data-oi="Hora do trabalho!" aria-labelledby="h-trabalho">
     <div class="wrap">
       <p class="palavra" aria-hidden="true"><span class="num">03</span><span class="pl" data-letras>Trabalho</span></p>
       <div class="grade">
@@ -122,8 +125,8 @@
     </div>
   </section>
 
-  <!-- 04 Conectar · Gemini -->
-  <section class="secao par" id="conectar" data-palco="gemini" data-inicio="0.22" data-jeito="pensa" data-oi="Tudo conectado!" aria-labelledby="h-conectar">
+  <!-- 04 Conectar · GPT -->
+  <section class="secao par" id="conectar" data-palco="gpt" data-inicio="0.22" data-jeito="pensa" data-faixa="arcade-rush" data-parte="4" data-sub="Ferramentas · IA · Drive · Celular" style="--cor:#28c8a0" data-oi="Tudo conectado!" aria-labelledby="h-conectar">
     <div class="wrap">
       <p class="palavra" aria-hidden="true"><span class="num">04</span><span class="pl" data-letras>Conectar</span></p>
       <div class="grade">
@@ -147,7 +150,7 @@
   </section>
 
   <!-- 05 Diversão · Slime -->
-  <section class="secao" id="diversao" data-palco="slime" data-inicio="0.8" data-jeito="danca" data-oi="Hora da festa!" aria-labelledby="h-diversao">
+  <section class="secao" id="diversao" data-palco="slime" data-inicio="0.8" data-jeito="danca" data-faixa="boss-battle-groove" data-parte="5" data-sub="Pontos · Conquistas · Mascotes" style="--cor:#ff5aaa" data-oi="Hora da festa!" aria-labelledby="h-diversao">
     <div class="wrap">
       <p class="palavra" aria-hidden="true"><span class="num">05</span><span class="pl" data-letras>Diversão</span></p>
       <div class="grade">
@@ -174,8 +177,8 @@
     </div>
   </section>
 
-  <!-- 06 Segurança · Pinguim -->
-  <section class="secao par" id="seguranca" data-palco="pinguim" data-inicio="0.22" data-oi="Tá tudo salvo!" aria-labelledby="h-seguranca">
+  <!-- 06 Segurança · Gemini -->
+  <section class="secao par" id="seguranca" data-palco="gemini" data-inicio="0.22" data-faixa="open-field-at-sunrise" data-parte="6" data-sub="Desfazer · Lixeira · Backup" style="--cor:#8b5cf6" data-oi="Tá tudo salvo!" aria-labelledby="h-seguranca">
     <div class="wrap">
       <p class="palavra" aria-hidden="true"><span class="num">06</span><span class="pl" data-letras>Segurança</span></p>
       <div class="grade">
@@ -199,7 +202,7 @@
   </section>
 
   <!-- Final: baixar e instalar; os seis comemoram -->
-  <section class="final" id="baixar" data-palco="claude,gpt,gemini,pinguim,coruja,slime" data-chega="chao" aria-labelledby="h-baixar">
+  <section class="final" id="baixar" data-faixa="game-loop" data-palco="claude,gpt,gemini,pinguim,coruja,slime" data-chega="chao" aria-labelledby="h-baixar">
     <div class="wrap">
       <p class="palavra pequena" aria-hidden="true"><span class="pl" data-letras>Baixar</span></p>
       <h2 id="h-baixar" class="final-titulo">Grátis · Sem conta · Código aberto</h2>
@@ -238,7 +241,7 @@
   <div class="wrap rodape-in">
     <a class="marca" href="#inicio"><img src="site/icon.png" alt="" width="28" height="28"><b>MyLoot</b></a>
     <p>Licença MIT · <a href="https://github.com/edirsooo/myloot">Código no GitHub</a> · <a href="https://github.com/edirsooo/myloot/blob/main/docs/video/myloot-tutorial.mp4">Tutorial em vídeo</a></p>
-    <p class="feito">Feito por <img src="site/prestes.png" alt="" width="18" height="18"> prestes design</p>
+    <p class="feito"><a href="https://prestesdesign.com.br">Feito por <img src="site/prestes.png" alt="" width="18" height="18"> prestes design</a></p>
   </div>
 </footer>
 

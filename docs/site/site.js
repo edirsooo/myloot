@@ -58,8 +58,7 @@
     const t = el.textContent; el.textContent = '';
     [...t].forEach((c, i) => { const s = document.createElement('span'); s.textContent = c; s.style.setProperty('--i', i); el.appendChild(s); });
   });
-  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('caiu'); io.unobserve(e.target); } }), { threshold: 0.4 });
-  qa('.palavra').forEach((p) => (calmo ? p.classList.add('caiu') : io.observe(p)));
+
 
   // XP do Slime: carinho e pouso na seção dão XP; 50 XP sobem de nível com confete
   const div = q('#diversao');
@@ -110,6 +109,74 @@
     pausa.setAttribute('aria-pressed', on); const t = on ? 'Retomar animações' : 'Pausar animações'; pausa.setAttribute('aria-label', t); pausa.title = t; pausa.firstChild.textContent = on ? '▶' : '❚❚';
     document.body.classList.toggle('pausado', on); if (window.Mascotes) Mascotes.estado.pausado = on;
   });
+
+  // seção ativa: troca a música e toca a transição (raios na cor do personagem, nome grande e o mascote numa nuvem de cubos)
+  const secoes = qa('main > section'), tr = q('.trans'), tcv = q('.t-cv'), NOMES = { guardar: 'Guardar', organizar: 'Organizar', trabalho: 'Trabalho', conectar: 'Conectar', diversao: 'Diversão', seguranca: 'Segurança' };
+  let ativa = null, tRaf = 0, tFim = 0;
+  function transicao(sec) {
+    if (calmo || document.body.classList.contains('pausado') || !sec.dataset.parte) return;
+    const cor = getComputedStyle(sec).getPropertyValue('--cor').trim(), k = sec.dataset.palco;
+    tr.style.setProperty('--cor', cor);
+    q('.t-parte', tr).textContent = 'PARTE ' + sec.dataset.parte + ' DE 6';
+    q('.t-nome', tr).textContent = NOMES[sec.id] || '';
+    q('.t-sub', tr).textContent = sec.dataset.sub || '';
+    tr.classList.remove('on'); void tr.offsetWidth; tr.classList.add('on');
+    clearTimeout(tFim); tFim = setTimeout(() => tr.classList.remove('on'), 1750);
+    // mascote grande acenando, nascendo de uma nuvem de cubos
+    cancelAnimationFrame(tRaf);
+    const V = window.Voxel, d = Math.min(devicePixelRatio || 1, 2), W = tcv.clientWidth, H = tcv.clientHeight, c = tcv.getContext('2d'), t0 = performance.now();
+    if (!V || !W) return;
+    tcv.width = W * d; tcv.height = H * d;
+    const cubos = Array.from({ length: 18 }, (_, j) => ({ a: j * 0.349 + Math.random() * 0.3, v: 0.5 + Math.random() * 0.5, s: 0.6 + Math.random() * 0.6, cor: ['#ff7e00', '#8b5cf6', '#3ad7ff', '#ffffff'][j % 4] }));
+    const mola = (v) => (v <= 0 ? 0 : v >= 1 ? 1 : 1 + Math.pow(2, -9 * v) * Math.sin((v * 7 - 0.75) * 2.094));
+    const passo = (now) => {
+      const t = (now - t0) / 1000; if (t > 1.75) { c.clearRect(0, 0, tcv.width, tcv.height); return; }
+      tRaf = requestAnimationFrame(passo);
+      c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, W, H);
+      const u = Math.min(1, t / 0.6), s = Math.min(1.08, mola((t - 0.12) / 0.7)), U = W / 30 * s, cx = W / 2, cy = H * 0.86;
+      if (s > 0.02) V.desenha(c, k, t > 0.35 ? 'aceno' : 'festa', t * 1.2, U, cx, cy, {});
+      if (u < 1) {           // nuvem de cubos e anel
+        const e = 1 - Math.pow(1 - u, 3), R = 20 + W * 0.42 * e;
+        c.globalAlpha = 1 - u; c.strokeStyle = '#fff'; c.lineWidth = Math.max(1, 10 * (1 - u)); c.beginPath(); c.arc(cx, cy - H * 0.3, R, 0, 6.3); c.stroke();
+        for (const b of cubos) { const r = R * b.v * 1.3, x = cx + Math.cos(b.a) * r, y = cy - H * 0.3 + Math.sin(b.a) * r - 30 * u, l = 14 * b.s * (1 - u * 0.6); c.fillStyle = b.cor; c.fillRect(x - l / 2, y - l / 2, l, l); }
+        c.globalAlpha = 1;
+      }
+    };
+    tRaf = requestAnimationFrame(passo);
+  }
+
+  // música: uma faixa do app por personagem, como no vídeo; troca com crossfade quando a seção muda
+  const som = q('.som'), players = [new Audio(), new Audio()]; let atual = 0, faixa = '', tocando = false;
+  players.forEach((a) => { a.loop = true; a.preload = 'none'; a.volume = 0; });
+  function fade(a, alvo, ms, fim) {
+    const v0 = a.volume, t0 = performance.now();
+    const f = (now) => { const k = Math.min(1, (now - t0) / ms); a.volume = v0 + (alvo - v0) * k; if (k < 1) requestAnimationFrame(f); else if (fim) fim(); };
+    requestAnimationFrame(f);
+  }
+  function toca(nome) {
+    if (!tocando || !nome || nome === faixa) return;
+    faixa = nome; const velho = players[atual]; atual = 1 - atual; const novo = players[atual];
+    novo.src = 'site/musica/' + nome + '.mp3'; novo.currentTime = 0; novo.volume = 0;
+    novo.play().then(() => fade(novo, 0.35, 700)).catch(() => {});
+    fade(velho, 0, 700, () => velho.pause());
+  }
+  function liga(on) {
+    tocando = on; som.setAttribute('aria-pressed', on); const t = on ? 'Parar a música' : 'Tocar a música'; som.setAttribute('aria-label', t); som.title = t;
+    try { localStorage.setItem('myloot-site-musica', on ? '1' : '0'); } catch (_) {}
+    if (on) { faixa = ''; toca((ativa || secoes[0]).dataset.faixa); } else { faixa = ''; players.forEach((a) => fade(a, 0, 400, () => a.pause())); }
+  }
+  som.addEventListener('click', () => liga(!tocando));
+  // quem ligou a música antes volta com ela no primeiro toque ou tecla (o navegador não deixa tocar sozinho)
+  let lembra = false; try { lembra = localStorage.getItem('myloot-site-musica') === '1'; } catch (_) {}
+  if (lembra) { const um = (e) => { if (e.target.closest && e.target.closest('.som')) return; removeEventListener('pointerdown', um, true); removeEventListener('keydown', um, true); if (!tocando) liga(true); }; addEventListener('pointerdown', um, true); addEventListener('keydown', um, true); }
+
+  const obs = new IntersectionObserver((es) => es.forEach((e) => {
+    if (!e.isIntersecting || e.target === ativa) return;
+    const antes = ativa; ativa = e.target;
+    if (antes) transicao(ativa);
+    toca(ativa.dataset.faixa);
+  }), { threshold: 0.55 });
+  secoes.forEach((s) => obs.observe(s));
 
   // topo com fundo depois de rolar
   const topo = q('#topo'), rola = () => topo.classList.toggle('cheio', scrollY > 20);
