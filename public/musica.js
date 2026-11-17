@@ -11,7 +11,7 @@
 
   async function carrega() {
     if (lista) return lista;
-    try { lista = (await (await fetch('/api/musicas')).json()).faixas || []; } catch (_) { lista = []; }
+    try { lista = (await (await fetch('/api/musicas')).json()).faixas || []; } catch (_) { lista = null; return []; } // falhou: tenta de novo na próxima vez
     for (let k = lista.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [lista[k], lista[j]] = [lista[j], lista[k]]; }
     const ult = lista.indexOf(S().musicaFaixa); if (ult >= 0) i = ult;
     return lista;
@@ -40,7 +40,7 @@
     if (!L.length) { M.toast('🎵 Ainda não há músicas. Coloque arquivos .mp3 na pasta public/musica do MyLoot.'); pinta(); return false; }
     const a = audio(); if (!a.src || !a.src.endsWith(fonte())) a.src = fonte();
     a.volume = vol();
-    let ok = true; try { await a.play(); } catch (_) { ok = false; }
+    let ok = true; try { await a.play(); } catch (er) { ok = false; if (salvar && er && er.name !== 'NotAllowedError') M.toast('🎵 Não consegui tocar esta música. Tente a próxima (⏭).'); }
     if (salvar && M.db) { M.db.settings.musica = ok; M.db.settings.musicaFaixa = L[i]; M.save(); }
     pinta(); return ok;
   }

@@ -101,14 +101,24 @@
     const palavras = text.trim() ? text.trim().split(/\s+/).length : 0;
     const el = document.createElement('div');
     el.className = 'rd-full';
-    el.innerHTML = `<div class="rd-bar"><span style="font-size:20px">📖</span><b>${esc(att.name)}</b><small>${palavras} palavras · ~${Math.max(1, Math.round(palavras / 200))} min de leitura</small><span style="flex:1"></span><button class="btn sm ghost" data-a="copy">📋 Copiar tudo</button><button class="btn sm ghost" data-a="raw">{ } Ver original</button><button class="icon-btn" data-a="x" title="Fechar (Esc)">✕</button></div><div class="rd-scroll">${html}</div>`;
+    el.innerHTML = `<div class="rd-bar"><span style="font-size:20px">📖</span><b>${esc(att.name)}</b><small>${palavras} palavras · ~${Math.max(1, Math.round(palavras / 200))} min de leitura</small><span style="flex:1"></span><button class="btn sm ghost" data-a="copy" title="Copiar o texto inteiro" aria-label="Copiar tudo">📋 <span class="rd-tx">Copiar tudo</span></button><a class="btn sm ghost" data-a="down" href="/anexos/${encodeURIComponent(att.file)}" download="${esc(att.name)}" title="Baixar o arquivo original" aria-label="Baixar arquivo">⬇ <span class="rd-tx">Baixar arquivo</span></a><button class="btn sm ghost" data-a="raw">{ } Ver original</button><button class="icon-btn" data-a="x" title="Fechar (Esc)" aria-label="Fechar">✕</button></div><div class="rd-scroll">${html}</div>`;
     document.body.appendChild(el);
     SFX.play('open');
     let raw = false;
     const close = () => { el.remove(); document.removeEventListener('keydown', key, true); };
     const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
     document.addEventListener('keydown', key, true);
-    const copy = (t) => { navigator.clipboard.writeText(t).then(() => { SFX.play('copy'); M.toast('📋 Copiado!'); }).catch(() => {}); };
+    // aberto por http na rede de casa, o navegador não libera a área de transferência: cai no jeito antigo (campo escondido), como na Biblioteca
+    const copy = async (t) => {
+      let ok = true;
+      try { await navigator.clipboard.writeText(t); } catch (_) {
+        const ta = document.createElement('textarea'); ta.value = t; ta.readOnly = true; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+        document.body.appendChild(ta); ta.select(); try { ta.setSelectionRange(0, t.length); } catch (__) {} // iPhone só seleciona assim
+        try { ok = document.execCommand('copy'); } catch (__) { ok = false; }
+        ta.remove();
+      }
+      if (ok) { SFX.play('copy'); M.toast('📋 Copiado!'); } else M.toast('⚠️ Não consegui copiar daqui. Use “⬇ Baixar arquivo” ou selecione o texto na tela.');
+    };
     el.onclick = (e) => {
       const b = e.target.closest('[data-a],[data-code]'); if (!b) return;
       if (b.dataset.code != null) return copy(codes[+b.dataset.code]);

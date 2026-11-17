@@ -46,7 +46,10 @@
     opt = opt || {};
     const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
     const tip = document.createElement('div'); tip.className = 'g-tip'; tip.hidden = true;
-    host.classList.add('g-host'); host.append(cv, tip);
+    // zoom por botão: no toque não existe rodinha do mouse
+    const zb = document.createElement('div'); zb.className = 'g-zoom';
+    zb.innerHTML = '<button type="button" data-z="in" title="Aproximar" aria-label="Aproximar o mapa">＋</button><button type="button" data-z="out" title="Afastar" aria-label="Afastar o mapa">−</button><button type="button" data-z="fit" title="Mostrar o mapa inteiro" aria-label="Centralizar o mapa">Centralizar</button>';
+    host.classList.add('g-host'); host.append(cv, tip, zb);
     const { nodes, edges } = M.graphData();
     const nb = new Map(nodes.map((n) => [n, new Set()]));
     edges.forEach((e) => { nb.get(e.a).add(e.b); nb.get(e.b).add(e.a); });
@@ -158,12 +161,22 @@
       const n = drag; drag = null; pan = null; sujo = true; guardar();
       if (n && !moved) { SFX.play('click'); if (opt.onOpen) opt.onOpen(); M.openItem(n.id); }
     };
+    cv.onpointercancel = () => { drag = null; pan = null; sujo = true; }; // o navegador tomou o gesto (toque): solta o que estava preso
     cv.onpointerleave = () => { if (!drag) { hover = null; tip.hidden = true; sujo = true; } };
+    // aproxima ou afasta mantendo parado o ponto (sx, sy) da tela; fitted = 2 impede o ajuste automático de desfazer o zoom da pessoa
+    const zoom = (f, sx, sy) => {
+      const k = Math.min(5, Math.max(0.2, cam.k * f));
+      cam.x = sx - ((sx - cam.x) / cam.k) * k; cam.y = sy - ((sy - cam.y) / cam.k) * k; cam.k = k; fitted = 2; sujo = true;
+    };
     cv.onwheel = (e) => {
-      e.preventDefault(); sujo = true;
-      const b = cv.getBoundingClientRect(), sx = e.clientX - b.left, sy = e.clientY - b.top;
-      const k = Math.min(5, Math.max(0.2, cam.k * (e.deltaY < 0 ? 1.12 : 0.89)));
-      cam.x = sx - ((sx - cam.x) / cam.k) * k; cam.y = sy - ((sy - cam.y) / cam.k) * k; cam.k = k;
+      e.preventDefault();
+      const b = cv.getBoundingClientRect();
+      zoom(e.deltaY < 0 ? 1.12 : 0.89, e.clientX - b.left, e.clientY - b.top);
+    };
+    zb.onclick = (e) => {
+      const b = e.target.closest('[data-z]'); if (!b) return;
+      SFX.play('click'); tip.hidden = true;
+      if (b.dataset.z === 'fit') { fit(); fitted = 2; sujo = true; } else zoom(b.dataset.z === 'in' ? 1.3 : 1 / 1.3, W / 2, H / 2);
     };
     cv.ondblclick = (e) => { if (!pick(toWorld(e))) { fit(); sujo = true; } };
 
@@ -178,7 +191,7 @@
   // painel lateral da tela inicial
   M.graphPanel = (el) => {
     const n = M.db.items.length;
-    el.innerHTML = `<h4>🕸️ Conexões ${M.hint('Cada bolinha é um item da sua Biblioteca. Itens com etiquetas iguais, da mesma categoria ou que citam o título de outro (ou usam [[Título]]) ficam ligados. Passe o mouse para ver as ligações, clique para abrir, arraste e use a rodinha para dar zoom.')}<a id="gFull">tela cheia ⛶</a></h4><p class="pg-dica">Cada bolinha é um item; as linhas mostram o que se relaciona. Clique para abrir.</p>
+    el.innerHTML = `<h4>🕸️ Conexões ${M.hint('Cada bolinha é um item da sua Biblioteca. Itens com etiquetas iguais, da mesma categoria ou que citam o título de outro (ou usam [[Título]]) ficam ligados. Passe o mouse para ver as ligações, clique para abrir, arraste e use a rodinha do mouse ou os botões ＋ e − para dar zoom.')}<a id="gFull">tela cheia ⛶</a></h4><p class="pg-dica">Cada bolinha é um item; as linhas mostram o que se relaciona. Clique para abrir.</p>
       ${n ? '<div class="g-box" id="gBox"></div>' : '<div class="empty" style="padding:22px">Guarde alguns itens para ver as conexões.</div>'}${legend()}`;
     if (n) M.graph(el.querySelector('#gBox'));
     el.querySelector('#gFull').onclick = M.graphFull;
@@ -186,11 +199,10 @@
 
   M.graphFull = () => {
     SFX.play('click');
-    const m = M.modal(`<div class="modal-h"><h2>🕸️ Mapa de conexões</h2><span class="g-count" id="gc"></span><button class="btn ghost sm" id="gFit">Centralizar</button><button class="icon-btn" id="x">✕</button></div><div class="g-full" id="gF"></div>${legend()}`);
+    const m = M.modal(`<div class="modal-h"><h2>🕸️ Mapa de conexões</h2><span class="g-count" id="gc"></span><button class="icon-btn" id="x" title="Fechar (Esc)" aria-label="Fechar">✕</button></div><div class="g-full" id="gF"></div>${legend()}`);
     m.classList.add('g-modal');
     const g = M.graph(m.querySelector('#gF'), { full: true, onOpen: M.closeModal });
     m.querySelector('#gc').textContent = `${g.nodes.length} itens · ${g.edges.length} ligações`;
-    m.querySelector('#gFit').onclick = g.fit;
     m.querySelector('#x').onclick = M.closeModal;
   };
 })();

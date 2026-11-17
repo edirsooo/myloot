@@ -15,13 +15,17 @@
     return it;
   };
 
+  // devolve { ok: [anexos que entraram], falhas: [{ name, erro }] }, para quem precisa saber se o arquivo chegou (voz);
+  // quem não usa o retorno continua igual: o aviso de cada falha e o de sucesso aparecem como antes
   M.attachFiles = async (it, files, after) => {
-    let n = 0;
+    const ok = [], falhas = [];
     for (const f of files) {
-      try { it.attachments.push(await M.upload(f)); n++; M.award('attach'); } catch (e) { M.toast('⚠️ ' + f.name + ': ' + e.message); }
+      try { const a = await M.upload(f); it.attachments.push(a); ok.push(a); M.award('attach'); } catch (e) { falhas.push({ name: f.name, erro: e.message }); M.toast('⚠️ ' + f.name + ': ' + e.message); }
     }
+    const n = ok.length;
     if (n) { it.updated = Date.now(); M.save(); SFX.play('drop'); M.toast(`📎 ${n} arquivo${n > 1 ? 's' : ''} anexado${n > 1 ? 's' : ''}`); }
     if (after) after();
+    return { ok, falhas };
   };
 
   M.itemFromFiles = async (files) => {
@@ -37,7 +41,10 @@
     else M.toast(`📥 ${files.length} itens criados`);
   };
 
-  M.newItemDialog = (o) => { const it = M.createItem(Object.assign({ title: '' }, o), true); it._new = true; M.openItem(it.id); };
+  M.newItemDialog = (o) => { const it = M.createItem(Object.assign({ title: '', _new: true }, o), true); M.openItem(it.id); }; // _new antes de salvar: a ficha em branco não entra no histórico
+
+  // "?" de ajuda dentro de um rótulo ligado a um campo (label for): ver a dica não leva o foco para o campo (no celular abriria o teclado)
+  document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('label[for] .hint')) e.preventDefault(); }, true);
 
   M.openItem = (id) => {
     const it = M.db.items.find((i) => i.id === id);
@@ -46,12 +53,13 @@
     SFX.play('open');
     let base = M.rasc.abrir(it); // traz de volta o rascunho guardado (se houver) e tira a foto da versão salva
     const touch = () => { if (!it._new) M.rasc.tocar(it, base); it.updated = Date.now(); M.save(); M.rodapePinta(m, it, it._new); };
+    let novoPasso = '', novoLink = '', linkEd = null, attEd = null; // texto ainda não incorporado em "Novo passo" e "Novo link"; link e anexo em edição
     const m = M.modal('<div></div>', { onClose: () => {
       M.cur = null;
       // item que já existia e foi mudado sem "Salvar": o cartão fica com a versão antiga e as mudanças viram rascunho
       if (!it._new && M.db.items.includes(it)) { if (M.rasc.guardar(it)) M.toast('📝 Alterações guardadas como rascunho. Abra o item de novo para salvar ou descartar.'); M.save(); }
       // item novo vazio e sem nada: descarta sem barulho
-      if (it._new && !it.title && !it.desc && !it.content && !it.attachments.length && !it.checklist.length) {
+      if (it._new && !it.title && !it.desc && !it.content && !it.attachments.length && !it.checklist.length && !it.links.length) {
         M.db.items = M.db.items.filter((x) => x.id !== it.id); M.save();
       } else if (it._new && M.db.items.includes(it)) M.toast('✅ Item salvo na Biblioteca'); // fechou no ✕: avisa que ficou guardado
       delete it._new; delete it._xp;
@@ -67,32 +75,34 @@
           <span style="font-size:22px">${t.em}</span>
           <h2>${t.name}</h2>
           <span class="savedot" id="savedot">✔ salvo</span>
-          <button class="icon-btn" id="eFav" title="Favorito">${it.fav ? '⭐' : '☆'}</button>
-          <button class="icon-btn" id="eDel" title="Lixeira">🗑️</button>
-          <button class="icon-btn" id="eX" title="Fechar (Esc)">✕</button>
+          <button class="icon-btn" id="eFav" title="Favorito" aria-label="Favorito" aria-pressed="${it.fav ? 'true' : 'false'}">${it.fav ? '⭐' : '☆'}</button>
+          ${it._new ? '' : `<button class="icon-btn" id="eArq" title="${it.arq ? 'Desarquivar: volta para a lista do dia a dia' : 'Arquivar: sai da lista do dia a dia, mas continua guardado'}" aria-label="${it.arq ? 'Desarquivar' : 'Arquivar'}">${it.arq ? '📤' : '📦'}</button>`}
+          <button class="icon-btn" id="eDel" title="Mandar para a Lixeira" aria-label="Mandar para a Lixeira">🗑️</button>
+          <button class="icon-btn" id="eX" title="Fechar (Esc)" aria-label="Fechar">✕</button>
         </div>
         <div class="modal-b">
           <div class="types" id="eTypes">${M.TYPES.map((x) => `<div class="slot ${x.id === it.type ? 'on' : ''}" data-t="${x.id}" style="--c:${x.color}">${x.em} ${x.name}</div>`).join('')}</div>
-          <div class="com-mic"><input class="title-in" id="eTitle" type="text" placeholder="Título" value="${esc(it.title)}">${M.micBtn('#eTitle')}</div>
-          <div class="fld"><label>Descrição ${M.hint('Um resumo curto. Aparece no cartão.')}${M.micBtn('#eDesc')}</label><textarea id="eDesc" style="min-height:56px;font-family:var(--f)" placeholder="Sobre o que é?">${esc(it.desc)}</textarea></div>
-          <div class="fld"><label>${it.type === 'link' ? 'Endereço (URL)' : 'Conteúdo'} ${M.hint(it.type === 'prompt' ? 'Copiar este prompt dá XP.' : 'O texto principal. Use o botão Copiar para levar para outro lugar.')}${it.type === 'link' ? '' : M.micBtn('#eContent')}</label>
+          <div class="com-mic"><input class="title-in" id="eTitle" type="text" placeholder="Título" aria-label="Título" value="${esc(it.title)}">${M.micBtn('#eTitle')}</div>
+          ${M.vozErroHTML ? M.vozErroHTML(it) : ''}
+          <div class="fld"><label for="eDesc">Descrição ${M.hint('Um resumo curto. Aparece no cartão.')}${M.micBtn('#eDesc')}</label><textarea id="eDesc" style="min-height:56px;font-family:var(--f)" placeholder="Sobre o que é?">${esc(it.desc)}</textarea></div>
+          <div class="fld"><label for="eContent">${it.type === 'link' ? 'Endereço (URL)' : 'Conteúdo'} ${M.hint(it.type === 'prompt' ? 'Copiar este prompt dá XP.' : 'O texto principal. Use o botão Copiar para levar para outro lugar.')}${it.type === 'link' ? '' : M.micBtn('#eContent')}</label>
             <div class="copybox"><textarea id="eContent" placeholder="${it.type === 'link' ? 'https://…' : it.type === 'comando' ? 'Cole o comando aqui' : 'Escreva ou cole aqui'}">${esc(it.content)}</textarea>
             <button class="btn sm" id="eCopy">📋 Copiar</button></div>
             <div id="eAi" style="margin-top:8px"></div>
             ${it.type === 'link' && /^https?:\/\//i.test(it.content.trim()) ? `<a class="btn sm ghost" style="margin-top:8px" href="${esc(it.content.trim())}" target="_blank" rel="noopener">↗ Abrir link</a>` : ''}
           </div>
           <div class="row">
-            <div class="fld"><label>Categoria</label><select id="eCat"><option value="">— nenhuma —</option>${M.db.categories.map((c) => `<option value="${c.id}" ${c.id === it.cat ? 'selected' : ''}>${esc(c.icon)} ${esc(c.name)}</option>`).join('')}</select></div>
-            <div class="fld"><label>Status</label><select id="eSt">${M.STATUS.map((s) => `<option value="${s.id}" ${s.id === it.status ? 'selected' : ''}>${s.em} ${s.name}</option>`).join('')}</select></div>
-            <div class="fld"><label>Data</label><input type="date" id="eDate" value="${it.date}"></div>
-            ${(M.db.clients || []).length ? `<div class="fld"><label>Cliente</label><select id="eCli"><option value="">— nenhum —</option>${M.db.clients.map((c) => `<option value="${c.id}" ${c.id === it.client ? 'selected' : ''}>👤 ${esc(c.nome || 'Sem nome')}</option>`).join('')}</select></div>` : ''}
+            <div class="fld"><label for="eCat">Categoria</label><select id="eCat"><option value="">— nenhuma —</option>${M.db.categories.map((c) => `<option value="${c.id}" ${c.id === it.cat ? 'selected' : ''}>${esc(c.icon)} ${esc(c.name)}</option>`).join('')}</select></div>
+            <div class="fld"><label for="eSt">Status</label><select id="eSt">${M.STATUS.map((s) => `<option value="${s.id}" ${s.id === it.status ? 'selected' : ''}>${s.em} ${s.name}</option>`).join('')}</select></div>
+            <div class="fld"><label for="eDate">Data</label><input type="date" id="eDate" value="${it.date}"></div>
+            ${(M.db.clients || []).length ? `<div class="fld"><label for="eCli">Cliente</label><select id="eCli"><option value="">— nenhum —</option>${M.db.clients.map((c) => `<option value="${c.id}" ${c.id === it.client ? 'selected' : ''}>👤 ${esc(c.nome || 'Sem nome')}</option>`).join('')}</select></div>` : ''}
           </div>
           <div class="cfg-row" style="border:0;padding:0"><span class="l" style="font-size:13px">📐 Usar como modelo ${M.hint('Modelos aparecem em ＋ Novo item: o item novo já nasce com o texto e o checklist deste. Bom para briefing, roteiro, checklist de post.')}</span>${M.sw('eMod', it.modelo)}</div>
-          <div class="fld"><label>Etiquetas ${M.hint('Separe com vírgula. Ex: ia, estudo, urgente')}</label><input type="text" id="eTags" value="${esc(it.tags.join(', '))}" placeholder="ia, estudo…" list="tagList"><datalist id="tagList">${M.allTags().map((x) => `<option value="${esc(x)}">`).join('')}</datalist></div>
-          <div class="fld"><label>Checklist</label><div id="eCheck"></div></div>
-          <div class="fld"><label>Links</label><div id="eLinks"></div></div>
+          <div class="fld"><label for="eTags">Etiquetas ${M.hint('Separe com vírgula. Ex: ia, estudo, urgente')}</label><input type="text" id="eTags" value="${esc(it.tags.join(', '))}" placeholder="ia, estudo…" list="tagList"><datalist id="tagList">${M.allTags().map((x) => `<option value="${esc(x)}">`).join('')}</datalist></div>
+          <div class="fld"><label for="eCheckNew">Checklist</label><div id="eCheck"></div></div>
+          <div class="fld"><label for="eLinkNew">Links</label><div id="eLinks"></div></div>
           ${M.origemHTML(it)}
-          <div class="fld"><label>Anexos ${M.hint('Arraste arquivos para cá. Eles são copiados para a pasta data/anexos.')}</label><div id="eAtt"></div><div id="ePrev"></div></div>
+          <div class="fld" role="group" aria-labelledby="eAttLab"><div class="lbl" id="eAttLab">Anexos ${M.hint('Arraste arquivos para cá. Eles são copiados para a pasta data/anexos.')}</div><div id="eAtt"></div><div id="ePrev"></div></div>
           ${M.ehMaterial(it) ? `<div class="dica-ia"><b>💡 Dica: personalize este documento com IA</b><p>Este material é um exemplo de referência (o PDF vem com a identidade da Prestes Design). Use como ponto de partida: mande o texto ou o PDF para o Claude, o Codex ou outra IA e peça para adaptar à sua marca, à sua identidade visual, à sua linguagem e às suas necessidades.</p><div class="cmd" id="ePromptIA">${esc(M.PROMPT_MARCA)}</div><button class="btn sm ghost" id="eCopiaIA">📋 Copiar comando</button></div>` : ''}
         </div>${M.rodapeSalvar(it._new)}`;
       bind();
@@ -105,7 +115,7 @@
       const box = $('#eAi', m); if (!box) return;
       const acts = [['melhorar', '✨ Melhorar'], ['corrigir', '🩹 Corrigir'], ['encurtar', '✂️ Encurtar'], ['resumir', '📌 Resumir'], ...(it.type === 'prompt' ? [['prompt', '🪄 Turbinar prompt']] : []), ['checklist', '☑️ Virar checklist'], ['titulo', '🏷️ Sugerir título']];
       if (!state) { box.innerHTML = `<div class="row" style="gap:8px"><button class="btn sm violet" id="aiOpen" style="flex:none">🤖 Pedir à IA</button><button class="btn sm ghost" id="sendTo" style="flex:none">📤 Enviar para…</button></div>`; $('#aiOpen', box).onclick = () => drawAi({ open: true }); $('#sendTo', box).onclick = (e) => M.sendMenu(e, it); return; }
-      box.innerHTML = `<div class="ai"><div class="ai-h">🤖 IA ${M.hint('Usa o Claude Code ou o Codex (a sua assinatura) ou a chave da API, conforme as Configurações. O texto do campo acima só é enviado quando você clica.')}<span style="flex:1"></span><select id="aiUse" hidden style="width:auto;padding:2px 8px;font-size:12px;margin-right:6px"></select><button class="xbtn" id="aiX">✕</button></div>
+      box.innerHTML = `<div class="ai"><div class="ai-h">🤖 IA ${M.hint('Usa o Claude Code ou o Codex (a sua assinatura) ou a chave da API, conforme as Configurações. O texto do campo acima só é enviado quando você clica.')}<span style="flex:1"></span><select id="aiUse" hidden style="width:auto;padding:2px 8px;font-size:12px;margin-right:6px"></select><button class="xbtn" id="aiX" title="Fechar a IA" aria-label="Fechar a IA">✕</button></div>
         <div class="ai-acts">${acts.map(([k, n]) => `<button data-k="${k}">${n}</button>`).join('')}</div>
         <div class="ai-ask"><input type="text" id="aiQ" placeholder="Ou peça do seu jeito: “traduza para inglês”, “deixe mais formal”…"><button class="btn sm violet" id="aiGo" style="flex:none">Enviar</button></div>
         <div id="aiRes">${state.load ? '<div class="ai-load"><i></i><i></i><i></i> A IA está pensando…</div>' : state.err ? `<div style="color:var(--red);font-weight:600">⚠️ ${esc(state.err)}</div>` : state.out != null ? `<div class="ai-out">${esc(state.out)}</div><div class="row" style="margin-top:8px;gap:8px">${state.k === 'titulo' ? '<button class="btn sm" data-u="title" style="flex:none">Usar como título</button>' : state.k === 'checklist' ? '<button class="btn sm" data-u="check" style="flex:none">Adicionar ao checklist</button>' : '<button class="btn sm" data-u="rep" style="flex:none">Substituir</button><button class="btn sm ghost" data-u="add" style="flex:none">Inserir abaixo</button>'}<button class="btn sm ghost" data-u="copy" style="flex:none">📋 Copiar</button><button class="btn sm ghost" data-u="no" style="flex:none">Descartar</button></div>` : ''}</div></div>`;
@@ -145,9 +155,12 @@
     }
 
     function bind() {
-      $('#eX', m).onclick = M.closeModal;
+      // texto que ficou em "Novo passo" ou "Novo link" sem Enter nem ＋ entra no item antes de salvar ou de fechar (não some)
+      const pend = () => { addPasso(true); addLink(true); };
+      $('#eX', m).onclick = () => { pend(); M.closeModal(); };
       $('#svOk', m).onclick = () => {
-        if (!it.title.trim() && !it.desc && !it.content && !it.attachments.length && !it.checklist.length) return M.falta($('#eTitle', m), '✍️ Escreva pelo menos um título');
+        pend();
+        if (!it.title.trim() && !it.desc && !it.content && !it.attachments.length && !it.checklist.length && !it.links.length) return M.falta($('#eTitle', m), '✍️ Escreva pelo menos um título');
         const novo = it._new, mudou = M.rasc.pendente(it);
         delete it._new; M.rasc.salvar(it); M.save(); M.closeModal();
         if (novo) M.toast('✅ Item salvo na Biblioteca'); else if (mudou) M.toast('✅ Alterações salvas');
@@ -155,7 +168,17 @@
       if ($('#svRev', m)) $('#svRev', m).onclick = () => { M.rasc.reverter(it); base = M.rasc.foto(it); M.save(); SFX.play('undo'); draw(); M.toast('↩ Alterações descartadas: voltou a versão salva'); };
       if ($('#svNo', m)) $('#svNo', m).onclick = () => { M.db.items = M.db.items.filter((x) => x.id !== it.id); delete it._new; M.save(); M.closeModal(); M.toast('Item descartado'); };
       $('#eDel', m).onclick = () => { M.closeModal(); M.trashItem(it); };
-      $('#eFav', m).onclick = () => { it.fav = !it.fav; touch(); SFX.play(it.fav ? 'star' : 'click'); $('#eFav', m).textContent = it.fav ? '⭐' : '☆'; };
+      if ($('#eArq', m)) $('#eArq', m).onclick = () => { $('#eX', m).click(); M.arquivarItem(it); }; // fecha a ficha (guardando rascunho, se houver) e arquiva
+      $('#eFav', m).onclick = () => { it.fav = !it.fav; touch(); SFX.play(it.fav ? 'star' : 'click'); $('#eFav', m).textContent = it.fav ? '⭐' : '☆'; $('#eFav', m).setAttribute('aria-pressed', it.fav ? 'true' : 'false'); };
+      // áudio que não foi transcrito (voz: 'erro'): tenta de novo sem sair da ficha
+      const vz = $('#vzDeNovo', m);
+      if (vz) vz.onclick = async () => {
+        vz.disabled = true; vz.textContent = '⏳ Transcrevendo…';
+        await M.vozDeNovo(it);
+        if (M.cur !== it) return;
+        if (!it._salvo) base = M.rasc.foto(it); // o resultado já está salvo: a próxima mudança da pessoa parte dele
+        draw();
+      };
       $('#eCopy', m).onclick = () => M.copyItem(it);
       if ($('#eCopiaIA', m)) $('#eCopiaIA', m).onclick = () => { navigator.clipboard.writeText(M.PROMPT_MARCA).catch(() => {}); SFX.play('copy'); M.toast('📋 Comando copiado. Cole na sua IA junto com o documento.'); };
       $('#eTypes', m).onclick = (e) => { const x = e.target.closest('.slot'); if (!x) return; it.type = x.dataset.t; touch(); SFX.play('click'); draw(); };
@@ -173,48 +196,108 @@
       $('#eTags', m).oninput = (e) => { it.tags = [...new Set(e.target.value.split(',').map((s) => s.trim().replace(/^#/, '')).filter(Boolean))]; touch(); };
     }
 
+    // ----- linhas de checklist, links e anexos: tudo o que muda aqui passa por touch() (rascunho) -----
+    const move = (L, id, d) => { const i = L.findIndex((x) => x.id === id), j = i + d; if (i < 0 || j < 0 || j >= L.length) return false; [L[i], L[j]] = [L[j], L[i]]; return true; };
+    // ↑ ↓ de uma linha (passo ou link): botões, para funcionar igual no clique, no toque e no teclado
+    const ordHTML = (i, n, oque) => `<button type="button" class="xbtn ord" data-a="up" ${i ? '' : 'disabled'} title="Subir ${oque}" aria-label="Subir ${oque}">↑</button><button type="button" class="xbtn ord" data-a="dn" ${i < n - 1 ? '' : 'disabled'} title="Descer ${oque}" aria-label="Descer ${oque}">↓</button>`;
+    const lixo = (oque) => `<button type="button" class="xbtn lx" data-a="rm" title="Remover ${oque}" aria-label="Remover ${oque}">🗑️</button>`;
+    // depois de subir ou descer, o foco continua na mesma linha (quem usa teclado segue apertando)
+    const focaOrd = (box, id, a) => { const r = box.querySelector(`[data-id="${id}"]`), x = r && (r.querySelector(`[data-a="${a}"]:not(:disabled)`) || r.querySelector('.ord:not(:disabled)')); if (x) x.focus(); };
+    const urlDe = (v) => (/^[a-z]+:\/\//i.test(v) ? v : 'https://' + v);
+    const sitio = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (_) { return ''; } };
+    const nomeExt = (n) => { const i = String(n || '').lastIndexOf('.'); return i > 0 ? [n.slice(0, i), n.slice(i)] : [String(n || ''), '']; };
+
+    function addPasso(quieto) {
+      const el = $('#eCheckNew', m), v = (el ? el.value : novoPasso).trim();
+      if (!v) { if (!quieto) M.falta(el, '✍️ Escreva o passo primeiro'); return; }
+      novoPasso = ''; it.checklist.push({ id: M.uid(), t: v, done: false }); touch(); drawCheck();
+      if (!quieto) { SFX.play('click'); $('#eCheckNew', m).focus(); }
+    }
     function drawCheck() {
-      const box = $('#eCheck', m);
-      box.innerHTML = it.checklist.map((c) => `<div class="chk ${c.done ? 'done' : ''}" data-id="${c.id}"><input type="checkbox" ${c.done ? 'checked' : ''}><input type="text" value="${esc(c.t)}"><button class="xbtn" title="Remover">✕</button></div>`).join('') +
-        `<input type="text" id="eCheckNew" placeholder="＋ Novo passo (Enter)" style="margin-top:6px">`;
+      const box = $('#eCheck', m), n = it.checklist.length;
+      box.innerHTML = it.checklist.map((c, i) => `<div class="chk ${c.done ? 'done' : ''}" data-id="${c.id}"><input type="checkbox" ${c.done ? 'checked' : ''} aria-label="Passo feito"><input type="text" value="${esc(c.t)}" aria-label="Texto do passo">${ordHTML(i, n, 'passo')}${lixo('passo')}</div>`).join('') +
+        `<div class="add-linha"><input type="text" id="eCheckNew" value="${esc(novoPasso)}" placeholder="Novo passo (Enter ou ＋)"><button type="button" class="icon-btn" id="eCheckAdd" title="Adicionar passo" aria-label="Adicionar passo">＋</button></div>`;
       box.onchange = (e) => {
         const row = e.target.closest('.chk'); if (!row) return;
         const c = it.checklist.find((x) => x.id === row.dataset.id);
         if (e.target.type === 'checkbox') { c.done = e.target.checked; row.classList.toggle('done', c.done); touch(); if (c.done) M.award('check', { x: e.clientX || innerWidth / 2, y: e.clientY || innerHeight / 2 }); }
       };
-      box.oninput = (e) => { const row = e.target.closest('.chk'); if (row && e.target.type === 'text') { it.checklist.find((x) => x.id === row.dataset.id).t = e.target.value; touch(); } };
-      box.onclick = (e) => { if (e.target.classList.contains('xbtn')) { it.checklist = it.checklist.filter((x) => x.id !== e.target.closest('.chk').dataset.id); touch(); drawCheck(); } };
-      $('#eCheckNew', m).onkeydown = (e) => { if (e.key === 'Enter' && e.target.value.trim()) { it.checklist.push({ id: M.uid(), t: e.target.value.trim(), done: false }); touch(); SFX.play('click'); drawCheck(); $('#eCheckNew', m).focus(); } };
+      box.oninput = (e) => {
+        if (e.target.id === 'eCheckNew') { novoPasso = e.target.value; return; }
+        const row = e.target.closest('.chk'); if (row && e.target.type === 'text') { it.checklist.find((x) => x.id === row.dataset.id).t = e.target.value; touch(); }
+      };
+      box.onclick = (e) => {
+        const b = e.target.closest('[data-a]'), row = b && b.closest('.chk'); if (!row) return;
+        const id = row.dataset.id, a = b.dataset.a;
+        if (a === 'rm') { it.checklist = it.checklist.filter((x) => x.id !== id); touch(); drawCheck(); }
+        else if (move(it.checklist, id, a === 'up' ? -1 : 1)) { touch(); SFX.play('click'); drawCheck(); focaOrd(box, id, a); }
+      };
+      $('#eCheckNew', m).onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addPasso(); } };
+      $('#eCheckAdd', m).onclick = () => addPasso();
     }
 
+    function addLink(quieto) {
+      const el = $('#eLinkNew', m); let v = (el ? el.value : novoLink).trim();
+      if (!v) { if (!quieto) M.falta(el, '✍️ Cole ou escreva o link primeiro'); return; }
+      v = urlDe(v);
+      novoLink = ''; it.links.push({ id: M.uid(), url: v, label: sitio(v) }); touch(); drawLinks();
+      if (!quieto) { SFX.play('click'); $('#eLinkNew', m).focus(); }
+    }
     function drawLinks() {
-      const box = $('#eLinks', m);
-      box.innerHTML = it.links.map((l) => `<div class="chk" data-id="${l.id}"><span>🔗</span><a href="${esc(l.url)}" target="_blank" rel="noopener" style="flex:1;color:var(--cyan);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.label || l.url)}</a><button class="xbtn" title="Remover">✕</button></div>`).join('') +
-        `<input type="text" id="eLinkNew" placeholder="＋ Cole um link e aperte Enter" style="margin-top:6px">`;
-      box.onclick = (e) => { if (e.target.classList.contains('xbtn')) { it.links = it.links.filter((x) => x.id !== e.target.closest('.chk').dataset.id); touch(); drawLinks(); } };
-      $('#eLinkNew', m).onkeydown = (e) => {
-        if (e.key !== 'Enter') return;
-        let v = e.target.value.trim(); if (!v) return;
-        if (!/^[a-z]+:\/\//i.test(v)) v = 'https://' + v;
-        let label = ''; try { label = new URL(v).hostname.replace(/^www\./, ''); } catch (_) {}
-        it.links.push({ id: M.uid(), url: v, label }); touch(); SFX.play('click'); drawLinks(); $('#eLinkNew', m).focus();
+      const box = $('#eLinks', m), n = it.links.length;
+      // o link em edição (✏️) troca a linha por dois campos: nome e endereço; o que se digita já vale, como no resto da ficha
+      box.innerHTML = it.links.map((l, i) => (l.id === linkEd
+        ? `<div class="chk lk-ed" data-id="${l.id}"><span>🔗</span><div class="lk-campos"><input type="text" data-k="label" value="${esc(l.label || '')}" placeholder="Nome (opcional)" aria-label="Nome do link"><input type="text" data-k="url" inputmode="url" value="${esc(l.url)}" placeholder="https://…" aria-label="Endereço do link"></div><button type="button" class="btn sm" data-a="ok" title="Concluir a edição do link">✔ OK</button></div>`
+        : `<div class="chk" data-id="${l.id}"><span>🔗</span><a href="${esc(l.url)}" target="_blank" rel="noopener" style="flex:1;color:var(--cyan);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.label || l.url)}</a><button type="button" class="xbtn" data-a="ed" title="Editar nome e endereço" aria-label="Editar link">✏️</button>${ordHTML(i, n, 'link')}${lixo('link')}</div>`)).join('') +
+        `<div class="add-linha"><input type="text" id="eLinkNew" inputmode="url" value="${esc(novoLink)}" placeholder="Cole um link (Enter ou ＋)"><button type="button" class="icon-btn" id="eLinkAdd" title="Adicionar link" aria-label="Adicionar link">＋</button></div>`;
+      box.oninput = (e) => {
+        if (e.target.id === 'eLinkNew') { novoLink = e.target.value; return; }
+        const row = e.target.closest('.lk-ed'), l = row && it.links.find((x) => x.id === row.dataset.id); if (!l) return;
+        const v = e.target.value.trim();
+        if (e.target.dataset.k === 'label') l.label = v;
+        else if (!v) return; // endereço vazio não vale: fica o anterior
+        else { const auto = !l.label || l.label === sitio(l.url); l.url = urlDe(v); if (auto) { l.label = sitio(l.url); row.querySelector('[data-k=label]').value = l.label; } } // nome que era só o site acompanha o endereço novo
+        touch();
       };
+      box.onkeydown = (e) => { if (e.key === 'Enter' && e.target.closest('.lk-ed')) { e.preventDefault(); linkEd = null; drawLinks(); } };
+      box.onclick = (e) => {
+        const b = e.target.closest('[data-a]'), row = b && b.closest('.chk'); if (!row) return;
+        const id = row.dataset.id, a = b.dataset.a;
+        if (a === 'rm') { it.links = it.links.filter((x) => x.id !== id); touch(); drawLinks(); }
+        else if (a === 'ed') { linkEd = id; drawLinks(); const i = box.querySelector('.lk-ed input'); if (i) { i.focus(); i.select(); } }
+        else if (a === 'ok') { linkEd = null; drawLinks(); }
+        else if (move(it.links, id, a === 'up' ? -1 : 1)) { touch(); SFX.play('click'); drawLinks(); focaOrd(box, id, a); }
+      };
+      $('#eLinkNew', m).onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } };
+      $('#eLinkAdd', m).onclick = () => addLink();
     }
 
     function drawAtt() {
       const box = $('#eAtt', m);
-      box.innerHTML = it.attachments.map((a) => `<div class="attach" data-id="${a.id}"><span class="ic">${M.fileIcon(a)}</span><span class="nm" title="${esc(a.name)}">${esc(a.name)}</span><small>${M.size(a.size)}</small><button class="btn sm ghost" data-a="prev" title="${M.isText(a.name) ? 'Ler em blocos' : 'Ver aqui dentro'}">${M.isText(a.name) ? M.ic('livro') + ' Ler' : M.ic('olho') + ' Ver'}</button><button class="btn sm ghost" data-a="open" title="Abrir no programa do computador">${M.ic('abrir')} Abrir</button><button class="btn sm ghost" data-a="show" title="Mostrar na pasta">${M.ic('pasta')} Pasta</button><button class="xbtn" data-a="rm" title="Remover">✕</button></div>`).join('<div style="height:6px"></div>') +
-        `<div class="dz" id="eDz" style="margin-top:8px">${M.ic('clipe')} Arraste arquivos aqui ou clique para escolher</div><input type="file" id="eFile" multiple hidden>`;
+      // renomear (✏️) muda só o nome mostrado: a extensão fica e o arquivo no disco (a.file) não é tocado
+      box.innerHTML = it.attachments.map((a) => `<div class="attach" data-id="${a.id}"><span class="ic">${M.fileIcon(a)}</span>${a.id === attEd
+        ? `<span class="nm-ed"><input type="text" id="eAttNome" value="${esc(nomeExt(a.name)[0])}" maxlength="120" aria-label="Nome do anexo"><small>${esc(nomeExt(a.name)[1])}</small></span><button type="button" class="btn sm" data-a="renok" title="Concluir a troca de nome">✔ OK</button>`
+        : `<span class="nm" title="${esc(a.name)}">${esc(a.name)}</span><small>${M.size(a.size)}</small><button class="btn sm ghost" data-a="prev" title="${M.isText(a.name) ? 'Ler em blocos' : 'Ver aqui dentro'}">${M.isText(a.name) ? M.ic('livro') + ' Ler' : M.ic('olho') + ' Ver'}</button><button class="btn sm ghost" data-a="open" title="Abrir no programa do computador">${M.ic('abrir')} Abrir</button><button class="btn sm ghost" data-a="show" title="Mostrar na pasta">${M.ic('pasta')} Pasta</button><button type="button" class="xbtn" data-a="ren" title="Renomear (muda só o nome mostrado aqui)" aria-label="Renomear anexo">✏️</button>${lixo('anexo')}`}</div>`).join('<div style="height:6px"></div>') +
+        `<div class="dz" id="eDz" role="button" tabindex="0" aria-label="Escolher arquivos para anexar" style="margin-top:8px">${M.ic('clipe')} Arraste arquivos aqui ou clique para escolher</div><input type="file" id="eFile" multiple hidden>`;
+      box.oninput = (e) => {
+        if (e.target.id !== 'eAttNome') return;
+        const a = it.attachments.find((x) => x.id === attEd), v = e.target.value.trim(); if (!a || !v) return; // nome vazio não vale: fica o anterior
+        a.name = v + nomeExt(a.name)[1]; touch();
+      };
+      box.onkeydown = (e) => { if (e.key === 'Enter' && e.target.id === 'eAttNome') { e.preventDefault(); attEd = null; drawAtt(); } };
       box.onclick = async (e) => {
         const b = e.target.closest('[data-a]'); if (!b) return;
         const a = it.attachments.find((x) => x.id === b.closest('.attach').dataset.id);
         if (b.dataset.a === 'rm') { it.attachments = it.attachments.filter((x) => x !== a); touch(); drawAtt(); $('#ePrev', m).innerHTML = ''; }
+        else if (b.dataset.a === 'ren') { attEd = a.id; drawAtt(); const i = $('#eAttNome', m); if (i) { i.focus(); i.select(); } }
+        else if (b.dataset.a === 'renok') { attEd = null; drawAtt(); }
         else if (b.dataset.a === 'open') M.api('/api/open', { method: 'POST', body: JSON.stringify({ file: a.file }) }).catch((er) => M.toast('⚠️ ' + er.message));
         else if (b.dataset.a === 'show') M.api('/api/reveal', { method: 'POST', body: JSON.stringify({ file: a.file }) }).catch((er) => M.toast('⚠️ ' + er.message));
         else preview(a);
       };
       const dz = $('#eDz', m), fi = $('#eFile', m);
       dz.onclick = () => fi.click();
+      dz.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fi.click(); } };
       fi.onchange = () => M.attachFiles(it, [...fi.files], () => { touch(); drawAtt(); });
       dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('over'); };
       dz.ondragleave = () => dz.classList.remove('over');

@@ -28,7 +28,7 @@
     home: [
       { s: '.hero', t: 'Seu resumo do dia', d: 'Aqui em cima ficam a data, quantas tarefas você tem para hoje e os seus números: itens guardados, tarefas abertas, nível e dias seguidos.' },
       { s: '.ring', t: 'Meta do dia', d: 'O anel enche conforme você ganha pontos (XP) concluindo tarefas e guardando itens. Se não curtir o joguinho, dá para desligar nas Configurações.' },
-      { s: '.qc', t: 'Guarde qualquer coisa', d: 'Escolha Tarefa, Nota, Prompt ou Link, escreva e aperte Enter. Se colar um link, ele entende sozinho. No 🎙️ você fala em vez de digitar.' },
+      { s: '.qc', t: 'Guarde qualquer coisa', d: 'Escolha à esquerda se é Tarefa, Nota, Prompt ou Link, escreva no campo claro e aperte Enter (ou Guardar). Se colar um link, ele entende sozinho. No 🎙️ você fala em vez de digitar.' },
       { s: '.home > .panel', tudo: true, t: 'Seus painéis', d: 'Para hoje, Missões do dia, Em andamento, Favoritos e Mexidos por último: o que importa agora, sem procurar.' },
       { s: '#gSide', t: 'Mapa de conexões', d: 'Cada bolinha é um item. Os que têm a mesma etiqueta, a mesma categoria ou citam um ao outro se ligam sozinhos. Passe o mouse, clique para abrir ou veja em tela cheia.' },
       { s: '#focus', t: 'Modo foco', d: 'Um timer para trabalhar sem distração. Pode fechar o navegador: quando acabar, o computador avisa.' },
@@ -56,7 +56,7 @@
     ],
     cal: [
       { s: '.cal-h', t: 'Calendário do mês', d: 'Use as setas para mudar de mês e “Hoje” para voltar.' },
-      { s: '.cal', t: 'Seus dias', d: 'Clique num dia para criar uma tarefa. Arraste uma tarefa para outro dia para remarcar. Itens com data também aparecem aqui, e o 🎯 mostra quantos hábitos da Rotina você cumpriu no dia.' },
+      { s: '.cal', t: 'Seus dias', d: 'Clique num dia para adicionar uma tarefa ou um compromisso. Arraste uma tarefa para outro dia para remarcar. Itens com data também aparecem aqui, e o 🎯 mostra quantos hábitos da Rotina você cumpriu no dia.' },
     ],
     clients: [
       { s: '#cliNovo', t: 'Seus clientes', d: 'Cadastre nome, WhatsApp, e-mail, Instagram, o quadro do Trello e a pasta do cliente no computador.' },
@@ -76,12 +76,12 @@
       { s: '#fNova', t: 'Adicione as suas', d: 'Inclua qualquer site ou programa que você usa: nome, link e para que serve.' },
       { s: '#fG', t: 'Separadas por grupo', d: 'IAs de imagem e vídeo, programas gratuitos e extras. Clique num grupo para filtrar.' },
       { s: '#fQ', t: 'Busque', d: 'Digite o nome ou o que você quer fazer.' },
-      { s: '#fRes .card', t: 'Abra, salve ou edite', d: 'Abra o site, clique em ⭐ Salvar para levar a ferramenta para as suas e edite ou remova quando quiser.' },
+      { s: '#fRes .card', t: 'Abra, salve ou edite', d: 'Abra o site, clique em ⭐ Salvar para levar a ferramenta para as suas e edite quando quiser. O ⋯ do cartão duplica, arquiva, guarda o link na Biblioteca e remove.' },
     ],
     cfg: [
       { s: '#celSec', t: 'Usar no celular', d: 'Ligue a chave, aponte a câmera do celular para o QR Code e use o MyLoot no mesmo Wi-Fi.' },
       { s: '#tourSec', t: 'Tutorial', d: 'Quer ver estas explicações de novo? É só clicar aqui.' },
-      { t: 'Seus dados são seus', d: 'Mais abaixo você conecta a IA, o Notion, o Trello e o Drive, baixa backup (com ou sem senha) e exporta tudo para o Obsidian.' },
+      { t: 'Seus dados são seus', d: 'Mais abaixo você conecta a IA, o Notion, o Trello e o Drive, faz o backup completo (com os anexos), volta a uma cópia de outro dia e exporta tudo para o Obsidian.' },
     ],
   };
 

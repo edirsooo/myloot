@@ -14,6 +14,21 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.15
+Esta versão aplica uma revisão completa das funções do app (o que dá para criar, mudar, desfazer e recuperar em cada tela).
+- **Início:** o bloco "O que você quer guardar?" ficou maior, em duas colunas: à esquerda você escolhe Tarefa, Nota, Prompt ou Link; à direita escreve num campo claro, fala no microfone e guarda.
+- **Compromissos:** no Calendário e em Tarefas dá para criar um compromisso com hora de início e fim. Ele não vira "atrasado": depois que passa, continua no dia do calendário.
+- **Tarefas que repetem:** "Pular esta vez" leva para a próxima data sem concluir; "Encerrar repetição" mantém a tarefa e para de repetir. A repetição mensal guarda o dia certo (dia 31 volta a ser 31 depois de fevereiro). Todas as concluídas ficam visíveis em "Mostrar mais".
+- **Financeiro:** ao mudar ou apagar um lançamento de conta fixa ou parcela, o app pergunta "só este" ou "este e os próximos". Conta fixa mostra até quando está prevista e tem "Renovar por mais 12 meses". O gráfico separa o que já foi pago ou recebido do que é previsão. Na ficha do cliente, cada pagamento abre o lançamento e pode ser marcado como recebido.
+- **Arquivar e pausar:** itens, metas e ferramentas podem ser arquivados (saem da lista do dia a dia e continuam guardados). Hábitos podem ser pausados sem perder a sequência.
+- **Lixeira:** hábitos, metas e ferramentas apagados agora vão para a Lixeira e podem ser restaurados.
+- **Biblioteca:** botão "⋯" em cada cartão com as ações (duplicar, arquivar, mover, enviar), "Selecionar vários" para agir em muitos itens de uma vez e "Renomear etiqueta".
+- **Ficha do item:** links e passos do checklist podem ser editados e mudar de ordem, anexos podem ser renomeados e o que ficou digitado entra ao salvar.
+- **Backup completo:** um arquivo `.zip` com os registros e os anexos, que restaura tudo em outro computador. A tela também lista as cópias automáticas de cada dia, com "Restaurar esta cópia".
+- **Google Drive:** arquivo que você editou direto na pasta do Drive não é mais sobrescrito nem apagado: vai para a pasta `_substituidos`.
+- **Não perder nada:** se a gravação falhar, aparece uma faixa que não some, o app tenta de novo sozinho e guarda as mudanças no navegador. PC e celular mudando campos diferentes da mesma ficha ficam com as duas mudanças. O aviso de "você não salvou" cobre mais janelas.
+- **Teclado e toque:** as janelas seguram o foco do teclado, cartões abrem com Enter, o mapa tem botões de zoom e os botões pequenos ganharam área de toque maior. O texto da página não é mais selecionado ao arrastar o mouse.
+
 ## Novidades da versão 2.14
 - **Mascotes:** agora um bichinho voxel mora na sua tela (já vem ligado): Claude, GPT, Gemini, Pinguim, Coruja ou Slime. Em Configurações → Diversão → Mascote você troca, dá nome, escolhe o tamanho ou desliga.
 - **Boas-vindas:** na primeira vez, os seis aparecem numa abertura animada e você escolhe o seu.
@@ -109,9 +124,9 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 - **Joguinho:** XP, níveis, meta do dia, missões, sequência de dias e conquistas. Tudo pode ser desligado.
 - **IA (opcional): Claude ou Codex.** Peça para melhorar, corrigir ou resumir qualquer texto. O MyLoot acha sozinho o [Claude Code](https://claude.com/claude-code) e o [Codex](https://developers.openai.com/codex) instalados no seu PC e usa a sua própria assinatura, sem chave e sem custo extra. Na primeira vez, ele pergunta quais você quer usar. Sem nenhum dos dois, dá para colar uma chave da API do Claude.
 - **Notion e Trello (opcional):** envie qualquer item para uma página do Notion ou para uma lista do Trello com um clique.
-- **Google Drive (opcional):** copia tudo como arquivos `.md` para a sua pasta do Drive.
+- **Google Drive (opcional):** copia tudo como arquivos `.md` para a sua pasta do Drive. O que você editar direto no Drive não é apagado: vai para a pasta `_substituidos`.
 - **Exportar para o Obsidian:** baixa um ZIP com tudo em Markdown (itens, anexos, clientes e tarefas), pronto para abrir como cofre.
-- **Backup com senha:** um arquivo `.myloot` criptografado (AES-256) para guardar onde quiser.
+- **Backup:** completo (`.zip` com os registros e os anexos, restaurável em outro computador), só dos registros (`.json` ou `.myloot` com senha, AES-256) e cópias automáticas de cada dia, restauráveis pela tela.
 - **Central de ferramentas:** 42 links de IAs de imagem e vídeo e de programas de código aberto, com busca e botão para guardar na sua Biblioteca.
 - **Já vem com 5 guias em PDF** sobre IA, edição de vídeo e organização.
 
@@ -188,7 +203,7 @@ Tudo fica na pasta `data/`, dentro da pasta do app:
 
 - `data/db.json` — itens, tarefas e progresso
 - `data/anexos/` — os arquivos que você anexou
-- `data/backups/` — uma cópia automática por dia (guarda as 20 mais novas)
+- `data/backups/` — uma cópia automática por dia (guarda as 20 mais novas), restauráveis em Configurações → Dados e backup
 
 A chave da API do Claude e as do Notion e do Trello ficam em `data/segredos.json`, fora do backup e do GitHub.
 

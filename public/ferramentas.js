@@ -52,7 +52,7 @@
   ];
   M.FERRAMENTAS = F;
   GRUPOS.push({ id: 'outras', em: '📌', nome: 'Outras', cor: '#ff9d4a', minha: true }); // só aparece em "Minhas ferramentas"
-  const st = { q: '', g: '', aba: '' }; // aba: 'minhas' ou 'rec' (vazio = decide ao abrir a tela)
+  const st = { q: '', g: '', aba: '', arq: false }; // aba: 'minhas' ou 'rec' (vazio = decide ao abrir a tela); arq: seção "Arquivadas" aberta
   const host = (u) => String(u || '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
   const grupo = (id) => GRUPOS.find((x) => x.id === id) || GRUPOS[GRUPOS.length - 1];
   const tem = (f) => (M.db.tools || []).some((t) => t.u === f.u && t.n === f.n);
@@ -67,46 +67,52 @@
     }
     return M.db.tools;
   }
-  const fonte = () => (st.aba === 'minhas' ? minhas() : F);
+  const ativas = () => minhas().filter((t) => !t.arq); // arquivada sai da lista, mas continua em M.db.tools (e contando como "já salva")
+  const fonte = () => (st.aba === 'minhas' ? ativas() : F);
+  const bate = (f, q) => !q || M.norm([f.n, f.p, f.s, f.onde, f.u].join(' ')).includes(q);
   function lista() {
     const q = M.norm(st.q);
-    return fonte().filter((f) => (!st.g || grupo(f.g).id === st.g) && (!q || M.norm([f.n, f.p, f.s, f.onde, f.u].join(' ')).includes(q)));
+    return fonte().filter((f) => (!st.g || grupo(f.g).id === st.g) && bate(f, q));
   }
   function cartao(f) {
     const g = grupo(f.g), meu = st.aba === 'minhas', ja = !meu && tem(f);
     const abrir = `<a class="btn sm" href="${esc(f.u)}" target="_blank" rel="noopener" style="flex:1">↗ Abrir</a>`;
-    return `<div class="card tool" style="--c:${g.cor}" ${meu ? `data-id="${f.id}"` : `data-i="${F.indexOf(f)}"`}>
-      <div class="top"><span class="badge">${g.em} ${g.nome}</span>${f.gr ? `<span class="tag" title="Dá para usar de graça?">🆓 ${esc(f.gr)}</span>` : ''}</div>
+    return `<div class="card tool${f.arq ? ' arq' : ''}" style="--c:${g.cor}" ${meu ? `data-id="${f.id}"` : `data-i="${F.indexOf(f)}"`}>
+      <div class="top"><span class="badge">${g.em} ${g.nome}</span>${f.gr ? `<span class="tag" title="Dá para usar de graça?">🆓 ${esc(f.gr)}</span>` : ''}<button type="button" class="maisbtn" data-mais title="Mais ações" aria-label="Mais ações" aria-haspopup="menu">⋯</button></div>
       <h3>${esc(f.n)}</h3>
       ${f.s ? `<p>Substitui <b style="color:var(--text)">${esc(f.s)}</b>${f.p ? ' · ' + esc(f.p) : ''}</p>` : f.p ? `<p style="-webkit-line-clamp:3">${esc(f.p)}</p>` : ''}
       <div class="meta"><span class="tdate" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">${esc(f.onde || host(f.u))}</span></div>
-      <div class="row" style="margin-top:10px;gap:8px">${abrir}${meu
-        ? `<button class="btn sm ghost" data-ed="${f.id}" style="flex:1" title="Mudar o nome, o link, a descrição ou o grupo">✏️ Editar</button><button class="btn sm ghost tool-x" data-rm="${f.id}" style="flex:none" title="Tirar das minhas ferramentas (dá para desfazer)" aria-label="Remover ${esc(f.n)} das minhas ferramentas">🗑️</button>`
-        : `<button class="btn sm ghost" data-save="${F.indexOf(f)}" style="flex:1" ${ja ? 'disabled' : ''} title="${ja ? 'Já está em Minhas ferramentas' : 'Copia para Minhas ferramentas, onde você pode editar'}">${ja ? '✔ Nas minhas' : '⭐ Salvar'}</button>`}</div>
+      <div class="row" style="margin-top:10px;gap:8px">${abrir}${!meu
+        ? `<button class="btn sm ghost" data-save="${F.indexOf(f)}" style="flex:1" ${ja ? 'disabled' : ''} title="${ja ? 'Já está em Minhas ferramentas' : 'Copia para Minhas ferramentas, onde você pode editar'}">${ja ? '✔ Nas minhas' : '⭐ Salvar'}</button>`
+        : f.arq ? `<button class="btn sm ghost" data-arq="${f.id}" style="flex:1" title="Volta para a lista das suas ferramentas">📤 Desarquivar</button>`
+        : `<button class="btn sm ghost" data-ed="${f.id}" style="flex:1" title="Mudar o nome, o link, a descrição ou o grupo">✏️ Editar</button><button class="btn sm ghost tool-x" data-rm="${f.id}" style="flex:none" title="Mandar para a Lixeira (dá para restaurar)" aria-label="Remover ${esc(f.n)} das minhas ferramentas">🗑️</button>`}</div>
     </div>`;
   }
   function cartoes() {
-    const L = lista(), base = fonte();
+    const L = lista(), base = fonte(), meu = st.aba === 'minhas', q = M.norm(st.q);
+    // arquivadas: seção recolhida no fim de "Minhas" (a busca também vale para elas e abre a seção se só achar ali)
+    const A = meu ? minhas().filter((t) => t.arq && bate(t, q)) : [];
+    const arq = A.length ? `<details class="arq-sec" id="fArq" ${st.arq || (q && !L.length) ? 'open' : ''}><summary>📦 Arquivadas (${A.length})</summary><div class="grid">${A.map(cartao).join('')}</div></details>` : '';
     $('#fCount').textContent = base.length ? L.length + ' de ' + base.length : '';
-    if (st.aba === 'minhas' && !base.length) {
-      $('#fRes').innerHTML = `<div class="empty"><div class="big">🧰</div><h3>Monte a sua caixa de ferramentas</h3><p>Adicione os sites e programas que você usa, ou salve os que gostar nas Recomendadas. Depois dá para editar, remover e desfazer.</p>
-        <div class="row" style="justify-content:center;gap:8px;margin-top:12px"><button class="btn" data-nova style="flex:none">＋ Adicionar ferramenta</button><button class="btn ghost" data-aba="rec" style="flex:none">💡 Ver as recomendadas</button></div></div>`;
-      return;
-    }
-    $('#fRes').innerHTML = L.length ? `<div class="grid">${L.map(cartao).join('')}</div>` : '<div class="empty"><div class="big">🕳️</div><h3>Nada encontrado</h3><p>Tente outra palavra ou escolha “Tudo” nos grupos.</p></div>';
+    $('#fRes').innerHTML = (meu && !base.length
+      ? `<div class="empty"><div class="big">🧰</div><h3>Monte a sua caixa de ferramentas</h3><p>Adicione os sites e programas que você usa, ou salve os que gostar nas Recomendadas. Depois dá para editar, duplicar, arquivar e remover.</p>
+        <div class="row" style="justify-content:center;gap:8px;margin-top:12px"><button class="btn" data-nova style="flex:none">＋ Adicionar ferramenta</button><button class="btn ghost" data-aba="rec" style="flex:none">💡 Ver as recomendadas</button></div></div>`
+      : L.length ? `<div class="grid">${L.map(cartao).join('')}</div>` : '<div class="empty"><div class="big">🕳️</div><h3>Nada encontrado</h3><p>Tente outra palavra ou escolha “Tudo” nos grupos.</p></div>') + arq;
+    if ($('#fArq')) $('#fArq summary').onclick = () => { st.arq = !$('#fArq').open; }; // lembra se a pessoa abriu ou recolheu
   }
 
   // janela de criar/editar uma ferramenta da pessoa
   function form(t) {
     const novo = !t; t = t || { n: '', u: '', p: '', g: 'outras', gr: '' };
-    const m = M.modal(`<div class="modal-h"><h2>${novo ? '＋ Nova ferramenta' : '✏️ Editar ferramenta'}</h2><button class="icon-btn" id="x">✕</button></div>
+    const desc = [t.s ? 'Substitui ' + t.s + '.' : '', t.p || ''].filter(Boolean).join(' '); // numa recomendada salva, "substitui X" vira texto editável
+    const m = M.modal(`<div class="modal-h"><h2>${novo ? '＋ Nova ferramenta' : '✏️ Editar ferramenta'}</h2><button class="icon-btn" id="x" title="Fechar" aria-label="Fechar">✕</button></div>
       <div class="modal-b">
-        <div class="fld"><label>Nome</label><input type="text" id="tfN" value="${esc(t.n)}" placeholder="Ex.: Canva" maxlength="80"></div>
-        <div class="fld"><label>Link ${M.hint('O endereço do site ou do programa. Pode colar só “canva.com”.')}</label><input type="text" id="tfU" value="${esc(t.u)}" placeholder="https://…" inputmode="url" autocapitalize="off" spellcheck="false"></div>
-        <div class="fld"><label>Para que serve <small style="color:var(--faint)">(opcional)</small></label><textarea id="tfP" rows="2" maxlength="240" placeholder="Uma linha para você lembrar depois">${esc(t.p || '')}</textarea></div>
-        <div class="row"><div class="fld"><label>Grupo</label><select id="tfG">${GRUPOS.map((g) => `<option value="${g.id}" ${grupo(t.g).id === g.id ? 'selected' : ''}>${g.em} ${g.nome}</option>`).join('')}</select></div>
-          <div class="fld"><label>É grátis? <small style="color:var(--faint)">(opcional)</small></label><input type="text" id="tfGr" value="${esc(t.gr || '')}" placeholder="Ex.: Sim, com limite" maxlength="40"></div></div>
-        <div class="row" style="justify-content:flex-end"><button class="btn ghost" id="tfNo" style="flex:none">Cancelar</button><button class="btn" id="tfOk" style="flex:none">✔ Salvar</button></div>
+        <div class="fld"><label for="tfN">Nome</label><input type="text" id="tfN" value="${esc(t.n)}" placeholder="Ex.: Canva" maxlength="80"></div>
+        <div class="fld"><label for="tfU">Link ${M.hint('O endereço do site ou do programa. Pode colar só “canva.com”.')}</label><input type="text" id="tfU" value="${esc(t.u)}" placeholder="https://…" inputmode="url" autocapitalize="off" spellcheck="false"></div>
+        <div class="fld"><label for="tfP">Para que serve <small style="color:var(--faint)">(opcional)</small></label><textarea id="tfP" rows="2" maxlength="240" placeholder="Uma linha para você lembrar depois">${esc(desc)}</textarea></div>
+        <div class="row"><div class="fld"><label for="tfG">Grupo</label><select id="tfG">${GRUPOS.map((g) => `<option value="${g.id}" ${grupo(t.g).id === g.id ? 'selected' : ''}>${g.em} ${g.nome}</option>`).join('')}</select></div>
+          <div class="fld"><label for="tfGr">É grátis? <small style="color:var(--faint)">(opcional)</small></label><input type="text" id="tfGr" value="${esc(t.gr || '')}" placeholder="Ex.: Sim, com limite" maxlength="40"></div></div>
+        <div class="row" style="justify-content:flex-end"><button class="btn ghost" id="tfNo" style="flex:none">Cancelar</button><button class="btn" id="tfOk" style="flex:none">${novo ? '＋ Adicionar ferramenta' : '✔ Salvar'}</button></div>
       </div>`, { small: true });
     const ok = () => {
       const n = $('#tfN', m).value.trim(); let u = $('#tfU', m).value.trim();
@@ -114,9 +120,11 @@
       if (!u) return M.falta($('#tfU', m), '🔗 Cole o link da ferramenta');
       if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = 'https://' + u;
       if (!/^https?:\/\/[^\s/]+\.[^\s/]+|^https?:\/\/localhost/i.test(u)) return M.falta($('#tfU', m), '🔗 Esse link não parece um endereço. Ex.: https://canva.com');
-      if (minhas().some((x) => x !== t && x.u === u)) return M.falta($('#tfU', m), '🧰 Esse link já está nas suas ferramentas');
+      // duas ferramentas podem ter o mesmo link (ex.: as do Gemini); só não pode repetir nome e link juntos
+      const rep = minhas().find((x) => x !== t && x.u === u && M.norm(x.n) === M.norm(n));
+      if (rep) return M.falta($('#tfN', m), rep.arq ? '🧰 Você já tem essa ferramenta: ela está em “Arquivadas”, no fim da lista' : '🧰 Você já tem uma ferramenta com esse nome e esse link');
       const d = { n, u, p: $('#tfP', m).value.trim(), g: $('#tfG', m).value, gr: $('#tfGr', m).value.trim() };
-      if (novo) M.db.tools.unshift(Object.assign({ id: M.uid(), s: '', onde: '', de: 'eu', created: Date.now() }, d)); else Object.assign(t, d);
+      if (novo) M.db.tools.unshift(Object.assign({ id: M.uid(), s: '', onde: '', de: 'eu', created: Date.now() }, d)); else Object.assign(t, d, { s: '', onde: '' });
       M.save(); M.closeModal(); SFX.play('done');
       st.aba = 'minhas'; st.g = ''; st.q = '';
       M.toast(novo ? '🧰 Ferramenta adicionada' : '✔ Ferramenta salva'); M.render();
@@ -132,17 +140,43 @@
     minhas().unshift(copia(f)); M.save(); SFX.play('done');
     M.toast('⭐ Salva em Minhas ferramentas'); M.render();
   }
-  function remover(id) {
-    const T = minhas(), i = T.findIndex((x) => x.id === id); if (i < 0) return;
-    const [t] = T.splice(i, 1); M.save(); SFX.play('trash');
-    M.toast('🗑️ Ferramenta removida', () => { M.db.tools.splice(Math.min(i, M.db.tools.length), 0, t); M.save(); SFX.play('undo'); M.render(); });
-    M.render();
+  const acha = (id) => minhas().find((x) => x.id === id);
+  // remover manda para a Lixeira (dá para restaurar mesmo depois de fechar o MyLoot); o Desfazer do aviso vem do histórico
+  function remover(t) {
+    if (!t) return;
+    M.paraLixeira('tool', t); M.save(); SFX.play('trash');
+    M.toast('🗑️ Ferramenta para a lixeira'); M.render();
+  }
+  // arquivar: sai da lista e fica na seção "Arquivadas"; continua em M.db.tools, então a recomendada segue como "já salva"
+  function arquivar(t, liga) {
+    if (!t) return;
+    if (liga) { t.arq = true; t.arqEm = Date.now(); } else { delete t.arq; delete t.arqEm; }
+    M.save(); SFX.play('click');
+    M.toast(liga ? '📦 Ferramenta arquivada. Ela fica em “Arquivadas”, no fim da lista.' : '📤 Ferramenta de volta para a lista'); M.render();
+  }
+  // duplicar: a cópia nasce logo depois da original, com "(cópia)" no nome para não bater na regra de nome e link repetidos
+  function duplicar(t) {
+    const T = minhas(), i = T.indexOf(t); if (i < 0) return;
+    let n = t.n + ' (cópia)', k = 2;
+    while (T.some((x) => x.u === t.u && M.norm(x.n) === M.norm(n))) n = `${t.n} (cópia ${k++})`;
+    const c = Object.assign(JSON.parse(JSON.stringify(t)), { id: M.uid(), n, de: 'eu', created: Date.now() }); delete c.arq; delete c.arqEm;
+    T.splice(i + 1, 0, c); M.save(); SFX.play('done');
+    M.toast('📑 Ferramenta duplicada'); M.render();
   }
   function paraBiblioteca(f) {
     const g = grupo(f.g);
     if (M.db.items.some((it) => it.type === 'link' && String(it.content || '').trim() === f.u && it.title === f.n)) return M.toast('🔗 Esse link já está na sua Biblioteca');
     M.createItem({ type: 'link', title: f.n, content: f.u, desc: [f.s ? 'Substitui ' + f.s + '.' : '', f.p || '', f.gr ? 'Grátis? ' + f.gr + '.' : ''].filter(Boolean).join(' '), tags: ['ferramenta', M.norm(g.nome).replace(/[^a-z0-9]+/g, '-')], cat: M.cat('c-guias') ? 'c-guias' : '' });
     M.toast('🔗 Guardado na Biblioteca');
+  }
+  // menu de ações do cartão: o mesmo no clique direito e no botão ⋯
+  function menu(e, c) {
+    if (!c) return;
+    const meu = !!c.dataset.id, f = meu ? acha(c.dataset.id) : F[+c.dataset.i]; if (!f) return;
+    M.ctxMenu(e, [{ em: '↗', t: 'Abrir', fn: () => window.open(f.u, '_blank', 'noopener') },
+      ...(meu ? [{ em: '✏️', t: 'Editar', fn: () => form(f) }, { em: '📑', t: 'Duplicar', fn: () => duplicar(f) }] : tem(f) ? [] : [{ em: '⭐', t: 'Salvar em Minhas ferramentas', fn: () => salvar(f) }]),
+      { em: '🔗', t: 'Guardar o link na Biblioteca', fn: () => paraBiblioteca(f) },
+      ...(meu ? [{ em: f.arq ? '📤' : '📦', t: f.arq ? 'Desarquivar' : 'Arquivar', fn: () => arquivar(f, !f.arq) }, '-', { em: '🗑️', t: 'Remover', fn: () => remover(f) }] : [])]);
   }
 
   M.pages.tools = () => {
@@ -153,11 +187,11 @@
     const gs = GRUPOS.filter((g) => (meu ? base.some((f) => grupo(f.g).id === g.id) : !g.minha));
     if (st.g && !gs.some((g) => g.id === st.g)) st.g = '';
     v.innerHTML = `${M.parceiroHTML()}
-      <div class="tool-abas"><div class="seg" role="tablist" aria-label="Quais ferramentas mostrar"><button type="button" role="tab" aria-selected="${meu}" class="${meu ? 'on' : ''}" data-aba="minhas">⭐ Minhas ferramentas <span class="n">${T.length}</span></button><button type="button" role="tab" aria-selected="${!meu}" class="${meu ? '' : 'on'}" data-aba="rec">💡 Recomendadas <span class="n">${F.length}</span></button></div>
+      <div class="tool-abas"><div class="seg" role="tablist" aria-label="Quais ferramentas mostrar"><button type="button" role="tab" aria-selected="${meu}" class="${meu ? 'on' : ''}" data-aba="minhas">⭐ Minhas ferramentas <span class="n">${T.filter((t) => !t.arq).length}</span></button><button type="button" role="tab" aria-selected="${!meu}" class="${meu ? '' : 'on'}" data-aba="rec">💡 Recomendadas <span class="n">${F.length}</span></button></div>
         <span class="grow"></span><button class="btn sm" id="fNova" title="Incluir um site ou programa seu">＋ Adicionar ferramenta</button></div>
       ${base.length ? `<div class="hotbar" id="fG" data-lab="Grupo"><div class="slot ${!st.g ? 'on' : ''}" data-g="">🧰 Tudo <span class="n">${base.length}</span></div>${gs.map((g) => `<div class="slot ${st.g === g.id ? 'on' : ''}" data-g="${g.id}" style="--c:${g.cor}">${g.em} ${g.nome} <span class="n">${base.filter((f) => grupo(f.g).id === g.id).length}</span></div>`).join('')}</div>
-      <div class="toolbar"><input class="search" id="fQ" type="search" placeholder="Buscar ferramenta… (ex.: vídeo, Photoshop)" value="${esc(st.q)}" style="max-width:340px">
-        ${M.hint(meu ? 'As suas ferramentas: as que você adicionou e as recomendadas que salvou. Dá para editar e remover (com desfazer). Clique com o botão direito num cartão para guardar o link na Biblioteca.' : 'Sugestões tiradas dos guias em PDF que vêm no MyLoot. “Salvar” copia a ferramenta para Minhas ferramentas, onde você pode editar. Preços e planos mudam sempre: confira no site oficial.')}
+      <div class="toolbar"><input class="search" id="fQ" type="search" aria-label="Buscar ferramenta" placeholder="Buscar ferramenta… (ex.: vídeo, Photoshop)" value="${esc(st.q)}" style="max-width:340px">
+        ${M.hint(meu ? 'As suas ferramentas: as que você adicionou e as recomendadas que salvou. Dá para editar e remover (o que sai vai para a Lixeira). O botão ⋯ de cada cartão tem mais ações: duplicar, arquivar e guardar o link na Biblioteca.' : 'Sugestões tiradas dos guias em PDF que vêm no MyLoot. “Salvar” copia a ferramenta para Minhas ferramentas, onde você pode editar. O botão ⋯ do cartão também guarda o link na sua Biblioteca. Preços e planos mudam sempre: confira no site oficial.')}
         <span class="grow"></span><small id="fCount" style="color:var(--faint);font-family:var(--mono)"></small></div>` : '<small id="fCount" hidden></small>'}
       <div id="fRes"></div>`;
     cartoes();
@@ -167,17 +201,17 @@
       const q = (s) => e.target.closest(s);
       const a = q('[data-aba]'); if (a) { st.aba = a.dataset.aba; st.g = ''; st.q = ''; SFX.play('click'); return M.render(); }
       if (q('#fNova,[data-nova]')) return form();
+      const mb = q('[data-mais]');
+      if (mb) { // ⋯ abre o mesmo menu do clique direito, logo abaixo do botão; pelo teclado, o foco vai para a primeira opção
+        const r = mb.getBoundingClientRect(); menu({ preventDefault() {}, clientX: r.left, clientY: r.bottom + 4 }, mb.closest('.card.tool'));
+        if (!e.detail && $('#ctx button')) $('#ctx button').focus();
+        return;
+      }
       const s = q('[data-save]'); if (s) return salvar(F[+s.dataset.save]);
-      const ed = q('[data-ed]'); if (ed) return form(T.find((x) => x.id === ed.dataset.ed));
-      const rm = q('[data-rm]'); if (rm) return remover(rm.dataset.rm);
+      const ed = q('[data-ed]'); if (ed) { const t = acha(ed.dataset.ed); return t && form(t); }
+      const rm = q('[data-rm]'); if (rm) return remover(acha(rm.dataset.rm));
+      const ar = q('[data-arq]'); if (ar) return arquivar(acha(ar.dataset.arq), false);
     };
-    v.oncontextmenu = (e) => {
-      const c = e.target.closest('.card.tool'); if (!c) return;
-      const f = c.dataset.id ? T.find((x) => x.id === c.dataset.id) : F[+c.dataset.i]; if (!f) return;
-      M.ctxMenu(e, [{ em: '↗', t: 'Abrir o site', fn: () => window.open(f.u, '_blank', 'noopener') },
-        ...(c.dataset.id ? [{ em: '✏️', t: 'Editar', fn: () => form(f) }] : tem(f) ? [] : [{ em: '⭐', t: 'Salvar em Minhas ferramentas', fn: () => salvar(f) }]),
-        { em: '📦', t: 'Guardar o link na Biblioteca', fn: () => paraBiblioteca(f) },
-        ...(c.dataset.id ? ['-', { em: '🗑️', t: 'Remover das minhas', fn: () => remover(f.id) }] : [])]);
-    };
+    v.oncontextmenu = (e) => { const c = e.target.closest('.card.tool'); if (c) menu(e, c); };
   };
 })();

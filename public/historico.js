@@ -8,9 +8,10 @@
   // lista do banco: [singular, plural, gênero]
   const COL = { items: ['item', 'itens', 'o'], tasks: ['tarefa', 'tarefas', 'a'], clients: ['cliente', 'clientes', 'o'], fin: ['lançamento', 'lançamentos', 'o'], habits: ['hábito', 'hábitos', 'o'], goals: ['meta', 'metas', 'a'], categories: ['coleção', 'coleções', 'a'], tools: ['ferramenta', 'ferramentas', 'a'], trash: ['', '', 'o'] };
   const EM = { items: '📦', tasks: '✅', clients: '👥', fin: '💰', habits: '🎯', goals: '🏆', categories: '🗂️', tools: '🧰' };
-  const LIX = { items: 'item', tasks: 'task', clients: 'client', fin: 'fin' }; // o que a Lixeira sabe guardar
+  const LIX = { items: 'item', tasks: 'task', clients: 'client', fin: 'fin', habits: 'habit', goals: 'goal', tools: 'tool' }; // o que a Lixeira sabe guardar
   const FORA = ['_salvo', 'rascunho', '_new', '_novo', '_xp', 'updated', 'id'];
   const MAX = 40, CHAVE = 'myloot-historico';
+  const FICA = ['xpd']; // campos que o desfazer não mexe (o XP já ganho não volta, então a marca de "já pontuou" também fica)
   const J = JSON.stringify;
   const chave = (k, o) => (k === 'trash' ? (o && o.data ? o.kind + ':' + o.data.id + ':' + o.at : '') : o && o.id);
   // versão "que vale": ficha aberta em edição (rascunho) conta como a versão salva; ficha nova só entra quando é salva
@@ -56,6 +57,9 @@
       return ['🗑️', 'Lixeira alterada'];
     }
     const ks = [...new Set(rs.map((r) => r.k))];
+    // concluir uma tarefa repetida cria a próxima na mesma ação
+    const feita = rs.length === 2 && rs.find((r) => r.k === 'tasks' && r.t === 'mud' && JSON.parse(r.d).done && !JSON.parse(r.a).done);
+    if (feita && rs.some((r) => r.k === 'tasks' && r.t === 'add')) return ['✅', 'Tarefa concluída:' + nome('tasks', JSON.parse(feita.d)) + ' (criou a próxima repetição)'];
     if (rs.length > 1) {
       if (ks.length > 1) return ['✏️', `${rs.length} mudanças de uma vez`];
       const [, mu, g] = COL[ks[0]];
@@ -73,6 +77,10 @@
       if (campos.length === 1 && campos[0] === 'fav') return ['⭐', (o.fav ? 'Item favoritado:' : 'Item tirado dos favoritos:') + N];
       if (campos.includes('attachments')) { const x = (o.attachments || []).length - (a.attachments || []).length; if (x > 0) return ['📎', `Arquivo anexado em${N}`]; if (x < 0) return ['📎', `Anexo removido de${N}`]; }
     }
+    if (r.k === 'habits' && campos.includes('pausa')) return o.pausa ? ['⏸', `Hábito pausado:${N}`] : ['▶', `Hábito retomado:${N}`];
+    if ((r.k === 'goals' || r.k === 'tools' || r.k === 'items') && campos.includes('arq')) return ['📦', `${U} ${o.arq ? 'arquivad' : 'desarquivad'}${g}:${N}`];
+    if (r.k === 'goals' && campos.includes('hist')) return ['🎯', `Avanço da meta:${N}`];
+    if (r.k === 'tasks' && campos.includes('date') && campos.length <= 3 && !campos.includes('text')) return ['🗓️', `Tarefa mudou de dia:${N}`];
     if (r.k === 'fin' && campos.includes('pago')) return ['💰', (o.pago ? 'Lançamento marcado como pago:' : 'Lançamento voltou para “a pagar”:') + N];
     return ['✏️', `${U} alterad${g}:${N}`];
   }
@@ -82,13 +90,18 @@
     clearTimeout(lazy); lazy = 0;
     if (!foto || !M.db) return;
     const recs = compara();
-    if (!recs.length || recs.length > 80) return; // restaurar backup ou importar pacote não entra no histórico
+    if (!recs.length || recs.length > 400) return; // restaurar backup ou importar pacote não entra no histórico
     const [em, txt] = rotulo(recs), agora = Date.now(), u = H[0];
     // várias alterações seguidas na mesma ficha viram uma linha só
     if (u && !u.desfeito && recs.length === 1 && recs[0].t === 'mud' && u.recs.length === 1 && u.recs[0].t === 'mud' && u.recs[0].k === recs[0].k && u.recs[0].id === recs[0].id && agora - u.at < 120000 && /alterad[oa]:/.test(u.txt) && /alterad[oa]:/.test(txt)) {
       u.recs[0].d = recs[0].d; u.at = agora; u.txt = txt;
       if (u.recs[0].a === u.recs[0].d) H.shift();
       guarda(); return;
+    }
+    // a primeira alteração logo depois de criar (ficha nova sendo preenchida) fica na mesma linha da criação
+    if (u && !u.desfeito && recs.length === 1 && recs[0].t === 'mud' && u.recs.length === 1 && u.recs[0].t === 'add' && u.recs[0].k === recs[0].k && u.recs[0].id === recs[0].id && agora - u.at < 120000) {
+      const o = (M.db[recs[0].k] || []).find((x) => chave(recs[0].k, x) === recs[0].id);
+      if (o) { u.recs[0].obj = J(o); u.at = agora; const r2 = rotulo(u.recs); u.em = r2[0]; u.txt = r2[1]; guarda(); return; }
     }
     const e = { id: M.uid(), at: agora, em, txt, recs, desfeito: false };
     H.unshift(e); if (H.length > MAX) H.length = MAX;
@@ -104,10 +117,10 @@
   }
   const silencio = (fn) => { mudo++; try { return fn(); } finally { mudo--; if (M.db) foto = tira(); } };
 
-  // volta = true desfaz; false refaz. Devolve quantas mudanças conseguiu aplicar.
+  // volta = true desfaz; false refaz. Devolve [quantas mudanças aplicou, quantos campos pulou por já terem mudado depois].
   function aplica(e, volta) {
-    let n = 0;
-    const semLixo = !e.recs.some((r) => r.k === 'trash');
+    let n = 0, pulou = 0;
+    const semLixo = !e.recs.some((r) => r.k === 'trash'), soCria = e.recs.every((r) => r.t === 'add');
     mudo++;
     try {
       for (const r of volta ? [...e.recs].reverse() : e.recs) {
@@ -118,8 +131,9 @@
         if (fazer === 'del') {
           if (i < 0) continue;
           const [o] = L.splice(i, 1); n++;
-          // desfazer uma criação não apaga de vez: o que foi criado vai para a Lixeira
-          if (volta && r.t === 'add' && semLixo && LIX[r.k]) M.db.trash.unshift({ kind: LIX[r.k], data: o, at: Date.now() });
+          // desfazer uma criação não apaga de vez: o que a pessoa criou vai para a Lixeira
+          // (o que nasceu junto com outra ação, como a próxima tarefa repetida, só some)
+          if (volta && r.t === 'add' && semLixo && soCria && LIX[r.k]) M.db.trash.unshift({ kind: LIX[r.k], data: o, at: Date.now() });
         } else if (fazer === 'add') {
           if (i >= 0) continue;
           let o = null;
@@ -127,26 +141,34 @@
           L.splice(Math.min(r.i == null ? L.length : r.i, L.length), 0, o || JSON.parse(r.obj)); n++;
         } else {
           if (i < 0) continue;
-          // só os campos que esta ação mexeu voltam: o que mudou depois, em outros campos, fica
+          // só os campos que esta ação mexeu voltam, e só se ainda estão como ela deixou:
+          // o que foi mudado de novo depois (naquele campo ou em outros) fica como está
           const de = JSON.parse(volta ? r.d : r.a), para = JSON.parse(volta ? r.a : r.d), o = L[i];
-          for (const c of new Set([...Object.keys(de), ...Object.keys(para)])) if (J(de[c]) !== J(para[c])) { if (c in para) o[c] = para[c]; else delete o[c]; }
-          if (o.updated) o.updated = Date.now();
-          n++;
+          let mexeu = 0;
+          for (const c of new Set([...Object.keys(de), ...Object.keys(para)])) {
+            if (J(de[c]) === J(para[c]) || FICA.includes(c)) continue;
+            if (J(o[c]) !== J(de[c])) { pulou++; continue; }
+            if (c in para) o[c] = para[c]; else delete o[c];
+            mexeu++;
+          }
+          if (mexeu) { if (o.updated) o.updated = Date.now(); n++; }
         }
       }
     } finally { mudo--; }
     foto = tira();
-    return n;
+    return [n, pulou];
   }
   function troca(id, volta, quieto) {
     const e = H.find((x) => x.id === id);
     if (!e || !!e.desfeito === volta) return false;
-    if (!aplica(e, volta)) { toast0.call(M, '🤷 Não deu: isso já foi mudado ou apagado de outro jeito.'); return false; }
-    e.desfeito = volta; guarda();
+    const [n, pulou] = aplica(e, volta);
+    if (!n) { toast0.call(M, '🤷 Não deu: isso já foi mudado ou apagado de outro jeito.'); return false; }
+    e.desfeito = volta; e.seq = Date.now(); guarda();
     M.save(); SFX.play('undo');
     if (M.modalOpen() && $('#overlay .hist')) desenha();
     if (M.render) M.render();
-    if (!quieto) toast0.call(M, (volta ? '↩ Desfeito: ' : '↪ Refeito: ') + e.txt);
+    if (M.cliAberto && M.modalOpen() && $('#overlay #cNome') && M.openClient) M.openClient(M.cliAberto); // ficha de cliente aberta: redesenha com o que voltou
+    if (!quieto || pulou) toast0.call(M, (volta ? '↩ Desfeito: ' : '↪ Refeito: ') + e.txt + (pulou ? ' (uma parte já tinha sido mudada depois e ficou como está)' : ''));
     return true;
   }
   const desfazer = (id, quieto) => troca(id, true, quieto);
@@ -154,7 +176,9 @@
 
   // ----- ganchos -----
   const load0 = M.load;
-  M.load = async function () { const r = await load0.apply(this, arguments); foto = tira(); return r; };
+  let carregou = false;
+  // recarregar o banco no meio do uso (restaurar backup) zera o histórico: as ações antigas não valem para os dados novos
+  M.load = async function () { const r = await load0.apply(this, arguments); if (carregou) { H.length = 0; guarda(); } carregou = true; foto = tira(); return r; };
   const sinc0 = M.sincronizar;
   // o que chega de outro aparelho não é ação desta pessoa nesta aba: não entra no histórico
   M.sincronizar = function () { if (lazy) registra(false); sinc = true; return sinc0.apply(this, arguments).finally(() => { sinc = false; if (M.db) foto = tira(); }); };
@@ -171,7 +195,8 @@
     const e = pend;
     if (e && !e.avisado && !/^⚠️/.test(String(msg))) {
       e.avisado = true;
-      if (undo) { const u = undo; undo = () => { silencio(u); e.desfeito = true; guarda(); }; } // a tela já tinha o seu desfazer
+      // a tela já tinha o seu desfazer: ele roda e o histórico completa o que ele não cobre (ex.: a próxima tarefa repetida que nasceu junto)
+      if (undo) { const u = undo; undo = () => { silencio(u); aplica(e, true); e.desfeito = true; e.seq = Date.now(); guarda(); M.save(); if (M.render) M.render(); }; }
       else if (!e.recs.every((r) => r.t === 'add') || e.recs.length === 1) undo = () => desfazer(e.id, true);
     }
     return toast0.call(this, msg, undo);
@@ -206,7 +231,8 @@
     const t = e.target || {};
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || '') || t.isContentEditable || (M.modalOpen() && !$('#overlay .hist'))) return;
     if (lazy) registra(false);
-    const re = k === 'y' || e.shiftKey, alvo = re ? H.find((x) => x.desfeito) : H.find((x) => !x.desfeito);
+    // refazer pega a ação desfeita por último, para voltar na ordem certa
+    const re = k === 'y' || e.shiftKey, alvo = re ? H.filter((x) => x.desfeito).sort((a, b) => (b.seq || 0) - (a.seq || 0))[0] : H.find((x) => !x.desfeito);
     e.preventDefault();
     if (!alvo) return toast0.call(M, re ? '↪ Nada para refazer.' : '↩ Nada para desfazer.');
     (re ? refazer : desfazer)(alvo.id);

@@ -1,12 +1,23 @@
 {
-  "versao": "2.14.0",
+  "versao": "2.15.0",
   "data": "2026-11-17",
   "novidades": [
-    "🐾 Mascotes: agora um bichinho mora na sua tela. Escolha entre Claude, GPT, Gemini, Pinguim, Coruja e Slime (ou desligue) em Configurações → Diversão → Mascote",
-    "🖱️ Ele digita junto com você, comemora cada tarefa, dança com a música e dá para pegar, balançar e soltar em cima dos quadros",
-    "👋 Na primeira vez, os mascotes dão as boas-vindas numa abertura animada (dá para rever em Configurações → Diversão)"
+    "🏠 Início novo: “O que você quer guardar?” ficou maior, em duas colunas, com o campo de escrever em destaque",
+    "📅 Compromissos com hora de início e fim no Calendário; tarefas repetidas ganham “Pular esta vez” e “Encerrar repetição”",
+    "💾 Backup completo com os anexos, que restaura tudo em outro computador, e lista de cópias automáticas para voltar a um dia anterior",
+    "💰 Financeiro: “só este” ou “este e os próximos” ao mudar ou apagar uma série, renovar conta fixa e pagamentos clicáveis na ficha do cliente",
+    "📦 Arquivar itens, metas e ferramentas, ⏸ pausar hábitos, e a Lixeira agora guarda hábitos, metas e ferramentas",
+    "☑ Biblioteca: botão ⋯ em cada cartão e “Selecionar vários” para mover, etiquetar, arquivar ou apagar de uma vez",
+    "🛟 Se a gravação falhar, o MyLoot avisa, tenta de novo sozinho e guarda as mudanças; PC e celular mexendo na mesma ficha não se atropelam mais",
+    "🛠️ Histórico mais seguro, links e checklist da ficha editáveis, zoom por botões no mapa e muitos ajustes de teclado e toque",
+    "🐾 Mascotes: a abertura volta uma vez depois de cada atualização, com o número da versão no canto, e as falas combinam com cada personagem"
   ],
   "historico": {
+    "2.14.0": [
+      "🐾 Mascotes: agora um bichinho mora na sua tela. Escolha entre Claude, GPT, Gemini, Pinguim, Coruja e Slime (ou desligue) em Configurações → Diversão → Mascote",
+      "🖱️ Ele digita junto com você, comemora cada tarefa, dança com a música e dá para pegar, balançar e soltar em cima dos quadros",
+      "👋 Na primeira vez, os mascotes dão as boas-vindas numa abertura animada (dá para rever em Configurações → Diversão)"
+    ],
     "2.13.0": [
       "🧰 Ferramentas: adicione as suas em “Minhas ferramentas” (nome, link, para que serve), edite e remova; as sugestões ficam em “Recomendadas”",
       "🕘 Histórico de ações no topo: desfaça ou refaça o que você criou, mudou, concluiu ou apagou (Ctrl + Z desfaz a última)",

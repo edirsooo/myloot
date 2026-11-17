@@ -52,7 +52,7 @@
     ['onclick', 'onkeydown', 'oncontextmenu', 'ondragstart', 'ondragover', 'ondrop', 'ondragend'].forEach((k) => { v[k] = null; });
     const GRUPO = { lib: 'Organização', clients: 'Gestão', tools: 'Extras', cfg: 'Sistema' }; // o título entra antes da primeira tela de cada grupo
     $('#nav').innerHTML = PAGES.map(([id, em, n]) => {
-      const c = id === 'tasks' ? M.db.tasks.filter((t) => !t.done).length : id === 'lib' ? M.db.items.length : id === 'trash' ? M.db.trash.length : id === 'clients' ? (M.db.clients || []).length : '';
+      const c = id === 'tasks' ? M.db.tasks.filter(M.tarefaPendente).length : id === 'lib' ? M.db.items.length : id === 'trash' ? M.db.trash.length : id === 'clients' ? (M.db.clients || []).length : '';
       return `${GRUPO[id] ? `<div class="nav-g">${GRUPO[id]}</div>` : ''}<button class="nav-i ${p === id ? 'on' : ''}" data-p="${id}"><span class="em">${em}</span>${n}<span class="cnt">${c || ''}</span></button>`;
     }).join('');
     $('#pageTitle').textContent = (PAGES.find((x) => x[0] === p) || [])[2] || '';
@@ -75,7 +75,7 @@
   // atalhos
   document.addEventListener('keydown', (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || '')) || e.target.isContentEditable;
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (M.modalOpen()) M.closeModal(); M.openSearch(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (M.modalOpen()) { M.fecharPeloUsuario(); if (M.modalOpen()) return; } M.openSearch(); return; } // janela com mudança não salva pergunta antes
     if (e.key === 'Escape') { if (!$('#levelup').hidden) $('#levelup').hidden = true; else if (M.modalOpen()) M.fecharPeloUsuario(); $('#ctx').hidden = true; return; }
     if (typing || e.ctrlKey || e.altKey || e.metaKey || M.modalOpen()) return;
     if (e.key === '/') { e.preventDefault(); M.openSearch(); }
@@ -117,6 +117,7 @@
     M.render();
     if (hash.startsWith('item=')) M.openItem(hash.slice(5));
     M.focusPaint();
+    await M.recuperarNaoSalvo(); // mudanças que não chegaram a ser salvas da última vez
     // ordem da abertura: 1) novidades da versão, 2) pop-up das IAs, 3) tutorial (só com tudo fechado)
     M.inicioPronto = false;
     const liberaTutorial = () => { M.inicioPronto = true; M.tourTalvez(M.ui.page); };

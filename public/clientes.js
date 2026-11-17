@@ -38,7 +38,7 @@
   const corDe = (s) => { let h = 0; for (const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) % 360; return `hsl(${h} 70% 55%)`; };
 
   function cardHTML(c) {
-    const s = cst(c.status), tA = M.db.tasks.filter((t) => t.client === c.id && !t.done).length, nI = M.db.items.filter((i) => i.client === c.id).length;
+    const s = cst(c.status), tA = M.db.tasks.filter((t) => t.client === c.id && M.tarefaPendente(t)).length, nI = M.db.items.filter((i) => i.client === c.id).length;
     return `<div class="card cli" data-cli="${c.id}" draggable="true" style="--c:${s.color}">
       <div class="top"><span class="av" style="background:${corDe(c.nome)}">${esc(iniciais(c.nome))}</span><div style="min-width:0;flex:1"><h3>${esc(c.nome || 'Sem nome')}</h3>${c.empresa ? `<p style="-webkit-line-clamp:1">${esc(c.empresa)}</p>` : ''}</div><span class="badge">${s.em} ${s.name}</span></div>
       <div class="meta">${c.rascunho ? '<span class="tag rasc" title="Tem alterações não salvas. Abra para salvar ou descartar.">📝 rascunho</span>' : ''}${tA ? `<span class="mi">✅ ${tA} tarefa${tA > 1 ? 's' : ''}</span>` : ''}${nI ? `<span class="mi">📦 ${nI} ite${nI > 1 ? 'ns' : 'm'}</span>` : ''}${c.tags.slice(0, 3).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}</div>
@@ -150,7 +150,7 @@
             ${ts.map(M.taskHTML).join('') || '<small style="color:var(--faint)">Nenhuma tarefa ainda.</small>'}
             <div class="row" style="margin-top:8px;align-items:center"><input type="text" id="cTk" placeholder="Nova tarefa… (ex.: Postar carrossel amanhã)" style="flex:3">${M.micBtn('#cTk')}<button class="btn" id="cTkGo" style="flex:none">＋ Adicionar</button></div></div>
           <div class="fld"><label>📦 Itens do cliente ${M.hint('Briefings, roteiros, prompts, arquivos e links deste cliente. Crie aqui ou ligue um item que já existe.')}</label>
-            ${its.map((it) => `<div class="rowi" data-it="${it.id}" style="--c:${M.type(it.type).color}"><span class="ic">${M.type(it.type).em}</span><b>${esc(it.title || 'Sem título')}</b><button class="xbtn" data-solta="${it.id}" title="Desligar do cliente">✕</button></div>`).join('') || '<small style="color:var(--faint)">Nenhum item ligado.</small>'}
+            ${its.map((it) => `<div class="rowi" data-it="${it.id}" style="--c:${M.type(it.type).color}"><span class="ic">${M.type(it.type).em}</span><b>${esc(it.title || 'Sem título')}</b><button type="button" class="xbtn desv" data-solta="${it.id}" title="Desvincular do cliente (o item continua na Biblioteca)" aria-label="Desvincular ${esc(it.title || 'item sem título')} do cliente"><span class="dv-i" aria-hidden="true">🔗</span><span class="dv-t">Desvincular</span></button></div>`).join('') || '<small style="color:var(--faint)">Nenhum item ligado.</small>'}
             <div class="row" style="margin-top:8px;gap:8px"><button class="btn ghost sm" id="cItNovo" style="flex:none">＋ Novo item</button>${M.modelos().length ? '<button class="btn sm ghost" id="cItMod" style="flex:none">📐 Usar modelo</button>' : ''}
               ${soltos.length ? `<select id="cItLiga" style="flex:1;min-width:160px"><option value="">🔗 Ligar item que já existe…</option>${soltos.slice(0, 300).map((i) => `<option value="${i.id}">${M.type(i.type).em} ${esc(i.title || 'Sem título')}</option>`).join('')}</select>` : ''}</div></div>
           ${M.finDoCliente(c)}
@@ -182,13 +182,13 @@
           else M.editTask(t, () => M.openClient(c.id));
         };
       });
-      m.querySelectorAll('[data-it]').forEach((r) => { r.onclick = (e) => { if (e.target.dataset.solta) return; M.openItem(r.dataset.it); }; });
+      m.querySelectorAll('[data-it]').forEach((r) => { r.onclick = (e) => { if (e.target.closest('[data-solta]')) return; M.openItem(r.dataset.it); }; });
       m.querySelectorAll('[data-solta]').forEach((b) => { b.onclick = () => { const it = M.db.items.find((i) => i.id === b.dataset.solta); if (it) { it.client = ''; it.updated = Date.now(); M.save(); draw(); } }; });
-      $('#cItNovo', m).onclick = () => { const it = M.createItem({ title: '', client: c.id, cat: '' }, true); it._new = true; M.openItem(it.id); };
+      $('#cItNovo', m).onclick = () => { const it = M.createItem({ title: '', client: c.id, cat: '', _new: true }, true); M.openItem(it.id); };
       if ($('#cItMod', m)) $('#cItMod', m).onclick = () => M.novoComModelo({ client: c.id });
       if ($('#cItLiga', m)) $('#cItLiga', m).onchange = (e) => { const it = M.db.items.find((i) => i.id === e.target.value); if (it) { it.client = c.id; it.updated = Date.now(); M.save(); SFX.play('drop'); draw(); } };
       $('#cTrello', m).onclick = () => enviarTrello(c);
-      $('#cFin', m).onclick = () => M.finEditar({ tipo: 'entrada', client: c.id, desc: 'Pagamento ' + (c.nome || ''), cat: 'Serviço / cliente' });
+      M.finClienteLiga(m, c, draw); // pagamentos do cliente: abrir, marcar recebido/pago e ver todos (fica no financeiro.js)
     }
     draw();
     if (!c.nome) $('#cNome', m).focus();

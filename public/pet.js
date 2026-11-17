@@ -1,21 +1,25 @@
 // Mascote: um bichinho voxel que mora na tela, reage ao que você faz e pode ser pego, balançado e solto em cima dos quadros.
 // Tudo é desenhado por código (caixas em projeção oblíqua), sem imagens. Ajustes em settings.pet = { on, tipo, nome, tam } (vem ligado).
-// Na primeira vez (settings.petVisto) toca a abertura de boas-vindas e abre a escolha do mascote.
+// A abertura de boas-vindas toca na primeira vez e uma vez depois de cada atualização (settings.petAbertura); a escolha do mascote abre só na primeira vez (settings.petVisto).
 (function () {
   const q = (s) => document.querySelector(s);
   const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const TIPOS = [['claude', 'Claude'], ['gpt', 'GPT'], ['gemini', 'Gemini'], ['pinguim', 'Pinguim'], ['coruja', 'Coruja'], ['slime', 'Slime']];
+  // [chave, nome, gênero]: as três pessoinhas são meninas; pinguim, coruja e slime são meninos. As falas se flexionam por aqui.
+  const TIPOS = [['claude', 'Claude', 'f'], ['gpt', 'GPT', 'f'], ['gemini', 'Gemini', 'f'], ['pinguim', 'Pinguim', 'm'], ['coruja', 'Coruja', 'm'], ['slime', 'Slime', 'm']];
+  const menina = (k) => (TIPOS.find((t) => t[0] === k) || [])[2] === 'f';
+  // nas falas: {o} vira "o" ou "a"; {ele|ela} escolhe a palavra inteira
+  const flex = (txt, k) => String(txt).replace(/\{([^|}]*)\|([^}]*)\}/g, (_, m, f) => (menina(k) ? f : m)).replace(/\{o\}/g, menina(k) ? 'a' : 'o');
   const cfg = () => Object.assign({ on: true, tipo: 'claude', nome: '', tam: 1 }, (M.db && M.db.settings.pet) || {});
   const rnd = (a, b) => a + Math.random() * (b - a);
   const um = (L) => L[(Math.random() * L.length) | 0];
   const lim = (v, a, b) => Math.max(a, Math.min(b, v));
   const F = {
-    pega: ['Ei!', 'Uooou!', 'Me leva!', 'Opa!'], chacoalha: ['Eita!', 'Paraaa!', 'Vou ficar tonto!'], tonto: ['Tudo girando…', 'Tô tonto…'],
+    pega: ['Ei!', 'Uooou!', 'Me leva!', 'Opa!'], chacoalha: ['Eita!', 'Paraaa!', 'Vou ficar tont{o}!'], tonto: ['Tudo girando…', 'Tô tont{o}…', 'Fiquei tont{o}…'],
     tarefa: ['Bora fazer essa?', 'Essa é rapidinha!', 'Eu ajudo nessa!'], item: ['Esse loot é bom!', 'Guardadinho aqui.', 'Posso ler?'], cliente: ['Cliente bom esse!', 'Vamos cuidar bem dele.'],
     notas: ['Hmm, suas notas…', 'Quanta coisa conectada!'], quadro: ['Cantinho novo!', 'Gostei daqui.', 'Boa vista!'], dentro: ['Entrei!', 'Aqui dentro é legal.'], chao: ['Ufa!', 'Chão firme.', 'Pousei!'],
     carinho: ['Hehe!', 'Mais um!', 'Bom trabalho hoje!', 'Gosto de você!'], tarefaFeita: ['Boa!', 'Mais uma!', 'Mandou bem!', 'Tarefa a menos!'], xp: ['+XP!', 'Isso!', 'Boa!'],
-    nivel: ['LEVEL UP!!', 'Subimos de nível!'], digita: ['Anotando…', 'Tec tec tec…', 'Escrevo junto!'], ia: ['Pensando junto…', 'Deixa a IA pensar…'], musica: ['♪ Essa é boa!', '♪ Solta o som!'],
-    foco: ['Modo foco! Tô junto.'], acorda: ['Opa, voltei!', 'Cochilei…'], escolhido: ['Cheguei!', 'Oi, oi!', 'Bora trabalhar!'],
+    nivel: ['LEVEL UP!!', 'Subimos de nível!'], digita: ['Anotando…', 'Tec tec tec…', 'Escrevo com você!'], ia: ['Pensando com você…', 'Deixa a IA pensar…'], musica: ['♪ Essa é boa!', '♪ Solta o som!'],
+    foco: ['Modo foco! Tô junt{o}.', 'Concentrad{o} com você.'], acorda: ['Opa, voltei!', 'Cochilei…', 'Descansad{o}!'], escolhido: ['Cheguei!', 'Oi, oi!', 'Bora trabalhar!', 'Tô pront{o}!'],
   };
 
   // ----- desenho voxel: caixas [x, y, z, largura, altura, fundo, cor]; x para a direita, y para cima, z para o fundo -----
@@ -227,7 +231,7 @@
 
   function diz(txt, ms) {
     if (!el || !ligado) return;
-    balao.textContent = txt; balao.hidden = false;
+    balao.textContent = flex(txt, tipo); balao.hidden = false;
     const lado = P.y - (TOPO[tipo] * U + 46) * K < 4;      // sem espaço em cima: o balão vai para o lado
     balao.classList.toggle('lado', lado);
     if (lado) { balao.style.bottom = (TOPO[tipo] * U * 0.45) + 'px'; balao.style.marginLeft = ((P.x > innerWidth / 2 ? -1 : 1) * (LARG[tipo] * U / 2 + balao.offsetWidth / 2 + 10)) + 'px'; }
@@ -557,10 +561,11 @@
   function abertura(fim) {
     if (calmo || q('.pet-ola')) { if (fim) fim(); return; }
     const ov = document.createElement('div'); ov.className = 'pet-ola';
-    ov.innerHTML = '<canvas></canvas><div class="pet-ola-logo"><div class="ln"><img class="ic" src="/icon.png" alt=""><b>MyLoot</b></div><small>by <img src="/prestes.png" alt=""> prestes design</small></div><button type="button" class="pet-ola-pular">Pular</button>';
+    ov.innerHTML = '<canvas></canvas><div class="pet-ola-logo"><div class="ln"><img class="ic" src="/icon.png" alt=""><b>MyLoot</b></div><small>by <img src="/prestes.png" alt=""> prestes design</small></div><span class="pet-ola-ver"></span><button type="button" class="pet-ola-pular">Pular</button>';
     document.body.appendChild(ov);
     const c = ov.firstChild, x = c.getContext('2d'), logo = ov.children[1], ks = TIPOS.map((a) => a[0]), n = ks.length, t0 = performance.now();
-    const FALAS = ['Oi!', 'Olá!', 'Bem-vindo!', 'Chegamos!', 'Oi, oi!', 'Bora!'];
+    pegaVersao().then((v) => { if (v) ov.querySelector('.pet-ola-ver').textContent = 'v' + v; });      // número da versão, discreto, no canto
+    const FALAS = ['Oi!', 'Olá!', 'Boas-vindas!', 'Chegamos!', 'Oi, oi!', 'Bora!'];       // falam com quem abriu o app: sem gênero
     let W = 0, H = 0, d = 1, id = 0, fora = false;
     const mede2 = () => { d = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; c.width = W * d; c.height = H * d; };
     const tecla = (e) => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); sai(); } };
@@ -606,18 +611,51 @@
       ${cfgHTML(true)}<div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" id="petOk" style="flex:none">Concluir</button></div></div>`, { small: true, onClose: feito });
     cfgBind(); m.querySelector('#x').onclick = M.closeModal; m.querySelector('#petOk').onclick = M.closeModal;
   }
-  // na primeira vez: espera as janelas da entrada (novidades e IA) fecharem, mostra a abertura e a escolha; o tutorial fica para depois
+  // A abertura é devida na primeira vez e uma vez depois de cada atualização (settings.petAbertura guarda a versão em que ela tocou).
+  // No computador ela toca antes da janela de novidades (M.mostrarNovidades espera por ela); no celular, logo depois de carregar.
+  // Nunca cobre uma janela aberta e não toca em navegador controlado por teste automático (navigator.webdriver), a não ser com window.__petIntro.
+  let versaoApp = '', introP = null;
+  const pegaVersao = async () => { if (!versaoApp) { try { versaoApp = String((await M.api('/api/versao')).versao || ''); } catch (_) {} } return versaoApp; };
+  const emTeste = () => !!navigator.webdriver && !window.__petIntro;
+  function intro() {
+    return introP || (introP = (async () => {
+      const st = M.db.settings, v = await pegaVersao();
+      if (emTeste() || (st.petVisto && (!v || st.petAbertura === v))) return false;
+      if ((M.modalOpen && M.modalOpen()) || q('.pet-ola')) return false;         // fica para a próxima entrada
+      await new Promise((r) => abertura(r));
+      if (v) { st.petAbertura = v; M.save(); }
+      return true;
+    })());
+  }
+  if (typeof M.mostrarNovidades === 'function') { const mn = M.mostrarNovidades; M.mostrarNovidades = async function () { try { await intro(); } catch (_) {} return mn.apply(this, arguments); }; }
+  // depois da abertura: na primeira vez, espera as janelas da entrada (novidades e IA) fecharem e abre a escolha; o tutorial fica para depois
   function entrada() {
-    if (M.db.settings.petVisto) { pendente = false; return; }
     let livre = 0;
-    const tenta = () => {
-      if (M.modalOpen && M.modalOpen()) { livre = 0; return setTimeout(tenta, 700); }
-      if (++livre < 2) return setTimeout(tenta, 700);
-      abertura(() => escolha(() => { pendente = false; if (tourAdiado && M.tourTalvez) { const pg = tourAdiado; tourAdiado = null; M.tourTalvez(pg); } }));
+    const fim = () => { pendente = false; if (tourAdiado && M.tourTalvez) { const pg = tourAdiado; tourAdiado = null; M.tourTalvez(pg); } };
+    const espera = () => {
+      if ((M.modalOpen && M.modalOpen()) || q('.pet-ola')) { livre = 0; return setTimeout(espera, 700); }
+      if (++livre < 2) return setTimeout(espera, 700);
+      escolha(fim);
     };
-    setTimeout(tenta, 1500);
+    setTimeout(async () => {
+      try { await intro(); } catch (_) {}
+      if (M.db.settings.petVisto || emTeste()) return fim();
+      espera();
+    }, 1500);
   }
   if (typeof M.tourTalvez === 'function') { const tt = M.tourTalvez; M.tourTalvez = function (pg) { if (pendente) { tourAdiado = pg; return; } return tt.apply(this, arguments); }; }
+
+  // a logo do menu (cubinho + MYLOOT) é o botão da intro: toca a abertura de novo e volta para o Início
+  const marca = q('#side .brand');
+  if (marca) {
+    marca.setAttribute('role', 'button'); marca.tabIndex = 0; marca.title = 'Ver a abertura do MyLoot';
+    const intro = () => {
+      if (q('.pet-ola') || (M.modalOpen && M.modalOpen())) return;
+      abertura(() => { document.body.classList.remove('menu'); if (M.go) M.go('home'); });
+    };
+    marca.addEventListener('click', intro);
+    marca.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); intro(); } });
+  }
 
   // ----- reações ao uso: XP, tarefa concluída, subir de nível e IA trabalhando -----
   function embrulha(nome, depois) {

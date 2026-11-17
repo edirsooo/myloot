@@ -6,6 +6,7 @@ const path = require('path');
 const cp = require('child_process');
 const os = require('os');
 const crypto = require('crypto');
+const stream = require('stream');
 const WIN = process.platform === 'win32', MAC = process.platform === 'darwin';
 
 const PORT = Number(process.env.MYLOOT_PORT || process.env.MOCHILA_PORT) || 4321;
@@ -236,46 +237,113 @@ function itemToMd(it, db) {
   return L.join('\n');
 }
 
+// O Drive é uma cópia, mas a pessoa pode ter mexido nela. O manifesto (data/drive-manifest.json) guarda a marca do que o app
+// escreveu da última vez em cada arquivo: o hash do texto nos .md; tamanho e data nos anexos (ler anexo grande a cada cópia seria lento).
+// Arquivo diferente dessa marca (editado por fora) ou que saiu da exportação nunca é sobrescrito nem apagado: vai para _substituidos/<data>/.
+const marcaTxt = (s) => 'h:' + crypto.createHash('sha1').update(s).digest('hex');
+const marcaArq = (st) => 'a:' + st.size + ':' + Math.round(st.mtimeMs);
+const intacto = (m, st) => { const x = /^a:(\d+):(\d+)$/.exec(m || ''); return !!x && +x[1] === st.size && Math.abs(+x[2] - st.mtimeMs) < 2000; };
+function hashArquivo(f) { // aos pedaços, para não carregar um anexo grande inteiro
+  const h = crypto.createHash('sha1'), b = Buffer.alloc(1 << 20), fd = fs.openSync(f, 'r');
+  try { let n; while ((n = fs.readSync(fd, b, 0, b.length, null)) > 0) h.update(b.subarray(0, n)); } finally { fs.closeSync(fd); }
+  return h.digest('hex');
+}
+const hojeLocal = () => { const d = new Date(), p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+
 function driveSync(db) {
   const cfg = db.settings.drive || {};
   if (!cfg.path) throw new Error('Escolha a pasta do Drive.');
   if (!fs.existsSync(cfg.path)) throw new Error('A pasta do Drive não existe: ' + cfg.path);
   const antigo = path.join(cfg.path, 'Mochila'), base = fs.existsSync(antigo) && !fs.existsSync(path.join(cfg.path, 'MyLoot')) ? antigo : path.join(cfg.path, 'MyLoot');
   fs.mkdirSync(base, { recursive: true });
-  let manifest = {};
-  try { manifest = JSON.parse(fs.readFileSync(MANIFEST, 'utf8')); } catch (_) {}
-  const next = {};
-  let written = 0;
+  const rel = (f) => path.relative(base, f).split(path.sep).join('/');
+  let velho = {};
+  try { velho = JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) || {}; } catch (_) {}
+  const antes = {};
+  if (velho.v === 2) { if (velho.base === base) Object.assign(antes, velho.arquivos); }
+  else for (const f of Object.keys(velho)) if (inside(base, f)) antes[rel(f)] = ''; // manifesto antigo: sabia o que o app criou, mas não o conteúdo
+  const depois = {}, dia = hojeLocal();
+  let written = 0, movidos = 0, erros = 0;
+  // tira o arquivo do caminho sem apagar. Se não conseguir, devolve false e ninguém escreve por cima dele.
+  const guardar = (file) => {
+    try {
+      let dst = path.join(base, '_substituidos', dia, path.relative(base, file));
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      if (fs.existsSync(dst)) { const e = path.extname(dst); dst = dst.slice(0, dst.length - e.length) + '-' + Date.now() + e; }
+      EXP.mover(file, dst); movidos++;
+      return true;
+    } catch (_) { erros++; return false; }
+  };
   for (const it of db.items) {
     const dir = path.join(base, TYPE_DIR[it.type] || 'Outros');
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${slug(it.title)}-${it.id}.md`);
-    const md = itemToMd(it, db);
-    let same = false;
-    try { same = fs.readFileSync(file, 'utf8') === md; } catch (_) {}
-    if (!same) { fs.writeFileSync(file, md); written++; }
-    next[file] = true;
+    const md = itemToMd(it, db), r = rel(file), marca = marcaTxt(md);
+    let atual = null, ilegivel = false;
+    if (fs.existsSync(file)) { try { atual = fs.readFileSync(file, 'utf8'); } catch (_) { ilegivel = true; erros++; } }
+    if (atual === md) depois[r] = marca;
+    else if (!ilegivel && (atual === null || (antes[r] && marcaTxt(atual) === antes[r]) || guardar(file))) { fs.writeFileSync(file, md); written++; depois[r] = marca; }
+    else depois[r] = antes[r] || ''; // não deu para ler ou para guardar a versão de fora: fica como está e tenta na próxima
     for (const a of it.attachments) {
       const src = path.join(ANX, path.basename(a.file || ''));
       if (!fs.existsSync(src)) continue;
       const adir = path.join(dir, 'anexos', it.id);
       fs.mkdirSync(adir, { recursive: true });
-      const dst = path.join(adir, safeName(a.name));
+      const dst = path.join(adir, safeName(a.name)), ra = rel(dst);
+      if (ra in depois) continue; // dois anexos com o mesmo nome no mesmo item: vale o primeiro (senão um ficaria trocando o outro a cada cópia)
       try {
-        const s1 = fs.statSync(src), s2 = fs.existsSync(dst) ? fs.statSync(dst) : null;
-        if (!s2 || s2.size !== s1.size) { fs.copyFileSync(src, dst); written++; }
-      } catch (_) {}
-      next[dst] = true;
+        const s1 = fs.statSync(src);
+        let s2 = null; try { s2 = fs.statSync(dst); } catch (_) {}
+        if (s2) {
+          const meu = intacto(antes[ra], s2), semMarca = !/^a:/.test(antes[ra] || '');
+          // já está igual: como o app deixou ou, com a data mexida, com o mesmo conteúdo (sem marca antiga, vale o tamanho, como era antes)
+          if (s2.size === s1.size && (meu || semMarca || hashArquivo(src) === hashArquivo(dst))) { depois[ra] = marcaArq(s2); continue; }
+          if (!meu && !guardar(dst)) { depois[ra] = antes[ra] || ''; continue; }
+        }
+        fs.copyFileSync(src, dst); written++;
+        depois[ra] = marcaArq(fs.statSync(dst));
+      } catch (_) { erros++; if (antes[ra] != null) depois[ra] = antes[ra]; }
     }
   }
-  // remove do Drive o que foi apagado no app (só o que o app mesmo criou)
-  let removed = 0;
-  for (const f of Object.keys(manifest)) {
-    if (!next[f] && inside(base, f)) { try { fs.unlinkSync(f); removed++; } catch (_) {} }
+  // o que o app tinha criado e saiu da exportação (item apagado, título ou tipo trocado) vai para _substituidos em vez de ser apagado
+  for (const r of Object.keys(antes)) {
+    if (r in depois || r.startsWith('_substituidos/')) continue;
+    const f = path.join(base, r);
+    if (inside(base, f) && fs.existsSync(f) && !guardar(f)) depois[r] = antes[r];
   }
-  fs.writeFileSync(MANIFEST, JSON.stringify(next));
-  return { escritos: written, removidos: removed, itens: db.items.length, pasta: base };
+  const tmp = MANIFEST + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify({ v: 2, base, arquivos: depois }));
+  fs.renameSync(tmp, MANIFEST);
+  return { escritos: written, movidos, erros, itens: db.items.length, pasta: base };
 }
+
+// ---------- cópias automáticas (data/backups): listar e voltar para uma delas ----------
+const RE_COPIA = /^(db-\d{4}-\d\d-\d\d|antes-de-restaurar-\d+)\.json$/;
+const copiasLidas = new Map(); // contar os registros pede abrir o arquivo: guarda o resultado enquanto ele não mudar
+function listarCopias() {
+  let anexos = new Set();
+  try { anexos = new Set(fs.readdirSync(ANX)); } catch (_) {}
+  const out = [];
+  for (const f of fs.readdirSync(BAK)) {
+    if (!RE_COPIA.test(f)) continue;
+    try {
+      const st = fs.statSync(path.join(BAK, f)), k = f + '|' + st.size + '|' + st.mtimeMs;
+      let c = copiasLidas.get(k);
+      if (!c) {
+        const d = JSON.parse(fs.readFileSync(path.join(BAK, f), 'utf8'));
+        const n = (x) => (Array.isArray(d[x]) ? d[x].length : 0), antes = /^antes-de-restaurar-(\d+)/.exec(f);
+        c = { arquivo: f, tipo: antes ? 'antes' : 'diaria', quando: antes ? Number(antes[1]) : Math.round(st.mtimeMs), tamanho: st.size, itens: n('items'), tarefas: n('tasks'), clientes: n('clients'),
+          arqs: (Array.isArray(d.items) ? d.items : []).flatMap((i) => (i.attachments || []).map((a) => path.basename(a.file || ''))) };
+        copiasLidas.set(k, c);
+      }
+      out.push({ arquivo: c.arquivo, tipo: c.tipo, quando: c.quando, tamanho: c.tamanho, itens: c.itens, tarefas: c.tarefas, clientes: c.clientes, anexos: c.arqs.length, anexosFaltando: c.arqs.filter((a) => !anexos.has(a)).length });
+    } catch (_) { out.push({ arquivo: f, tipo: f.startsWith('db-') ? 'diaria' : 'antes', quando: 0, ruim: true }); }
+  }
+  return out.sort((a, b) => b.quando - a.quando);
+}
+// antes de qualquer restauração, o banco de agora vira uma cópia em data/backups (e aparece na lista de cópias automáticas)
+function guardarAtual() { if (fs.existsSync(DB)) fs.copyFileSync(DB, path.join(BAK, 'antes-de-restaurar-' + Date.now() + '.json')); }
+let restaurando = false;
 
 // ---------- Claude (API da Anthropic) ----------
 // A chave fica em data/segredos.json, fora do db.json: não entra no backup nem vai para o Drive.
@@ -556,7 +624,7 @@ function applyPacks(db) {
 
 // ---------- rotas ----------
 // o que só o próprio computador pode fazer (o celular usa e mexe nos dados, mas não desliga, não troca chaves nem abre coisas no PC)
-const SO_PC = ['/api/shutdown', '/api/open', '/api/reveal', '/api/abrir-pasta', '/api/atualizacao/aplicar', '/api/rede', '/api/rede/trocar', '/api/ai/key', '/api/int/salvar', '/api/restore', '/api/drive/sync', '/api/notify-test', '/api/conexoes', '/api/conexoes/mudar', '/api/conexoes/apagar'];
+const SO_PC = ['/api/shutdown', '/api/open', '/api/reveal', '/api/abrir-pasta', '/api/atualizacao/aplicar', '/api/rede', '/api/rede/trocar', '/api/ai/key', '/api/int/salvar', '/api/restore', '/api/restore/completo', '/api/backups', '/api/backups/restaurar', '/api/drive/sync', '/api/notify-test', '/api/conexoes', '/api/conexoes/mudar', '/api/conexoes/apagar'];
 
 async function app(req, res) {
   try {
@@ -681,7 +749,52 @@ async function app(req, res) {
           try { body = JSON.parse(EXP.decifrar(body.cripto, body.senha)); } catch (e) { return send(res, 400, { erro: e.message }); }
         }
         if (!body || !Array.isArray(body.items)) return send(res, 400, { erro: 'Esse arquivo não parece um backup do MyLoot.' });
-        if (fs.existsSync(DB)) fs.copyFileSync(DB, path.join(BAK, 'antes-de-restaurar-' + Date.now() + '.json'));
+        guardarAtual();
+        writeDB(migrate(body));
+        return send(res, 200, { ok: true });
+      }
+      // ----- backup completo: um ZIP com o banco e a pasta de anexos, feito em fluxo (pode ter gigabytes) -----
+      if (p === '/api/backup/completo' && req.method === 'GET') {
+        const b = EXP.backupPlano(readDB().db, ANX);
+        if (u.searchParams.get('info') === '1') return send(res, 200, Object.assign({ bytes: b.total }, b.etiqueta));
+        res.writeHead(200, { 'Content-Type': 'application/zip', 'Content-Length': b.total, 'Content-Disposition': `attachment; filename="myloot-backup-completo-${hojeLocal()}.zip"`, 'Cache-Control': 'no-store' });
+        // o tamanho já foi avisado: se um arquivo mudar no meio, o download falha em vez de entregar um ZIP errado
+        try { await EXP.zipFluxo(res, b.entradas); res.end(); } catch (_) { res.destroy(); }
+        return;
+      }
+      if (p === '/api/restore/completo' && req.method === 'POST') {
+        // o envio vai direto para o disco; o banco e os anexos só mudam depois que o ZIP inteiro foi conferido
+        const engole = () => new Promise((ok) => { req.on('end', ok).on('close', ok).on('error', ok); req.resume(); });
+        if (restaurando) { await engole(); return send(res, 409, { erro: 'Já tem uma restauração em andamento. Espere ela terminar.' }); }
+        const len = Number(req.headers['content-length']) || 0, tem = EXP.livre(DATA);
+        if (tem != null && len > tem - 50e6) { await engole(); return send(res, 507, { erro: `Falta espaço no disco para receber o backup: ele tem ${EXP.MB(len)} e há ${EXP.MB(tem)} livres.` }); }
+        restaurando = true;
+        // sobra de uma restauração interrompida (o servidor foi fechado no meio): a pasta de trabalho antiga sai antes de começar outra
+        for (const f of fs.readdirSync(DATA)) if (/^tmp-restaurar-\d+$/.test(f)) { try { fs.rmSync(path.join(DATA, f), { recursive: true, force: true }); } catch (_) {} }
+        const tmp = path.join(DATA, 'tmp-restaurar-' + Date.now());
+        try {
+          fs.mkdirSync(tmp, { recursive: true });
+          const zipArq = path.join(tmp, 'envio.zip');
+          await stream.promises.pipeline(req, fs.createWriteStream(zipArq));
+          const r = await EXP.restaurarCompleto(zipArq, { ANX, tmp });
+          guardarAtual();
+          const anexos = EXP.aplicarAnexos(r, path.join(BAK, 'anexos-antes-de-restaurar-' + Date.now()));
+          const novo = migrate(r.db);
+          writeDB(novo);
+          return send(res, 200, { ok: true, itens: novo.items.length, tarefas: novo.tasks.length, clientes: novo.clients.length, anexos });
+        } catch (e) { return send(res, 400, { erro: e.message }); }
+        finally { restaurando = false; try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (_) {} }
+      }
+      // ----- cópias automáticas: ver as que existem e voltar para uma -----
+      if (p === '/api/backups' && req.method === 'GET') return send(res, 200, { copias: listarCopias() });
+      if (p === '/api/backups/restaurar' && req.method === 'POST') {
+        const nome = path.basename(String(JSON.parse((await readBody(req, 4096)).toString('utf8') || '{}').arquivo || ''));
+        const f = path.join(BAK, nome);
+        if (!RE_COPIA.test(nome) || !fs.existsSync(f)) return send(res, 404, { erro: 'Não achei essa cópia.' });
+        let body = null;
+        try { body = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) {}
+        if (!body || !Array.isArray(body.items)) return send(res, 400, { erro: 'Essa cópia está danificada. Escolha outra.' });
+        guardarAtual();
         writeDB(migrate(body));
         return send(res, 200, { ok: true });
       }
@@ -822,6 +935,7 @@ function ouvir() {
   if (server && server._host === host) return;
   const velho = server;
   server = http.createServer(app); server._host = host;
+  server.requestTimeout = 0; // o Node corta envios que passam de 5 minutos; um backup completo ou um anexo grande pode demorar mais que isso
   server.on('error', (e) => {
     if (e.code === 'EADDRINUSE' && primeira) { console.log('O MyLoot já está aberto na porta ' + PORT + '.'); process.exit(0); }
     if (e.code === 'EADDRINUSE') return setTimeout(() => server.listen(PORT, host), 500);

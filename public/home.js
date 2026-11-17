@@ -2,7 +2,7 @@
 (function () {
   const { esc, $, $$ } = M;
   M.pages = M.pages || {};
-  let qcMode = 'tarefa';
+  let qcMode = 'tarefa', qcTxt = ''; // qcTxt: o que está digitado na captura; sobrevive quando a tela é redesenhada (trocar o tipo, sincronizar)
 
   // ----- missões do dia -----
   M.quests = () => {
@@ -30,7 +30,7 @@
   M.pages.home = () => {
     const v = $('#view'), g = M.db.game, s = M.db.settings, today = M.today();
     const h = new Date().getHours(), hi = h < 5 ? 'Boa madrugada' : h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
-    const open = M.db.tasks.filter((t) => !t.done);
+    const open = M.db.tasks.filter(M.tarefaPendente); // compromisso que já passou não conta como pendente
     const late = open.filter((t) => t.date && t.date < today), now = open.filter((t) => t.date === today);
     const dayXp = (g.log[today] || { xp: 0 }).xp, pct = Math.min(100, Math.round((dayXp / (s.dailyGoal || 50)) * 100));
     const doing = M.db.items.filter((i) => i.status === 'and').sort((a, b) => b.updated - a.updated).slice(0, 5);
@@ -40,22 +40,34 @@
     const contas = M.finHoje ? M.finHoje() : [];
     const sumFin = contas.length ? ` · <a data-go="fin" style="color:var(--amber);cursor:pointer">💰 ${contas.length} conta${contas.length > 1 ? 's' : ''} para hoje ou atrasada${contas.length > 1 ? 's' : ''}</a>` : '';
     const date = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-    const modes = [['tarefa', '✅ Tarefa'], ['nota', '📝 Nota'], ['prompt', '✨ Prompt'], ['link', '🔗 Link']];
+    const modes = [['tarefa', '✅ Tarefa', 'algo para fazer'], ['nota', '📝 Nota', 'uma ideia ou lembrete'], ['prompt', '✨ Prompt', 'um texto para usar na IA'], ['link', '🔗 Link', 'um site para voltar depois']];
+    const rot = { tarefa: 'Qual é a tarefa?', nota: 'Escreva a nota', prompt: 'Cole ou escreva o prompt', link: 'Cole o link' };
     const ph = { tarefa: 'Escreva a tarefa e aperte Enter…', nota: 'Anote uma ideia rápida…', prompt: 'Cole um prompt para guardar…', link: 'Cole um link…' };
-    v.innerHTML = `<div class="home-wrap"><div class="home">
-      <div class="hero wide"><img class="pix" src="/bau.png" alt="">
+    v.innerHTML = `<div class="home-wrap"><div class="home-topo">
+      <div class="hero"><img class="pix" src="/bau.png" alt="">
         <div class="grow"><h1>${hi}! 👋</h1><p style="text-transform:capitalize">${date}</p><p>${sum}${sumFin}</p>
           <div class="mini" style="margin-top:12px">${s.gamify ? `<div>Nv ${M.levelOf(g.xp)}<small>${esc(M.levelName(M.levelOf(g.xp)))}</small></div><div>🔥 ${$('#hudStreak b').textContent}<small>dias seguidos</small></div>` : ''}<div>${M.db.items.length}<small>itens no loot</small></div><div>${open.length}<small>tarefas abertas</small></div></div>
         </div>
         ${s.gamify ? `<div class="ring" style="--p:${pct}" title="Meta de hoje: ${dayXp} / ${s.dailyGoal} XP"><span>${pct}%<small>META</small></span></div>` : ''}
       </div>
-      <div class="qc wide"><div class="qc-lab">O que você quer guardar?</div><div class="seg" id="qcM">${modes.map(([k, n]) => `<button data-m="${k}" class="${qcMode === k ? 'on' : ''}">${n}</button>`).join('')}</div><div class="qc-linha"><input type="text" id="qcIn" placeholder="${ph[qcMode]}" autocomplete="off">${M.micBtn('#qcIn') || '<button type="button" class="mic-in" id="qcVoz" title="Criar por voz" aria-label="Criar por voz">🎙️</button>'}<button class="btn" id="qcGo">Guardar ↵</button></div></div>
+      <div class="qc">
+        <div class="qc-esq">
+          <div class="qc-topo"><div class="qc-copy"><h2 id="qcTit"><span class="qc-l1"><span class="qc-3d" aria-hidden="true"><span class="qc-cubo"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="qc-f f1">📝</span><span class="qc-f f2">✨</span><span class="qc-f f3">🔗</span><span class="qc-f f4">✅</span></span><span>O que você quer</span></span> <b>guardar?</b></h2><p>Escolha o tipo, escreva ou fale. O MyLoot guarda no lugar certo.</p></div></div>
+          <div class="qc-tipos" id="qcM" role="group" aria-labelledby="qcTit">${modes.map(([k, n, d]) => `<button type="button" data-m="${k}" class="${qcMode === k ? 'on' : ''}" aria-pressed="${qcMode === k}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>
+        </div>
+        <div class="qc-dir">
+          <label class="qc-lab" for="qcIn">${rot[qcMode]}</label>
+          <textarea id="qcIn" rows="4" placeholder="${ph[qcMode]}" autocomplete="off">${esc(qcTxt)}</textarea>
+          <div class="qc-linha">${M.micBtn('#qcIn') || '<button type="button" class="mic-in" id="qcVoz" title="Criar por voz" aria-label="Criar por voz">🎙️</button>'}<span class="qc-dica">Enter guarda · Shift + Enter pula linha</span><button class="btn" id="qcGo">Guardar ↵</button></div>
+        </div>
+      </div>
+    </div><aside class="panel g-side" id="gSide"></aside><div class="home">
       <div class="panel principal"><h4>🌞 Para hoje <a data-go="tasks">ver todas →</a></h4>${[...late, ...now].map(M.taskHTML).join('') || '<div class="empty" style="padding:22px">Tudo em dia ✨</div>'}${M.rotinaHojeHTML ? M.rotinaHojeHTML() : ''}</div>
       <div class="panel">${s.gamify ? `<h4>🎯 Missões do dia ${M.hint('Complete as três para ganhar um bônus de XP. Zera todo dia.')}</h4>${M.quests().map((q) => `<div class="quest ${q.v >= q.max ? 'ok' : ''}"><span>${q.em} ${q.t}</span><div class="bar"><i style="width:${Math.min(100, (q.v / q.max) * 100)}%"></i></div><small>${q.v >= q.max ? '✔' : q.v + '/' + q.max}</small></div>`).join('')}<div style="height:10px"></div>` : ''}
         <h4>⛏️ Em andamento</h4>${doing.map(rowItem).join('') || '<small style="color:var(--faint)">Nada em andamento.</small>'}</div>
       <div class="panel"><h4>⭐ Favoritos</h4>${favs.map(rowItem).join('') || '<small style="color:var(--faint)">Marque um item com a estrela.</small>'}</div>
       <div class="panel"><h4>🕘 Mexidos por último <a data-go="lib">biblioteca →</a></h4>${recent.map(rowItem).join('') || '<small style="color:var(--faint)">Seu loot está vazio.</small>'}</div>
-    </div><aside class="panel g-side" id="gSide"></aside></div>`;
+    </div></div>`;
     M.graphPanel($('#gSide'));
 
     const input = $('#qcIn');
@@ -69,12 +81,14 @@
         M.createItem({ type: mode, title, content: mode === 'nota' && val.length <= 60 ? '' : (isUrl && !/^https?:/i.test(val) ? 'https://' + val : val), cat: '' });
         M.toast(`${M.type(mode).em} Guardado no loot`);
       }
-      M.render(); $('#qcIn').focus();
+      qcTxt = ''; M.render(); $('#qcIn').focus();
     };
     $('#qcGo').onclick = save;
     if ($('#qcVoz')) $('#qcVoz').onclick = () => M.voz(); // no celular o áudio vai para o PC transcrever
-    input.onkeydown = (e) => { if (e.key === 'Enter') save(); };
-    $('#qcM').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; qcMode = b.dataset.m; SFX.play('click'); M.render(); $('#qcIn').focus(); };
+    input.oninput = () => { qcTxt = input.value; };
+    input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); } }; // Shift + Enter pula linha
+    // trocar Tarefa/Nota/Prompt/Link redesenha a tela: o texto já digitado continua no campo, com o cursor no fim
+    $('#qcM').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; qcTxt = input.value; qcMode = b.dataset.m; SFX.play('click'); M.render(); const i = $('#qcIn'); i.focus(); try { i.setSelectionRange(i.value.length, i.value.length); } catch (_) {} };
     v.onclick = (e) => {
       const go = e.target.closest('[data-go]'); if (go) return M.go(go.dataset.go);
       const row = e.target.closest('.rowi'); if (row) return M.openItem(row.dataset.id);
@@ -84,7 +98,7 @@
       if (e.target.type === 'checkbox') M.toggleTask(t, e);
       else if (e.target.dataset.a === 'rm') M.trashTask(t);
       else if (e.target.dataset.a === 'prio') { t.prio = M.PRIOS[(M.PRIOS.indexOf(t.prio) + 1) % 3]; M.save(); M.render(); }
-      else M.go('tasks');
+      else M.abrirTarefa(t.id);
     };
     v.oncontextmenu = (e) => { const r = e.target.closest('.rowi'); if (r) M.itemMenu(e, M.db.items.find((i) => i.id === r.dataset.id)); };
   };
@@ -132,7 +146,7 @@
       end = 0; SFX.play('click'); paint(); return;
     }
     let v = pref || min || 25;
-    const m = M.modal(`<div class="modal-h"><h2>⏱ Modo foco</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b">
+    const m = M.modal(`<div class="modal-h"><h2>⏱ Modo foco</h2><button class="icon-btn" id="x" title="Fechar (Esc)" aria-label="Fechar">✕</button></div><div class="modal-b">
       <div>Quanto tempo? ${M.hint('O relógio roda no servidor do MyLoot. Você pode fechar o navegador: quando acabar, aparece um aviso no computador. Só para se você desligar o MyLoot ou o computador.')}</div>
       <div class="foco-num"><button class="icon-btn" id="fMenos" title="5 minutos a menos" aria-label="5 minutos a menos">−</button><b id="fVal"></b><button class="icon-btn" id="fMais" title="5 minutos a mais" aria-label="5 minutos a mais">＋</button></div>
       <small class="foco-dica">Role a bolinha do mouse (ou use − e ＋) para mudar de 5 em 5 minutos.</small>

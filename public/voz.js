@@ -41,6 +41,7 @@
   const agora = () => new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
   const arquivo = (blob) => new File([blob], 'audio-' + M.today() + '-' + Date.now().toString(36).slice(-4) + (/ogg/.test(blob.type) ? '.ogg' : /mp4|m4a|aac/.test(blob.type) ? '.m4a' : /mpeg|mp3/.test(blob.type) ? '.mp3' : /wav/.test(blob.type) ? '.wav' : '.webm'), { type: blob.type || 'audio/webm' });
   const fmt = (s) => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+  const motivo = (e) => (/failed to fetch|networkerror|load failed/i.test(e || '') ? 'sem conexão com o computador' : e || 'sem resposta');
 
   // ----- gravador -----
   async function gravar(aoNivel) {
@@ -90,7 +91,8 @@ Regras: "tarefa" é algo a fazer (comece com verbo); datas faladas (amanhã, sex
       : x.tipo === 'link' ? x.url : '';
     return `${EMO[x.tipo] || '📝'} <b>${esc(x.titulo || '')}</b>${extra ? ` <small>${esc(extra)}</small>` : ''}`;
   }
-  async function criar(x, audio) {
+  // falhas (opcional): lista onde entra o motivo quando o áudio não pôde ser guardado no item
+  async function criar(x, audio, falhas) {
     if (x.tipo === 'tarefa') {
       const t = M.addTask(String(x.titulo || '').slice(0, 200), /^\d{4}-\d{2}-\d{2}$/.test(x.data || '') ? x.data : '');
       if (t && /^\d{2}:\d{2}$/.test(x.hora || '')) t.hora = x.hora;
@@ -104,7 +106,7 @@ Regras: "tarefa" é algo a fazer (comece com verbo); datas faladas (amanhã, sex
     }
     const ty = ['nota', 'prompt', 'link'].includes(x.tipo) ? x.tipo : 'nota';
     const it = M.createItem({ type: ty, title: String(x.titulo || '').slice(0, 120) || 'Áudio ' + agora(), content: ty === 'link' ? String(x.url || '') : String(x.texto || ''), cat: '' });
-    if (audio) await M.attachFiles(it, [audio]);
+    if (audio) { const r = await M.attachFiles(it, [audio]); if (falhas && r.falhas.length) falhas.push(motivo(r.falhas[0].erro)); }
     return it;
   }
 
@@ -173,7 +175,7 @@ Regras: "tarefa" é algo a fazer (comece com verbo); datas faladas (amanhã, sex
     if (M.remoto) return vozCelular();
     document.body.classList.remove('menu');
     let rec = null, t0 = 0, relogio = 0, ultimo = null, ocupado = false;
-    const m = M.modal(`<div class="modal-h"><h2>🎙️ Criar por voz</h2><button class="icon-btn" id="x">✕</button></div>
+    const m = M.modal(`<div class="modal-h"><h2>🎙️ Criar por voz</h2><button class="icon-btn" id="x" title="Fechar (Esc)" aria-label="Fechar">✕</button></div>
       <div class="modal-b voz">
         <div class="voz-topo">
           <button class="voz-mic" id="vMic" aria-label="Gravar"><span>🎙️</span><i id="vNiv"></i></button>
@@ -183,7 +185,7 @@ Regras: "tarefa" é algo a fazer (comece com verbo); datas faladas (amanhã, sex
         <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><label class="btn ghost sm" style="flex:none;cursor:pointer">📎 Mandar um arquivo de áudio<input type="file" id="vArq" accept="audio/*,.ogg,.opus,.m4a,.mp3,.wav,.webm" hidden></label>
           <small style="color:var(--faint)">Serve áudio do WhatsApp, gravação do celular, mp3…</small></div>
         <div id="vRes" hidden>
-          <textarea id="vTx" placeholder="O que você falou aparece aqui. Dá para corrigir antes de salvar."></textarea>
+          <textarea id="vTx" aria-label="Texto transcrito" placeholder="O que você falou aparece aqui. Dá para corrigir antes de salvar."></textarea>
           <label class="voz-chk"><input type="checkbox" id="vGuarda"> Guardar o áudio junto (no item)</label>
           <div class="row voz-acoes"><button class="btn" id="vIA">✨ Organizar com IA</button><button class="btn ghost" id="vNota">📝 Salvar como nota</button><button class="btn ghost" id="vTar">✅ Virar tarefa</button></div>
           <div id="vLista"></div>
@@ -235,7 +237,13 @@ Regras: "tarefa" é algo a fazer (comece com verbo); datas faladas (amanhã, sex
     const texto = () => { const t = $('#vTx', m).value.trim(); if (!t) M.falta($('#vTx', m), '✍️ Fale ou escreva algo primeiro'); return t; };
     const audio = () => ($('#vGuarda', m).checked && ultimo ? arquivo(ultimo) : null);
     const fim = (msg) => { M.toast(msg); M.render(); $('#vTx', m).value = ''; $('#vRes', m).hidden = true; $('#vLista', m).innerHTML = ''; st('Toque no microfone e fale', 'Pode mandar o próximo.'); };
-    $('#vNota', m).onclick = async () => { const t = texto(); if (!t) return; await criar({ tipo: 'nota', titulo: titulo(t), texto: t }, audio()); fim('📝 Nota salva'); };
+    // o texto sempre fica na nota; "áudio guardado" só aparece quando o anexo entrou de verdade
+    $('#vNota', m).onclick = async () => {
+      const t = texto(); if (!t) return;
+      const au = audio(), f = [];
+      await criar({ tipo: 'nota', titulo: titulo(t), texto: t }, au, f);
+      fim(f.length ? '⚠️ Nota salva com o texto, mas o áudio não foi guardado: ' + f[0] : au ? '📝 Nota salva com o áudio guardado' : '📝 Nota salva');
+    };
     $('#vTar', m).onclick = async () => { const t = texto(); if (!t) return; await criar({ tipo: 'tarefa', titulo: t }); fim('✅ Tarefa criada'); };
     $('#vIA', m).onclick = async () => {
       const t = texto(); if (!t) return;
@@ -250,10 +258,11 @@ Regras: "tarefa" é algo a fazer (comece com verbo); datas faladas (amanhã, sex
         $('#vCriar', m).onclick = async () => {
           const sel = [...box.querySelectorAll('input[data-i]')].filter((c) => c.checked).map((c) => L[+c.dataset.i]);
           if (!sel.length) return;
-          let au = audio();
-          for (const x of sel) { await criar(x, ['nota', 'prompt'].includes(x.tipo) ? au : null); if (['nota', 'prompt'].includes(x.tipo)) au = null; }
+          let au = audio(); const f = [];
+          for (const x of sel) { await criar(x, ['nota', 'prompt'].includes(x.tipo) ? au : null, f); if (['nota', 'prompt'].includes(x.tipo)) au = null; }
+          if (au) f.push('só nota e prompt guardam o áudio'); // pediu para guardar, mas nenhum item escolhido recebe anexo
           FX.burst && FX.burst(null, null, 30, 6);
-          fim(`🎙️ ${sel.length} ${sel.length > 1 ? 'itens criados' : 'item criado'}`);
+          fim(`🎙️ ${sel.length} ${sel.length > 1 ? 'itens criados' : 'item criado'}` + (f.length ? '. ⚠️ O áudio não foi guardado: ' + f[0] : ''));
         };
       } catch (e) { box.innerHTML = `<p style="margin:0;color:var(--red)">⚠️ ${esc(e.message)}</p>`; }
       finally { b.disabled = false; b.textContent = '✨ Organizar com IA'; }
@@ -263,8 +272,8 @@ Regras: "tarefa" é algo a fazer (comece com verbo); datas faladas (amanhã, sex
   // ----- celular: grava ou escolhe o áudio e manda para o PC transcrever -----
   function vozCelular() {
     document.body.classList.remove('menu');
-    let rec = null;
-    const m = M.modal(`<div class="modal-h"><h2>🎙️ Criar por voz</h2><button class="icon-btn" id="x">✕</button></div>
+    let rec = null, pend = null, url = ''; // pend: gravação que ainda não chegou ao PC; fica aqui para tentar de novo ou baixar
+    const m = M.modal(`<div class="modal-h"><h2>🎙️ Criar por voz</h2><button class="icon-btn" id="x" title="Fechar" aria-label="Fechar">✕</button></div>
       <div class="modal-b voz">
         <div class="voz-topo">
           ${podeGravar() ? '<button class="voz-mic" id="vMic" aria-label="Gravar"><span>🎙️</span><i id="vNiv"></i></button>' : '<label class="voz-mic" aria-label="Gravar"><span>🎙️</span><input type="file" id="vCap" accept="audio/*" capture hidden></label>'}
@@ -272,18 +281,33 @@ Regras: "tarefa" é algo a fazer (comece com verbo); datas faladas (amanhã, sex
             <small>O áudio vai para o seu PC, que transcreve e cria a nota. O texto aparece quando o MyLoot estiver aberto lá.</small></div>
         </div>
         <label class="btn ghost sm" style="cursor:pointer">📎 Escolher um áudio (WhatsApp, gravador…)<input type="file" id="vArq" accept="audio/*,.ogg,.opus,.m4a,.mp3" hidden></label>
-      </div>`, { small: true, onClose: () => { if (rec) rec.parar(); } });
+        <div class="voz-erro" id="vFalha" role="alert" hidden><span id="vFalhaTx"></span><span class="ve-b"><button type="button" class="btn sm" id="vDeNovo">🔁 Tentar enviar de novo</button><a class="btn sm ghost" id="vBaixa">⬇ Baixar áudio</a></span></div>
+      </div>`, { small: true, onClose: () => { if (rec) rec.parar(); if (url) URL.revokeObjectURL(url); } });
     $('#x', m).onclick = M.closeModal;
     const enviar = async (blob) => {
-      $('#vSt', m).textContent = 'Enviando para o PC…';
+      const f = blob instanceof File ? blob : arquivo(blob);
+      $('#vFalha', m).hidden = true; $('#vSt', m).textContent = 'Enviando para o PC…';
       try {
-        const it = M.createItem({ type: 'nota', title: '🎙️ Áudio de ' + agora(), content: '', cat: '' });
-        it.voz = 'pendente';
-        await M.attachFiles(it, [blob instanceof File ? blob : arquivo(blob)]);
-        M.save(); M.closeModal(); M.render();
+        // o item só entra na Biblioteca depois que o áudio chegou: sem o anexo não há o que transcrever
+        const it = M.newItem({ type: 'nota', title: '🎙️ Áudio de ' + agora(), content: '', cat: '', voz: 'pendente' });
+        const r = await M.attachFiles(it, [f]);
+        if (!r.ok.length) {
+          pend = f; if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(f);
+          if (!m.isConnected) return;
+          $('#vSt', m).textContent = '⚠️ O áudio não chegou ao PC';
+          $('#vFalhaTx', m).textContent = 'Não deu para enviar (' + motivo(r.falhas[0] && r.falhas[0].erro) + '). A gravação continua aqui: tente de novo ou baixe o áudio para não perder.';
+          const a = $('#vBaixa', m); a.href = url; a.download = f.name;
+          $('#vFalha', m).hidden = false; SFX.play('error');
+          return;
+        }
+        pend = null;
+        M.db.items.push(it); M.award('item'); M.save();
+        if (m.isConnected) M.closeModal();
+        M.render();
         M.toast('🎙️ Áudio guardado. O PC transcreve e o texto aparece no item.');
-      } catch (e) { $('#vSt', m).textContent = '⚠️ ' + e.message; }
+      } catch (e) { if (m.isConnected) $('#vSt', m).textContent = '⚠️ ' + e.message; }
     };
+    $('#vDeNovo', m).onclick = () => { if (pend) enviar(pend); };
     const arq = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) enviar(f); };
     $('#vArq', m).onchange = arq;
     if ($('#vCap', m)) $('#vCap', m).onchange = arq;
@@ -296,27 +320,74 @@ Regras: "tarefa" é algo a fazer (comece com verbo); datas faladas (amanhã, sex
   }
 
   // ----- PC: transcreve os áudios que chegaram do celular -----
+  const ERRO = 'Não consegui transcrever: ';
+  const ehAudio = (a) => /^audio\//.test(a.mime || '') || /\.(ogg|opus|oga|m4a|mp3|wav|webm|aac)$/i.test(a.name || '');
+  // o áudio do item: o último anexo de áudio (ou o último anexo, como sempre foi)
+  M.vozAudio = (it) => { const L = it.attachments || []; return [...L].reverse().find(ehAudio) || L[L.length - 1] || null; };
+  // aplica a mesma mudança no item e nas outras versões dele (a salva, com a ficha em edição, e o rascunho guardado),
+  // para o "Descartar alterações" ou um rascunho antigo não desfazerem o resultado da transcrição
+  const emTodas = (it, fn) => {
+    fn(it);
+    for (const k of ['_salvo', 'rascunho']) if (it[k]) { try { const o = JSON.parse(it[k]); fn(o); it[k] = M.rasc.foto(o); } catch (_) {} }
+  };
+  const emCurso = new Set(); // itens sendo transcritos agora (a fila e o "Tentar de novo" não pegam o mesmo)
+  // transcreve o áudio guardado no item; devolve '' se deu certo ou o motivo do erro
+  async function transcreveItem(it) {
+    emCurso.add(it.id);
+    try {
+      const a = M.vozAudio(it); if (!a) throw new Error('o áudio não está mais no item');
+      const blob = await fetch('/anexos/' + encodeURIComponent(a.file)).then((r) => { if (!r.ok) throw new Error('áudio não encontrado'); return r.blob(); });
+      const txt = await M.transcrever(blob), t = txt || '(não deu para entender o áudio)';
+      emTodas(it, (o) => {
+        o.content = String(o.content || '').trim() ? o.content.trim() + '\n\n' + t : t; // se já havia texto, a transcrição entra embaixo
+        if (/^🎙️ Áudio de /.test(o.title || '') && txt) o.title = titulo(txt);
+        if (String(o.desc || '').startsWith(ERRO)) o.desc = '';
+        o.voz = 'ok';
+      });
+      it.updated = Date.now(); M.save();
+      return '';
+    } catch (e) {
+      const msg = e.message || 'erro';
+      emTodas(it, (o) => { o.voz = 'erro'; if (!String(o.desc || '').trim() || o.desc.startsWith(ERRO)) o.desc = ERRO + msg; });
+      M.save();
+      return msg;
+    } finally { emCurso.delete(it.id); }
+  }
   let naFila = false;
   M.vozFila = async () => {
     if (M.remoto || naFila || !M.db) return;
-    const L = M.db.items.filter((i) => i.voz === 'pendente' && (i.attachments || []).length);
+    const L = M.db.items.filter((i) => i.voz === 'pendente' && (i.attachments || []).length && !emCurso.has(i.id));
     if (!L.length) return;
     naFila = true;
     try {
       for (const it of L) {
-        const a = it.attachments[it.attachments.length - 1];
-        try {
-          const blob = await fetch('/anexos/' + encodeURIComponent(a.file)).then((r) => { if (!r.ok) throw new Error('áudio não encontrado'); return r.blob(); });
-          M.toast('🎙️ Transcrevendo o áudio que veio do celular…');
-          const txt = await M.transcrever(blob);
-          it.content = txt || '(não deu para entender o áudio)';
-          if (/^🎙️ Áudio de /.test(it.title) && txt) it.title = titulo(txt);
-          it.voz = 'ok'; it.updated = Date.now(); M.save();
-          M.toast('🎙️ Áudio do celular virou nota: ' + it.title);
-          if (!M.modalOpen()) M.render();
-        } catch (e) { it.voz = 'erro'; it.desc = 'Não consegui transcrever: ' + e.message; M.save(); }
+        M.toast('🎙️ Transcrevendo o áudio que veio do celular…');
+        if (await transcreveItem(it)) M.toast('⚠️ Não consegui transcrever um áudio do celular. Abra o item “' + it.title + '” para tentar de novo ou baixar o áudio.');
+        else M.toast('🎙️ Áudio do celular virou nota: ' + it.title);
+        if (!M.modalOpen()) M.render();
       }
     } finally { naFila = false; }
+  };
+
+  // ----- item com a transcrição em erro: tentar de novo e baixar o áudio (aparece na ficha do item) -----
+  M.vozErroHTML = (it) => {
+    const a = it.voz === 'erro' && M.vozAudio(it); if (!a) return '';
+    return `<div class="voz-erro" role="alert"><span>⚠️ A transcrição deste áudio não deu certo. O áudio continua guardado aqui.</span><span class="ve-b"><button type="button" class="btn sm" id="vzDeNovo">🔁 Tentar transcrever de novo</button><a class="btn sm ghost" id="vzBaixa" href="/anexos/${encodeURIComponent(a.file)}" download="${esc(a.name)}">⬇ Baixar áudio</a></span></div>`;
+  };
+  // devolve true se a transcrição saiu (no celular: se o pedido voltou para a fila do PC)
+  M.vozDeNovo = async (it) => {
+    if (!M.vozAudio(it)) { M.toast('⚠️ O áudio não está mais neste item.'); return false; }
+    if (M.remoto) { // o celular não transcreve: devolve o item para a fila do PC
+      emTodas(it, (o) => { o.voz = 'pendente'; if (String(o.desc || '').startsWith(ERRO)) o.desc = ''; });
+      it.updated = Date.now(); M.save();
+      M.toast('🔁 Pedido enviado. O PC transcreve quando o MyLoot estiver aberto lá.');
+      return true;
+    }
+    if (emCurso.has(it.id)) { M.toast('🎙️ Este áudio já está sendo transcrito…'); return false; }
+    M.toast('🎙️ Transcrevendo de novo…');
+    const erro = await transcreveItem(it);
+    if (erro) { SFX.play('error'); M.toast('⚠️ ' + ERRO + erro); } else { SFX.play('pop'); M.toast('🎙️ Transcrição pronta: ' + it.title); }
+    return !erro;
   };
   M.aoSincronizar = () => { M.vozFila(); };
 })();

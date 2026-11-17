@@ -27,8 +27,9 @@
     el.appendChild(b);
     let t = 0;
     const conta = () => { el.classList.remove('com-undo'); void el.offsetWidth; el.classList.add('com-undo'); clearTimeout(t); t = setTimeout(() => el.remove(), 5000); };
-    el.onmouseenter = () => { clearTimeout(t); el.classList.remove('com-undo'); };
-    el.onmouseleave = conta;
+    const para = () => { clearTimeout(t); el.classList.remove('com-undo'); };
+    el.onmouseenter = para; el.onmouseleave = conta;
+    el.addEventListener('focusin', para); el.addEventListener('focusout', conta); // pelo teclado, o foco no botão também segura o aviso
     conta();
   };
 
@@ -84,19 +85,50 @@
   M.modal = (html, opt) => {
     opt = opt || {};
     const ov = $('#overlay');
+    if (!ov.classList.contains('on')) abridor = document.activeElement; // para devolver o foco a quem abriu, quando fechar
     document.body.classList.remove('menu'); // no celular o menu lateral fica por cima das janelas: fecha antes de abrir qualquer uma
-    ov.innerHTML = `<div class="modal ${opt.small ? 'sm' : ''}">${html}</div>`;
+    ov.innerHTML = `<div class="modal ${opt.small ? 'sm' : ''}" role="dialog" aria-modal="true" tabindex="-1">${html}</div>`;
     ov.classList.add('on');
     ov.onmousedown = (e) => { if (e.target === ov) M.fecharPeloUsuario(); };
     onClose = opt.onClose || null;
-    sujo = false;
-    return ov.firstElementChild;
+    sujo = false; foto0 = null;
+    const m = ov.firstElementChild, h = m.querySelector('.modal-h h2');
+    if (h) { h.id = h.id || 'modalTit'; m.setAttribute('aria-labelledby', h.id); }
+    // teclado e leitor de tela: o foco entra na janela (se a tela não pôs o cursor num campo, fica na própria janela)
+    setTimeout(() => { if (ov.firstElementChild === m && !m.contains(document.activeElement)) m.focus({ preventScroll: true }); }, 80);
+    return m;
   };
+  let abridor = null;
+  // Tab e Shift+Tab ficam dentro da janela aberta
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const m = $('#overlay.on .modal'); if (!m) return;
+    const f = [...m.querySelectorAll('a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter((x) => !x.disabled && x.offsetParent !== null);
+    if (!f.length) { e.preventDefault(); return; }
+    const pri = f[0], ult = f[f.length - 1], a = document.activeElement;
+    if (!m.contains(a)) { e.preventDefault(); pri.focus(); }
+    else if (e.shiftKey && (a === pri || a === m)) { e.preventDefault(); ult.focus(); }
+    else if (!e.shiftKey && a === ult) { e.preventDefault(); pri.focus(); }
+  });
+  // Enter ou Espaço num cartão ou linha que funciona como botão (role="button") faz o mesmo que clicar
+  document.addEventListener('keydown', (e) => {
+    if ((e.key !== 'Enter' && e.key !== ' ') || e.target !== document.activeElement) return;
+    const t = e.target; if (!t.matches || !t.matches('[role="button"][tabindex]') || /^(BUTTON|A|INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    e.preventDefault(); t.click();
+  });
   // ----- não perder o que foi digitado -----
   // Fichas de item e de cliente guardam rascunho sozinhas. As janelas pequenas com botão de salvar (tarefa, lançamento, hábito, meta)
   // não têm rascunho: se a pessoa mudou algo e tenta sair pelo ✕, Esc ou clicando fora, a janela pergunta antes de fechar.
-  let sujo = false;
-  const temSalvar = (m) => !m.querySelector('#eX,#cX') && [...m.querySelectorAll('button')].some((b) => /Salvar|Lançar|Adicionar/.test(b.textContent));
+  let sujo = false, foto0 = null;
+  const temSalvar = (m) => !m.querySelector('#eX,#cX') && [...m.querySelectorAll('button')].some((b) => /Salvar|Lançar|Adicionar|Criar|Guardar/.test(b.textContent));
+  // além dos campos digitados, conta o que não dispara "input": botões de escolha (dias, frequência, tipo) e texto que entrou ditado.
+  // Na primeira vez que a pessoa mexe na janela, guarda como ela estava; ao sair, compara.
+  const SEP = String.fromCharCode(1);
+  const fotoJanela = (m) => [...m.querySelectorAll('input,textarea,select')].filter((e) => e.type !== 'search' && e.type !== 'file').map((e) => (e.type === 'checkbox' || e.type === 'radio' ? e.checked : e.value)).join(SEP)
+    + SEP + SEP + [...m.querySelectorAll('button.on,[aria-pressed="true"]')].map((e) => e.id || Object.values(e.dataset).join('.') || e.textContent).join(SEP);
+  const primeira = (e) => { const m = e.target.closest && e.target.closest('#overlay.on .modal'); if (m && foto0 == null && temSalvar(m)) foto0 = fotoJanela(m); };
+  ['pointerdown', 'keydown', 'focusin'].forEach((ev) => document.addEventListener(ev, primeira, true));
+  const mudou = (m) => sujo || (foto0 != null && foto0 !== fotoJanela(m));
   const marca = (e) => { const m = e.target.closest && e.target.closest('#overlay.on .modal'); if (m && e.target.matches('input,textarea,select') && e.target.type !== 'search' && temSalvar(m)) sujo = true; };
   document.addEventListener('input', marca, true); document.addEventListener('change', marca, true);
   const avisaSujo = (m) => {
@@ -104,14 +136,16 @@
     const d = document.createElement('div'); d.className = 'sair-aviso';
     d.innerHTML = '<span>✍️ Você mudou algo aqui e ainda não salvou.</span><span class="sa-b"><button type="button" class="btn ghost sm" data-sa="fica">Continuar editando</button><button type="button" class="btn danger sm" data-sa="sai">Sair sem salvar</button></span>';
     m.prepend(d); d.scrollIntoView({ block: 'nearest' });
-    d.onclick = (e) => { const a = e.target.dataset.sa; if (a === 'fica') d.remove(); if (a === 'sai') { sujo = false; const x = m.querySelector('.modal-h #x'); if (x) x.click(); else M.closeModal(); } };
+    d.onclick = (e) => { const a = e.target.dataset.sa; if (a === 'fica') d.remove(); if (a === 'sai') { sujo = false; foto0 = fotoJanela(m); const x = m.querySelector('.modal-h #x'); if (x) x.click(); else M.closeModal(); } };
   };
-  M.fecharPeloUsuario = () => { const m = $('#overlay.on .modal'); if (m && sujo && temSalvar(m)) return avisaSujo(m); const x = m && m.querySelector('.modal-h #x,.modal-h #eX,.modal-h #cX'); if (x) x.click(); else M.closeModal(); };
-  document.addEventListener('click', (e) => { const x = e.target.closest && e.target.closest('#overlay.on .modal-h #x'); if (!x || !sujo) return; const m = x.closest('.modal'); if (!temSalvar(m)) return; e.stopPropagation(); e.preventDefault(); avisaSujo(m); }, true);
+  M.fecharPeloUsuario = () => { const m = $('#overlay.on .modal'); if (m && temSalvar(m) && mudou(m)) return avisaSujo(m); const x = m && m.querySelector('.modal-h #x,.modal-h #eX,.modal-h #cX'); if (x) x.click(); else M.closeModal(); };
+  document.addEventListener('click', (e) => { const x = e.target.closest && e.target.closest('#overlay.on .modal-h #x'); if (!x) return; const m = x.closest('.modal'); if (!temSalvar(m) || !mudou(m)) return; e.stopPropagation(); e.preventDefault(); avisaSujo(m); }, true);
   M.closeModal = () => {
     const ov = $('#overlay');
     if (!ov.classList.contains('on')) return;
-    ov.classList.remove('on'); ov.innerHTML = ''; sujo = false;
+    ov.classList.remove('on'); ov.innerHTML = ''; sujo = false; foto0 = null;
+    const ab = abridor; abridor = null;
+    if (ab && ab.isConnected && ab.focus) setTimeout(() => { if (!M.modalOpen()) ab.focus({ preventScroll: true }); }, 0);
     const f = onClose; onClose = null;
     if (f) f();
     // janela aberta de dentro da ficha de um cliente (tarefa, lançamento, modelos, confirmação): ao fechar de qualquer jeito
@@ -123,6 +157,14 @@
     const m = M.modal(`<div class="modal-b"><div style="font-size:15px">${esc(msg)}</div><div class="row" style="justify-content:flex-end"><button class="btn ghost" id="cn" style="flex:none">Cancelar</button><button class="btn danger" id="cy" style="flex:none">${esc(okLabel || 'Confirmar')}</button></div></div>`, { small: true });
     $('#cn', m).onclick = () => { M.closeModal(); res(false); };
     $('#cy', m).onclick = () => { M.closeModal(); res(true); };
+  });
+
+  // pergunta com várias respostas. opcoes = [{ k, t, perigo, fraco }]; devolve o k escolhido, ou null em Cancelar, ✕, Esc ou clique fora
+  M.escolha = (msg, opcoes, titulo) => new Promise((res) => {
+    let feito = false; const fim = (v) => { if (feito) return; feito = true; res(v); };
+    const m = M.modal(`<div class="modal-h"><h2>${esc(titulo || 'O que você quer fazer?')}</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div style="font-size:15px">${esc(msg)}</div><div class="escolha">${opcoes.map((o) => `<button type="button" class="btn ${o.perigo ? 'danger' : o.fraco ? 'ghost' : ''}" data-k="${esc(o.k)}">${esc(o.t)}</button>`).join('')}<button type="button" class="btn ghost" data-k="">Cancelar</button></div></div>`, { small: true, onClose: () => fim(null) });
+    $('#x', m).onclick = M.closeModal;
+    m.querySelector('.escolha').onclick = (e) => { const b = e.target.closest('[data-k]'); if (!b) return; fim(b.dataset.k || null); M.closeModal(); };
   });
 
   // ----- menu de clique direito -----
@@ -198,12 +240,12 @@
         ? `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>${M.type(r.it.type).em}</span><span>${hi(r.it.title || 'Sem título', q)}</span><small>${r.where}</small></div>`
         : r.kind === 'cli'
         ? `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>👤</span><span>${hi(r.c.nome || 'Sem nome', q)}${r.c.empresa ? ' · ' + esc(r.c.empresa) : ''}</span><small>cliente</small></div>`
-        : `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>${r.t.done ? '✅' : '☐'}</span><span>${hi(r.t.text, q)}</span><small>tarefa</small></div>`).join('');
+        : `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>${r.t.ev ? '📅' : r.t.done ? '✅' : '☐'}</span><span>${hi(r.t.text, q)}</span><small>${r.t.ev ? 'compromisso' : r.t.done ? 'tarefa concluída' : 'tarefa'}</small></div>`).join('');
     }
     function go(i) {
       const r = list[i]; if (!r) return;
       M.closeModal();
-      if (r.kind === 'cmd') r.c[3](); else if (r.kind === 'item') M.openItem(r.it.id); else if (r.kind === 'cli') { M.go('clients'); M.openClient(r.c.id); } else M.go('tasks');
+      if (r.kind === 'cmd') r.c[3](); else if (r.kind === 'item') M.openItem(r.it.id); else if (r.kind === 'cli') { M.go('clients'); M.openClient(r.c.id); } else M.abrirTarefa(r.t.id);
     }
     input.oninput = run;
     input.onkeydown = (e) => {

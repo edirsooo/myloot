@@ -8,16 +8,17 @@
     const v = $('#view'), T = M.db.trash;
     if (!T.length) { v.innerHTML = '<div class="empty"><div class="big">🧹</div><h3>Lixeira vazia</h3><p>O que você apagar fica aqui para dar para voltar atrás.</p><button class="btn ghost sm" data-hist style="margin-top:12px">🕘 Ver o histórico de ações</button></div>'; return; }
     // um painel por tipo, lado a lado: o olho não precisa atravessar a tela para achar o botão
-    const GR = [['item', '📦 Itens'], ['task', '✅ Tarefas'], ['client', '👥 Clientes'], ['fin', '💰 Lançamentos']];
-    const tipo = (e) => (['item', 'client', 'fin'].includes(e.kind) ? e.kind : 'task');
+    const GR = [['item', '📦 Itens'], ['task', '✅ Tarefas'], ['client', '👥 Clientes'], ['fin', '💰 Lançamentos'], ['habit', '🎯 Hábitos'], ['goal', '🏆 Metas'], ['tool', '🧰 Ferramentas']];
+    const tipo = (e) => (M.LIXO[e.kind] ? e.kind : 'task');
     const quando = (ms) => { const d = new Date(ms); return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); };
     const linha = (e) => {
       const it = e.data, k = tipo(e);
       const [em, nome, sub] = k === 'item' ? [M.type(it.type).em, it.title || 'Sem título', M.type(it.type).name]
         : k === 'client' ? ['👤', it.nome || 'Cliente', it.empresa || 'Cliente']
-        : k === 'fin' ? [it.tipo === 'saida' ? '💸' : '💵', it.desc || 'Lançamento', M.reais(it.valor)] : ['☑️', it.text || 'Tarefa', 'Tarefa'];
+        : k === 'fin' ? [it.tipo === 'saida' ? '💸' : '💵', it.desc || 'Lançamento', M.reais(it.valor)]
+        : k === 'habit' ? [it.em || '🎯', it.nome || 'Hábito', 'Hábito'] : k === 'goal' ? [it.em || '🏆', it.nome || 'Meta', 'Meta'] : k === 'tool' ? ['🧰', it.n || 'Ferramenta', 'Ferramenta'] : ['☑️', it.text || 'Tarefa', 'Tarefa'];
       return `<div class="lix-row"><span class="em">${em}</span><div class="tx"><b>${esc(nome)}</b><small>${esc(sub)} · apagado em ${quando(e.at)}</small></div>
-        <button class="btn sm" data-r="${it.id}" title="Devolve para o lugar de onde saiu">↩ Restaurar</button><button class="xbtn" data-x="${it.id}" title="Apagar de vez (não dá para desfazer)" aria-label="Apagar de vez">✕</button></div>`;
+        <button class="btn sm" data-r="${it.id}" title="Devolve para o lugar de onde saiu">↩ Restaurar</button><button class="xbtn" data-x="${it.id}" title="Apagar de vez" aria-label="Apagar ${esc(nome)} de vez">🗑️</button></div>`;
     };
     v.innerHTML = `<div class="toolbar"><button class="btn danger sm" id="empty">🧹 Esvaziar lixeira</button><button class="btn ghost sm" data-hist title="Tudo o que você fez nesta sessão, com desfazer e refazer">🕘 Histórico de ações</button>
         <span style="color:var(--dim)">${T.length} ${T.length === 1 ? 'coisa apagada' : 'coisas apagadas'}</span>${M.hint('O que você apaga fica aqui até esvaziar a lixeira. “Restaurar” devolve para o lugar de onde saiu; o ✕ apaga só aquela coisa de vez.')}</div>
@@ -77,14 +78,11 @@
       ${M.cnxSection()}
       ${M.iaSection()}
       <section class="stat so-pc"><div class="cfg-h">☁️ Google Drive</div>
-        <div class="cfg-row"><span class="l">Copiar para o Drive ${M.hint('Precisa do app “Google Drive para computador”. Cada item vira um arquivo .md numa pasta por tipo, com os anexos junto.')}</span>${M.sw('cDrive', s.drive.on)}</div>
-        <div class="row" style="margin-top:8px;align-items:center"><input type="text" id="cPath" value="${esc(s.drive.path)}" placeholder="Ex: G:\\Meu Drive" style="flex:3"><button class="btn ghost" id="cFind" style="flex:none">🔎 Procurar</button><button class="btn" id="cSync" style="flex:none">☁️ Sincronizar agora</button></div>
+        <div class="cfg-row"><span class="l">Copiar para o Drive ${M.hint('Precisa do app “Google Drive para computador”. Cada item vira um arquivo .md numa pasta por tipo, com os anexos junto. Se você mexer num arquivo lá no Drive, ou apagar o item aqui, o MyLoot não apaga nem troca a sua versão: ela vai para a pasta _substituidos.')}</span>${M.sw('cDrive', s.drive.on)}</div>
+        <div class="row" style="margin-top:8px;align-items:center"><input type="text" id="cPath" value="${esc(s.drive.path)}" placeholder="Ex: G:\\Meu Drive" style="flex:3"><button class="btn ghost" id="cFind" style="flex:none">🔎 Procurar</button><button class="btn" id="cSync" style="flex:none">☁️ Copiar para o Drive agora</button></div>
         <small id="cDriveMsg" style="color:var(--dim);display:block;margin-top:8px"></small>
       </section>
-      <section class="stat"><div class="cfg-h">💾 Dados e backup</div>
-        <div class="row" style="align-items:center"><a class="btn ghost" id="cBak" href="/api/backup" download="myloot-backup.json" style="flex:none">⬇️ Baixar backup (.json)</a><button class="btn ghost so-pc" id="cRes" style="flex:none">⬆️ Restaurar backup</button><input type="file" id="cResF" accept=".json,.myloot,application/json" hidden></div>
-        ${M.dadosExtras()}
-        <small style="color:var(--dim);display:block;margin-top:8px">Cópia automática todo dia em <code>data/backups</code> (guarda as 20 mais novas).</small>
+      <section class="stat"><div class="cfg-h">💾 Dados e backup</div>${M.dadosExtras()}
       </section>
       <div class="so-pc" style="display:contents">${M.versaoSection()}</div>
       ${M.suporteSection()}
@@ -171,17 +169,16 @@
     };
     $('#cSync').onclick = async () => {
       try {
-        msg('Sincronizando…'); await M.api('/api/db', { method: 'PUT', body: JSON.stringify(M.db) });
+        // primeiro a gravação normal (a que confere a revisão, para não passar por cima de outro aparelho); só depois a cópia
+        msg('Salvando antes de copiar…');
+        const rev0 = M.rev; M.save(true);
+        if (!(await M.salvou()) || M.rev === rev0) throw new Error('Não consegui salvar agora, então não copiei. Tente de novo em instantes.');
+        if ((await M.api('/api/rev')).rev !== M.rev) throw new Error('Outro aparelho acabou de salvar. Espere uns segundos e tente de novo.');
+        msg('Copiando para o Drive…');
         const r = await M.api('/api/drive/sync', { method: 'POST' });
-        msg(`Pronto! ${r.itens} itens · ${r.escritos} arquivos atualizados · ${r.removidos} removidos.`); SFX.play('done');
+        const pl = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+        msg(`Pronto! ${pl(r.itens, 'item', 'itens')} · ${pl(r.escritos, 'arquivo atualizado', 'arquivos atualizados')}` + (r.movidos ? ` · ${pl(r.movidos, 'guardado', 'guardados')} na pasta _substituidos (mexidos fora do MyLoot ou que saíram da cópia)` : '') + (r.erros ? ` · ⚠️ ${pl(r.erros, 'arquivo', 'arquivos')} não consegui copiar` : '') + '.', !!r.erros); SFX.play('done');
       } catch (e) { msg(e.message, true); SFX.play('error'); }
-    };
-    $('#cRes').onclick = () => $('#cResF').click();
-    $('#cResF').onchange = async (e) => {
-      const f = e.target.files[0]; if (!f) return;
-      e.target.value = '';
-      if (!(await M.confirm('Trocar os dados atuais pelos desse backup? Uma cópia dos atuais é guardada antes.', 'Restaurar'))) return;
-      try { await M.api('/api/restore', { method: 'POST', body: await M.corpoRestaurar(f) }); await M.load(); M.applySettings(); M.toast('✅ Backup restaurado'); M.go('lib'); } catch (er) { M.toast('⚠️ ' + er.message); }
     };
     $('#cOff').onclick = async () => {
       if (!(await M.confirm('Desligar o servidor do MyLoot?', 'Desligar'))) return;

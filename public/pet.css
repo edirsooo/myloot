@@ -24,6 +24,9 @@
 .pet-boas .pet-esc button{padding:6px 5px 5px;flex:1 1 70px;min-width:0}
 .pet-boas .pet-esc canvas{width:54px;height:54px}
 /* abertura de boas-vindas */
+#side .brand{cursor:pointer;border-radius:12px}
+#side .brand:hover{background:var(--accent-soft)}
+#side .brand:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .pet-ola{position:fixed;inset:0;z-index:9600;background:radial-gradient(ellipse at 50% 42%,#221a4e 0%,#0b1024 58%,#070b18 100%);cursor:pointer;overflow:hidden;animation:petOlaEntra .35s ease-out}
 .pet-ola canvas{position:absolute;inset:0;width:100%;height:100%}
 .pet-ola.sai{opacity:0;transition:opacity .45s}
@@ -35,5 +38,6 @@
 .pet-ola-logo small{display:flex;align-items:center;gap:8px;font-size:clamp(13px,2.2vw,20px);font-weight:600;color:#c9cfee}
 .pet-ola-logo small img{height:1.25em;width:auto}
 .pet-ola-pular{position:absolute;right:16px;bottom:calc(14px + env(safe-area-inset-bottom));background:none;border:0;color:#aab0d2;font-weight:700;font-size:13px;cursor:pointer;padding:8px 10px}
+.pet-ola-ver{position:absolute;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));font:600 12px var(--mono,monospace);letter-spacing:.5px;color:#8a92b8;opacity:.7;pointer-events:none}
 @keyframes petOlaEntra{from{opacity:0}}
 @media (prefers-reduced-motion:reduce){.pet-fala.on,.pet-pisou{animation:none}}

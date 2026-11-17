@@ -63,7 +63,13 @@
     for (const so of s || []) {
       const id = chave(k, so); sm.add(id);
       const lo = lm.get(id), bo = bm.get(id);
-      if (lo) { if (bo && J(lo) === J(bo)) troca(lo, so); out.push(lo); } // mantém o mesmo objeto (a janela aberta continua apontando para ele)
+      if (lo) { // mantém o mesmo objeto (a janela aberta continua apontando para ele)
+        if (bo && J(lo) === J(bo)) troca(lo, so);
+        // mudou nos dois aparelhos: junta campo a campo (o título mudado lá e a descrição mudada aqui ficam os dois);
+        // se foi o mesmo campo, vale o daqui
+        else if (bo && k !== 'trash' && J(so) !== J(bo)) { for (const x of new Set([...Object.keys(so), ...Object.keys(lo)])) if (J(lo[x]) === J(bo[x]) && J(so[x]) !== J(bo[x])) { if (x in so) lo[x] = so[x]; else delete lo[x]; } }
+        out.push(lo);
+      }
       else if (!bo) out.push(so); // novo no outro aparelho
       // se estava na base e sumiu daqui, foi apagado aqui: fica apagado
     }
@@ -119,7 +125,7 @@
     if (!r.ok) throw new Error(j.erro || 'erro ' + r.status);
     M.rev = j.rev || M.rev; base = JSON.parse(corpo);
   }
-  M.salvando = () => !!saveT || enviando;
+  M.salvando = () => !!saveT || enviando || !!retryT;
   // olha o servidor a cada 4 s (só com a aba visível e sem janela aberta) e na volta para a aba
   let mudouFora = false;
   const ocupado = () => M.modalOpen() || (/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '') && document.activeElement.value);
@@ -144,9 +150,19 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) olhar(); });
   window.addEventListener('focus', olhar);
 
-  let saveT = 0, driveT = 0;
+  // ----- gravação: se falhar, o app avisa numa faixa que não some, tenta de novo sozinho e guarda uma cópia neste navegador -----
+  var saveT = 0, driveT = 0, retryT = 0, falhas = 0;
+  const PEND = 'myloot-nao-salvo';
+  M.estadoSalvar = 'ok'; // 'ok' ou 'erro'
+  function faixaSalvar(erro, quando) {
+    M.estadoSalvar = erro ? 'erro' : 'ok';
+    const b = M.$('#saveState'); if (!b) return;
+    b.hidden = !erro;
+    if (erro) b.innerHTML = `<span>⚠️ As últimas mudanças ainda não foram salvas${quando ? `. Nova tentativa em ${quando} s` : ''}.</span><button type="button" class="btn sm" id="saveAgora">Tentar agora</button>`;
+  }
+  const guardaLocal = () => { try { localStorage.setItem(PEND, J({ at: Date.now(), base, db: M.db })); } catch (_) { try { localStorage.removeItem(PEND); } catch (__) {} } };
   M.save = (quick) => {
-    clearTimeout(saveT);
+    clearTimeout(saveT); clearTimeout(retryT); retryT = 0;
     saveT = setTimeout(async () => {
       saveT = 0;
       if (enviando) { M.save(); return; } // espera a gravação anterior terminar
@@ -154,11 +170,35 @@
       try {
         await enviar();
         const dot = M.$('#savedot'); if (dot) { dot.classList.add('on'); setTimeout(() => dot.classList.remove('on'), 900); }
+        if (falhas) { M.toast('✅ Tudo salvo de novo'); try { localStorage.removeItem(PEND); } catch (_) {} }
+        falhas = 0; faixaSalvar(false);
         const d = M.db.settings.drive;
         if (d && d.on && d.path) { clearTimeout(driveT); driveT = setTimeout(() => M.api('/api/drive/sync', { method: 'POST' }).catch(() => {}), 4000); }
-      } catch (e) { M.toast('⚠️ Não consegui salvar: ' + e.message); }
+      } catch (e) {
+        falhas++;
+        if (falhas === 1) M.toast('⚠️ Não consegui salvar: ' + e.message);
+        guardaLocal();
+        const espera = Math.min(30, 3 * 2 ** Math.min(falhas - 1, 4)); // 3, 6, 12, 24, 30 s
+        faixaSalvar(true, espera);
+        retryT = setTimeout(() => { retryT = 0; M.save(true); }, espera * 1000);
+      }
       finally { enviando = false; }
     }, quick ? 0 : 350);
+  };
+  document.addEventListener('click', (e) => { if (e.target.id === 'saveAgora') { faixaSalvar(true); M.save(true); } });
+  // fechar ou recarregar com mudança ainda não gravada: o navegador pergunta antes
+  addEventListener('beforeunload', (e) => { if (M.estadoSalvar === 'erro' || saveT || enviando) { e.preventDefault(); e.returnValue = ''; } });
+  // ao abrir: se da última vez ficou mudança sem salvar guardada neste navegador, oferece juntar com o que está no servidor
+  M.recuperarNaoSalvo = async () => {
+    let p = null; try { p = JSON.parse(localStorage.getItem(PEND) || 'null'); } catch (_) {}
+    if (!p || !p.db || !p.base) return false;
+    const larga = () => { try { localStorage.removeItem(PEND); } catch (_) {} };
+    if (J(p.db) === J(M.db)) { larga(); return false; }
+    const quando = new Date(p.at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const r = await M.escolha(`Da última vez (${quando}) algumas mudanças não chegaram a ser salvas. Elas ficaram guardadas neste navegador.`, [{ k: 'sim', t: '↩ Recuperar essas mudanças' }, { k: 'nao', t: 'Descartar', fraco: true }], 'Mudanças não salvas');
+    if (r === 'sim') { const meu = p.db; juntar(p.base, meu, M.db); troca(M.db, meu); larga(); M.save(true); M.render(); M.toast('✅ Mudanças recuperadas'); return true; }
+    if (r === 'nao') larga();
+    return false;
   };
   M.upload = async (file) => {
     const r = await fetch('/api/attach?name=' + encodeURIComponent(file.name), { method: 'POST', headers: Object.assign({ 'Content-Type': file.type || 'application/octet-stream' }, H), body: file });
@@ -278,6 +318,10 @@
   };
 
   // ----- ações sobre itens/tarefas (com lixeira) -----
+  // tipos que a Lixeira guarda e a lista do banco de onde cada um saiu
+  M.LIXO = { item: 'items', task: 'tasks', client: 'clients', fin: 'fin', habit: 'habits', goal: 'goals', tool: 'tools' };
+  // tira o objeto da sua lista e põe na Lixeira (quem chama salva, avisa e redesenha)
+  M.paraLixeira = (kind, o) => { const k = M.LIXO[kind]; M.db[k] = (M.db[k] || []).filter((x) => x.id !== o.id); M.db.trash.unshift({ kind, data: o, at: Date.now() }); };
   M.newItem = (o) => {
     const t = Date.now();
     return Object.assign({ id: M.uid(), type: 'nota', title: '', desc: '', content: '', checklist: [], links: [], attachments: [], cat: '', status: 'ver', tags: [], date: '', fav: false, created: t, updated: t }, o);
@@ -300,7 +344,7 @@
     const i = M.db.trash.findIndex((x) => x.data.id === id);
     if (i < 0) return;
     const [e] = M.db.trash.splice(i, 1);
-    (e.kind === 'item' ? M.db.items : e.kind === 'client' ? (M.db.clients || (M.db.clients = [])) : e.kind === 'fin' ? (M.db.fin || (M.db.fin = [])) : M.db.tasks).push(e.data);
+    const k = M.LIXO[e.kind] || 'tasks'; (M.db[k] || (M.db[k] = [])).push(e.data);
     M.save(); SFX.play('undo'); M.render();
     if (!silent) M.toast('↩️ Restaurado');
   };

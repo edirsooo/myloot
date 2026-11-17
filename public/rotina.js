@@ -7,6 +7,7 @@
   const G = () => M.db.goals || (M.db.goals = []);
 
   let dia = ''; // dia que está na tela (vazio = hoje)
+  let arqAberto = false; // seção "Arquivadas" das metas aberta ou recolhida
   const D = () => dia || M.today();
   const DOW = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
   const dow = (d) => new Date(d + 'T12:00:00').getDay();
@@ -19,11 +20,14 @@
   const alvo = (h) => Math.max(1, Number(h.alvo) || 1);
   const valor = (h, d) => Number((h.log || {})[d]) || 0;
   const feito = (h, d) => valor(h, d) >= alvo(h);
+  // pausa: h.pausa liga, h.pausaEm é o dia em que ela começou e h.pausas guarda os períodos já encerrados ([de, até]).
+  // Dia em pausa vale como folga: não entra no progresso do dia e não quebra a sequência.
+  const emPausa = (h, d) => !!(h.pausa && (!h.pausaEm || d >= h.pausaEm)) || (h.pausas || []).some(([a, b]) => d >= a && d <= b);
   const semanaDe = (d) => { const ini = M.addDays(d, -dow(d)); return Array.from({ length: 7 }, (_, i) => M.addDays(ini, i)); };
   const naSemana = (h, d) => semanaDe(d).filter((x) => feito(h, x)).length;
   // o hábito vale neste dia? (todo dia · dias da semana escolhidos · X vezes por semana, em qualquer dia)
   const previsto = (h, d) => {
-    if (h.criado && d < h.criado) return false;
+    if ((h.criado && d < h.criado) || emPausa(h, d)) return false;
     if (h.freq === 'semana') return (h.dias || []).includes(dow(d));
     if (h.freq === 'vezes') return feito(h, d) || naSemana(h, d) < (h.vezes || 1);
     return true;
@@ -34,14 +38,17 @@
     if (h.freq === 'vezes') {
       let n = 0, d = hoje;
       if (naSemana(h, d) < (h.vezes || 1)) d = M.addDays(d, -7); // a semana atual ainda está em aberto
-      for (let i = 0; i < 104; i++) { if (naSemana(h, d) >= (h.vezes || 1)) n++; else break; d = M.addDays(d, -7); if (h.criado && semanaDe(d)[6] < h.criado) break; }
+      for (let i = 0; i < 104; i++) {
+        if (naSemana(h, d) >= (h.vezes || 1)) n++; else if (!semanaDe(d).some((x) => emPausa(h, x))) break; // semana com pausa não soma nem quebra
+        d = M.addDays(d, -7); if (h.criado && semanaDe(d)[6] < h.criado) break;
+      }
       return n;
     }
     let n = 0, d = hoje;
     if (!feito(h, d)) d = M.addDays(d, -1); // hoje ainda está em aberto
     for (let i = 0; i < 730; i++) {
       if (h.criado && d < h.criado) break;
-      if (h.freq === 'semana' && !(h.dias || []).includes(dow(d))) { d = M.addDays(d, -1); continue; }
+      if ((h.freq === 'semana' && !(h.dias || []).includes(dow(d))) || (emPausa(h, d) && !feito(h, d))) { d = M.addDays(d, -1); continue; } // folga e pausa não quebram
       if (!feito(h, d)) break;
       n++; d = M.addDays(d, -1);
     }
@@ -50,7 +57,7 @@
   M.rotinaMaiorSeq = () => Math.max(0, ...H().filter((h) => h.freq !== 'vezes').map(sequencia));
   const freqNome = (h) => (h.freq === 'semana' ? (h.dias || []).length === 7 ? 'Todo dia' : (h.dias || []).slice().sort().map((i) => DOW[i]).join(', ')
     : h.freq === 'vezes' ? `${h.vezes || 1}x por semana` : 'Todo dia');
-  const doDia = (d) => H().filter((h) => !h.pausa && previsto(h, d));
+  const doDia = (d) => H().filter((h) => previsto(h, d)); // previsto já deixa de fora o hábito em pausa
   M.rotinaDia = (d) => { const L = doDia(d); return { total: L.length, feitos: L.filter((h) => feito(h, d)).length }; };
 
   // marca, desmarca ou soma (hábitos com quantidade)
@@ -85,12 +92,23 @@
     return `<div class="hab ${ok ? 'ok' : ''} ${folga ? 'folga' : ''}" data-h="${h.id}">
       <button class="hab-chk" data-a="chk" title="${ok ? 'Desmarcar' : 'Marcar como feito'}" aria-label="${ok ? 'Desmarcar' : 'Marcar como feito'}: ${esc(h.nome)}">${ok ? '✔' : ''}</button>
       <span class="hab-em">${esc(h.em || '🎯')}</span>
-      <div class="hab-tx"><b>${esc(h.nome)}</b><small>${folga ? (h.freq === 'vezes' ? 'semana já completa · ' : 'hoje não é dia · ') : ''}${freqNome(h)}${a > 1 ? ` · ${v} de ${a} ${esc(h.un || '')}` : ''}${h.hora ? ` · ⏰ ${esc(h.hora)}` : ''}</small>
+      <div class="hab-tx"><b>${esc(h.nome)}</b><small>${folga ? (emPausa(h, d) ? 'estava pausado neste dia · ' : h.freq === 'vezes' ? 'semana já completa · ' : 'hoje não é dia · ') : ''}${freqNome(h)}${a > 1 ? ` · ${v} de ${a} ${esc(h.un || '')}` : ''}${h.hora ? ` · ⏰ ${esc(h.hora)}` : ''}</small>
         ${a > 1 ? `<div class="hab-bar"><i style="width:${Math.min(100, (v / a) * 100)}%"></i></div>` : ''}</div>
       ${a > 1 ? `<button class="icon-btn" data-a="menos" title="Tirar um pouco" aria-label="Diminuir">−</button><button class="icon-btn" data-a="mais" title="Somar um pouco" aria-label="Aumentar">＋</button>` : ''}
       ${pontos(h, d)}
       <span class="hab-seq ${s ? 'on' : ''}" title="${h.freq === 'vezes' ? 'Semanas seguidas batendo a meta' : 'Dias seguidos cumprindo'}">🔥 ${s}</span>
-      <button class="icon-btn" data-a="ed" title="Editar hábito" aria-label="Editar hábito">✏️</button>
+      <button class="icon-btn" data-a="ed" title="Editar hábito" aria-label="Editar hábito: ${esc(h.nome)}">✏️</button>
+    </div>`;
+  }
+  // hábito pausado: sai da lista do dia e fica na seção "Pausados", mais apagado, até a pessoa retomar
+  function pausadoHTML(h) {
+    const s = sequencia(h);
+    return `<div class="hab pausado" data-h="${h.id}">
+      <span class="hab-em">${esc(h.em || '🎯')}</span>
+      <div class="hab-tx"><b>${esc(h.nome)}</b><small>⏸ pausado${h.pausaEm ? ' desde ' + M.fmtDate(h.pausaEm) : ''} · ${freqNome(h)}</small></div>
+      <span class="hab-seq ${s ? 'on' : ''}" title="A sequência fica guardada enquanto o hábito está pausado">🔥 ${s}</span>
+      <button class="btn sm" data-a="retoma" title="O hábito volta a valer a partir de hoje">▶ Retomar</button>
+      <button class="icon-btn" data-a="ed" title="Editar hábito" aria-label="Editar hábito: ${esc(h.nome)}">✏️</button>
     </div>`;
   }
   const fmtMeta = (g, v) => (g.un === 'R$' ? M.reais(v) : (Number(v) || 0).toLocaleString('pt-BR') + (g.un ? ' ' + g.un : ''));
@@ -100,9 +118,10 @@
     const prazo = g.prazo ? ` · até ${M.fmtDate(g.prazo)}${pct >= 100 ? '' : falta < 0 ? ' (prazo passou)' : falta === 0 ? ' (é hoje)' : ` (faltam ${falta} dia${falta === 1 ? '' : 's'})`}` : '';
     return `<div class="meta-c ${pct >= 100 ? 'ok' : ''} ${g.prazo && falta < 0 && pct < 100 ? 'late' : ''}" data-g="${g.id}">
       <div class="mc-top"><span class="hab-em">${esc(g.em || '🎯')}</span><div class="hab-tx"><b>${esc(g.nome)}</b><small>${g.un === 'R$' ? esc(fmtMeta(g, g.atual)) : (Number(g.atual) || 0).toLocaleString('pt-BR')} de ${esc(fmtMeta(g, g.alvo))}${prazo}</small></div>
-        <b class="mc-pct">${pct >= 100 ? '🏆 ' : ''}${pct}%</b><button class="icon-btn" data-a="ged" title="Editar meta" aria-label="Editar meta">✏️</button></div>
+        <b class="mc-pct">${pct >= 100 ? '🏆 ' : ''}${pct}%</b><button class="icon-btn" data-a="ged" title="Editar meta" aria-label="Editar meta: ${esc(g.nome)}">✏️</button></div>
       <div class="mc-bar"><i style="width:${pct}%"></i></div>
-      <div class="mc-add"><input type="text" inputmode="decimal" id="gIn-${g.id}" placeholder="Quanto você avançou?" aria-label="Valor para somar na meta ${esc(g.nome)}"><button class="btn sm" data-a="soma">＋ Somar</button>${(g.hist || []).length ? '<button class="btn sm ghost" data-a="tira" title="Tira o último valor que você somou">↩ Desfazer</button>' : ''}</div>
+      ${g.arq ? '<div class="mc-add"><span class="grow"></span><button class="btn sm ghost" data-a="garq" title="Volta para a lista das suas metas">📤 Desarquivar</button></div>'
+        : `<div class="mc-add"><input type="text" inputmode="decimal" id="gIn-${g.id}" placeholder="Quanto você avançou?" aria-label="Valor para somar na meta ${esc(g.nome)}"><button class="btn sm" data-a="soma">＋ Somar</button>${(g.hist || []).length ? `<button class="btn sm ghost" data-a="av" title="Ver, corrigir ou apagar o que você já somou">📋 Avanços (${g.hist.length})</button>` : ''}${pct >= 100 ? '<button class="btn sm ghost" data-a="garq" title="Tira da lista e guarda em Arquivadas. Dá para desarquivar depois.">📦 Arquivar</button>' : ''}</div>`}
     </div>`;
   }
   function mesHTML(d) {
@@ -121,25 +140,29 @@
   // ----- tela -----
   M.pages.rot = () => {
     const v = $('#view'), d = D(), hoje = M.today();
-    const todos = H().filter((h) => !h.pausa), L = todos.filter((h) => previsto(h, d)), folga = todos.filter((h) => !previsto(h, d) && !(h.criado && d < h.criado));
+    // pausado (neste dia) sai da lista e vai para a seção "Pausados"; nos dias de antes da pausa o hábito aparece normalmente
+    const pausados = H().filter((h) => h.pausa && emPausa(h, d)), todos = H().filter((h) => !pausados.includes(h));
+    const L = todos.filter((h) => previsto(h, d)), folga = todos.filter((h) => !previsto(h, d) && !(h.criado && d < h.criado));
     const ok = L.filter((h) => feito(h, d)).length;
+    const ativas = G().filter((g) => !g.arq), arqs = G().filter((g) => g.arq); // meta arquivada fica numa seção recolhida
     const nomeDia = d === hoje ? 'Hoje' : d === M.addDays(hoje, -1) ? 'Ontem' : DOW[dow(d)];
     const dataLonga = new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     v.innerHTML = `
       <div class="rot-top">
-        <button class="btn" id="hNovo">＋ Novo hábito</button><button class="btn ghost" id="gNovo">＋ Nova meta</button>
+        <button class="btn" id="hNovo">＋ Adicionar hábito</button><button class="btn ghost" id="gNovo">＋ Adicionar meta</button>
         <div class="cal-h rot-nav"><button class="icon-btn" id="rP" title="Dia anterior" aria-label="Dia anterior">‹</button><h3><b>${nomeDia}</b> <small>${dataLonga}</small></h3><button class="icon-btn" id="rN" title="Dia seguinte" aria-label="Dia seguinte" ${d >= hoje ? 'disabled' : ''}>›</button>${d !== hoje ? '<button class="btn ghost sm" id="rH">Voltar para hoje</button>' : ''}${M.hint('Esqueceu de marcar ontem? Use as setas para voltar o dia e marcar. Dias que ainda não chegaram ficam travados.')}</div>
       </div>
       <div class="rot-grid">
-        <section class="panel rot-hab"><h4>🔁 Hábitos ${L.length ? `<span class="rot-n">${ok} de ${L.length}</span>` : ''} ${M.hint('Hábito é o que você quer repetir: beber água, ler, treinar. Clique no círculo para marcar como feito. 🔥 mostra há quantos dias seguidos você cumpre; as bolinhas são os últimos 7 dias.')}</h4>
+        <section class="panel rot-hab"><h4>🔁 Hábitos ${L.length ? `<span class="rot-n">${ok} de ${L.length}</span>` : ''} ${M.hint('Hábito é o que você quer repetir: beber água, ler, treinar. Clique no círculo para marcar como feito. 🔥 mostra há quantos dias seguidos você cumpre; as bolinhas são os últimos 7 dias. Vai ficar um tempo sem fazer? Abra o ✏️ e clique em ⏸ Pausar: o hábito sai dos seus dias sem perder a sequência.')}</h4>
           ${L.map((h) => habHTML(h, d)).join('')}${folga.map((h) => habHTML(h, d, true)).join('')}
           ${todos.length && !L.length && !folga.length ? '<small style="color:var(--faint)">Nenhum hábito tinha sido criado até este dia.</small>' : ''}
-          ${!todos.length ? `<div class="empty" style="padding:26px 10px"><div class="big">🌱</div><h3>Nenhum hábito ainda</h3><p>Comece com um só. Alguns exemplos para criar com um clique:</p>
-            <div class="rot-ex">${[['💧', 'Beber água', 8, 'copos'], ['📚', 'Ler', 10, 'páginas'], ['🏃', 'Treinar', 1, 'vez'], ['🧘', 'Meditar', 10, 'min']].map(([e, n, a, u]) => `<button class="chip-b" data-ex="${e}|${n}|${a}|${u}">${e} ${n}</button>`).join('')}</div></div>` : ''}</section>
-        <section class="panel rot-metas"><h4>🎯 Metas ${M.hint('Meta é um número para alcançar até uma data: faturar 10 mil no mês, fechar 5 clientes, ler 12 livros. Vá somando o que avançou; ao chegar em 100% tem comemoração.')}</h4>
-          ${G().map(metaHTML).join('') || '<div class="empty" style="padding:26px 10px"><div class="big">🎯</div><h3>Nenhuma meta ainda</h3><p>Crie uma meta com número e prazo e vá somando o progresso.</p></div>'}</section>
+          ${!todos.length && pausados.length ? '<small style="color:var(--faint)">Todos os seus hábitos estão pausados.</small>' : ''}${!H().length ? `<div class="empty" style="padding:26px 10px"><div class="big">🌱</div><h3>Nenhum hábito ainda</h3><p>Comece com um só. Alguns exemplos para criar com um clique:</p>
+            <div class="rot-ex">${[['💧', 'Beber água', 8, 'copos'], ['📚', 'Ler', 10, 'páginas'], ['🏃', 'Treinar', 1, 'vez'], ['🧘', 'Meditar', 10, 'min']].map(([e, n, a, u]) => `<button class="chip-b" data-ex="${e}|${n}|${a}|${u}">${e} ${n}</button>`).join('')}</div></div>` : ''}${pausados.length ? `<h5 class="rot-sub">⏸ Pausados <span class="rot-n">${pausados.length}</span> ${M.hint('Hábito pausado não aparece nos seus dias, não conta no progresso e não quebra a sequência 🔥. Clique em ▶ Retomar para ele voltar a valer.')}</h5>${pausados.map(pausadoHTML).join('')}` : ''}</section>
+        <section class="panel rot-metas"><h4>🎯 Metas ${M.hint('Meta é um número para alcançar até uma data: faturar 10 mil no mês, fechar 5 clientes, ler 12 livros. Vá somando o que avançou; ao chegar em 100% tem comemoração. Meta que você não quer mais ver na lista pode ser arquivada: ela vai para “Arquivadas”, no fim.')}</h4>
+          ${ativas.map(metaHTML).join('') || (arqs.length ? '<small style="color:var(--faint)">Nenhuma meta ativa. As arquivadas estão logo abaixo.</small>' : '<div class="empty" style="padding:26px 10px"><div class="big">🎯</div><h3>Nenhuma meta ainda</h3><p>Crie uma meta com número e prazo e vá somando o progresso.</p></div>')}${arqs.length ? `<details class="arq-sec" id="gArq" ${arqAberto ? 'open' : ''}><summary>📦 Arquivadas (${arqs.length})</summary>${arqs.map(metaHTML).join('')}</details>` : ''}</section>
         <section class="panel rot-mes"><h4>🗓️ ${new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })} ${M.hint('Cada quadradinho é um dia. Quanto mais forte a cor, mais hábitos você cumpriu. Clique num dia para ver e marcar aquele dia.')}</h4>${mesHTML(d)}</section>
       </div>`;
+    if ($('#gArq')) $('#gArq').ontoggle = (e) => { arqAberto = e.target.open; }; // lembra se a seção estava aberta ao redesenhar
     const ir = (x) => { dia = x >= hoje ? '' : x; SFX.play('click'); M.render(); };
     $('#rP').onclick = () => ir(M.addDays(d, -1));
     $('#rN').onclick = () => ir(M.addDays(d, 1));
@@ -155,14 +178,17 @@
       if (hr) {
         const h = H().find((x) => x.id === hr.dataset.h); if (!h) return;
         if (a.a === 'ed') return editarHabito(h);
+        if (a.a === 'retoma') { pausar(h, false); M.save(); SFX.play('click'); M.render(); return M.toast('▶ Hábito retomado. Ele volta a valer hoje.'); }
+        if (hr.classList.contains('folga') && emPausa(h, d)) return M.toast('⏸ Nesse dia o hábito estava pausado.');
         if (hr.classList.contains('folga') && a.a === 'chk' && h.freq !== 'vezes') return M.toast('Hoje não é dia desse hábito. Para mudar os dias, clique no ✏️.');
         return marcar(h, d, a.a === 'chk' ? 'alterna' : a.a, e);
       }
       const gr = e.target.closest('.meta-c'); if (!gr) return;
       const g = G().find((x) => x.id === gr.dataset.g); if (!g) return;
       if (a.a === 'ged') return editarMeta(g);
+      if (a.a === 'garq') return arquivarMeta(g, !g.arq);
+      if (a.a === 'av') return avancos(g);
       if (a.a === 'soma') somar(g, $('#gIn-' + g.id), e);
-      if (a.a === 'tira') { const u = (g.hist || []).pop(); if (u) { g.atual = Math.max(0, Math.round((g.atual - u.v) * 100) / 100); if (g.atual < g.alvo) g.feitoEm = ''; M.save(); SFX.play('undo'); M.render(); M.toast('↩ Tirei ' + fmtMeta(g, u.v)); } }
     };
     v.onkeydown = (e) => { if (e.key === 'Enter' && e.target.id && e.target.id.startsWith('gIn-')) { const g = G().find((x) => 'gIn-' + x.id === e.target.id); if (g) somar(g, e.target, e); } };
   };
@@ -171,67 +197,88 @@
     if (!n) return M.falta(campo, '✍️ Escreva quanto você avançou (ex.: 500)');
     const antes = g.atual >= g.alvo;
     g.atual = Math.round((g.atual + n) * 100) / 100; (g.hist = g.hist || []).push({ d: M.today(), v: n });
-    if (!antes && g.atual >= g.alvo) {
-      g.feitoEm = M.today(); M.award('goal');
-      setTimeout(() => { SFX.play('goal'); FX.rain(); FX.burst(null, null, 120, 12); M.toast('🏆 Meta batida: ' + g.nome + '!'); }, 250);
-    } else { SFX.play('coin'); M.toast('＋ ' + fmtMeta(g, n) + ' na meta'); }
-    M.save(); M.render();
+    const bateu = !antes && g.atual >= g.alvo;
+    if (bateu) { g.feitoEm = M.today(); M.award('goal'); } else if (g.atual < g.alvo) g.feitoEm = '';
+    M.save(); M.render(); // salva antes de avisar: assim o aviso ganha o Desfazer do histórico
+    if (bateu) setTimeout(() => { SFX.play('goal'); FX.rain(); FX.burst(null, null, 120, 12); M.toast('🏆 Meta batida: ' + g.nome + '!'); }, 250);
+    else { SFX.play('coin'); M.toast('＋ ' + fmtMeta(g, n) + ' na meta'); }
   }
+  // pausar e retomar: a pausa vale a partir de hoje. Ao retomar, o período parado entra em h.pausas,
+  // para os dias sem marcar não quebrarem a sequência.
+  function pausar(h, liga) {
+    const hoje = M.today();
+    if (liga) { h.pausa = true; h.pausaEm = hoje; return; }
+    const ate = M.addDays(hoje, -1), de = h.pausaEm || h.criado || hoje;
+    if (de <= ate) (h.pausas = h.pausas || []).push([de, ate]);
+    h.pausa = false; h.pausaEm = '';
+  }
+  // arquivar: a meta sai da lista e fica na seção "Arquivadas" (não é apagar)
+  const arquiva = (g, liga) => { if (liga) { g.arq = true; g.arqEm = Date.now(); } else { delete g.arq; delete g.arqEm; } };
+  const avisoArq = (g) => (g.arq ? '📦 Meta arquivada. Ela fica em “Arquivadas”, no fim da lista.' : '📤 Meta de volta para a lista');
+  function arquivarMeta(g, liga) { arquiva(g, liga); M.save(); SFX.play('click'); M.render(); M.toast(avisoArq(g)); }
 
   // ----- janelas: hábito e meta -----
-  const escolheEmoji = (L, atual) => `<div class="em-grade" id="emG">${L.map((e) => `<button type="button" class="${e === atual ? 'on' : ''}" data-e="${e}">${e}</button>`).join('')}</div>`;
+  const escolheEmoji = (L, atual) => `<div class="em-grade" id="emG" role="group" aria-labelledby="emL">${L.map((e) => `<button type="button" class="${e === atual ? 'on' : ''}" data-e="${e}" aria-pressed="${e === atual}">${e}</button>`).join('')}</div>`;
+  // marca o botão escolhido de um grupo (para os olhos e para o leitor de tela)
+  const acende = (m, S, b) => $$(S, m).forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
   function editarHabito(h, pre) {
     const novo = !h;
     const o = Object.assign({ em: '💧', nome: '', freq: 'dia', dias: [1, 2, 3, 4, 5], vezes: 3, alvo: 1, un: 'vez', hora: '' }, pre || {}, h ? JSON.parse(JSON.stringify(h)) : {});
-    const m = M.modal(`<div class="modal-h"><h2>${novo ? '🌱 Novo hábito' : '✏️ Editar hábito'}</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b">
-      <div class="fld"><label>Ícone</label>${escolheEmoji(EM_HAB.includes(o.em) ? EM_HAB : [o.em, ...EM_HAB], o.em)}</div>
-      <div class="fld"><label>Nome do hábito</label><div class="com-mic"><input type="text" id="hNome" placeholder="Ex.: Beber água, Ler, Treinar" value="${esc(o.nome)}">${M.micBtn('#hNome')}</div></div>
-      <div class="fld"><label>Com que frequência? ${M.hint('Todo dia: vale sempre. Dias da semana: só nos dias que você escolher (os outros são folga e não quebram a sequência). X vezes por semana: em qualquer dia, até completar o número.')}</label>
-        <div class="seg" id="hFreq"><button data-f="dia" class="${o.freq === 'dia' ? 'on' : ''}">Todo dia</button><button data-f="semana" class="${o.freq === 'semana' ? 'on' : ''}">Dias da semana</button><button data-f="vezes" class="${o.freq === 'vezes' ? 'on' : ''}">X vezes por semana</button></div>
-        <div class="tn-data" id="hDias" style="margin-top:8px" ${o.freq === 'semana' ? '' : 'hidden'}>${DOW.map((n, i) => `<button type="button" class="chip-b ${o.dias.includes(i) ? 'on' : ''}" data-i="${i}">${n}</button>`).join('')}</div>
-        <div class="row" id="hVz" style="margin-top:8px;align-items:center;gap:8px" ${o.freq === 'vezes' ? '' : 'hidden'}><input type="number" id="hVezes" min="1" max="7" value="${o.vezes}" style="width:80px;flex:none"><span>vezes por semana</span></div></div>
+    const m = M.modal(`<div class="modal-h"><h2>${novo ? '🌱 Novo hábito' : '✏️ Editar hábito'}</h2><button class="icon-btn" id="x" title="Fechar" aria-label="Fechar">✕</button></div><div class="modal-b">
+      <div class="fld"><label id="emL">Ícone</label>${escolheEmoji(EM_HAB.includes(o.em) ? EM_HAB : [o.em, ...EM_HAB], o.em)}</div>
+      <div class="fld"><label for="hNome">Nome do hábito</label><div class="com-mic"><input type="text" id="hNome" placeholder="Ex.: Beber água, Ler, Treinar" value="${esc(o.nome)}">${M.micBtn('#hNome')}</div></div>
+      <div class="fld"><label id="hFreqL">Com que frequência? ${M.hint('Todo dia: vale sempre. Dias da semana: só nos dias que você escolher (os outros são folga e não quebram a sequência). X vezes por semana: em qualquer dia, até completar o número.')}</label>
+        <div class="seg" id="hFreq" role="group" aria-labelledby="hFreqL">${[['dia', 'Todo dia'], ['semana', 'Dias da semana'], ['vezes', 'X vezes por semana']].map(([f, t]) => `<button type="button" data-f="${f}" class="${o.freq === f ? 'on' : ''}" aria-pressed="${o.freq === f}">${t}</button>`).join('')}</div>
+        <div class="tn-data" id="hDias" role="group" aria-label="Dias da semana" style="margin-top:8px" ${o.freq === 'semana' ? '' : 'hidden'}>${DOW.map((n, i) => `<button type="button" class="chip-b ${o.dias.includes(i) ? 'on' : ''}" data-i="${i}" aria-pressed="${o.dias.includes(i)}">${n}</button>`).join('')}</div>
+        <div class="row" id="hVz" style="margin-top:8px;align-items:center;gap:8px" ${o.freq === 'vezes' ? '' : 'hidden'}><input type="number" id="hVezes" min="1" max="7" value="${o.vezes}" style="width:80px;flex:none" aria-label="Quantas vezes por semana"><span>vezes por semana</span></div></div>
       <div class="row">
-        <div class="fld"><label>Quanto por dia? ${M.hint('Para hábitos de “fiz ou não fiz”, deixe 1 vez. Para contar (8 copos de água, 30 minutos de leitura), coloque o número e a unidade: aparecem os botões − e ＋ para ir somando.')}</label>
-          <div class="row" style="gap:8px"><input type="number" id="hAlvo" min="1" max="999" value="${alvo(o)}" style="flex:1"><select id="hUn" style="flex:1">${(UN_HAB.includes(o.un) ? UN_HAB : [o.un, ...UN_HAB]).map((u) => `<option ${u === o.un ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select></div></div>
-        <div class="fld"><label>Lembrete ${M.hint('Opcional. No horário, o computador mostra um aviso se o hábito do dia ainda não foi marcado.')}</label><input type="time" id="hHora" value="${esc(o.hora || '')}"></div>
+        <div class="fld"><label for="hAlvo">Quanto por dia? ${M.hint('Para hábitos de “fiz ou não fiz”, deixe 1 vez. Para contar (8 copos de água, 30 minutos de leitura), coloque o número e a unidade: aparecem os botões − e ＋ para ir somando.')}</label>
+          <div class="row" style="gap:8px"><input type="number" id="hAlvo" min="1" max="999" value="${alvo(o)}" style="flex:1"><select id="hUn" style="flex:1" aria-label="Unidade">${(UN_HAB.includes(o.un) ? UN_HAB : [o.un, ...UN_HAB]).map((u) => `<option ${u === o.un ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select></div></div>
+        <div class="fld"><label for="hHora">Lembrete ${M.hint('Opcional. No horário, o computador mostra um aviso se o hábito do dia ainda não foi marcado.')}</label><input type="time" id="hHora" value="${esc(o.hora || '')}"></div>
       </div>
-      <div class="row" style="justify-content:space-between">${novo ? '<span></span>' : '<button class="btn danger" id="hDel" style="flex:none">🗑️ Apagar</button>'}<button class="btn" id="hOk" style="flex:none">✔ Salvar hábito</button></div></div>`, { small: true });
+      <div class="jan-pe">${novo ? '' : `<button class="btn danger" id="hDel" title="Vai para a Lixeira. Dá para restaurar.">🗑️ Apagar</button><button class="btn ghost" id="hPausa" title="${o.pausa ? 'O hábito volta a valer a partir de hoje' : 'O hábito sai dos seus dias sem perder a sequência. Dá para retomar quando quiser.'}">${o.pausa ? '▶ Retomar' : '⏸ Pausar'}</button>`}<span class="grow"></span><button class="btn" id="hOk">${novo ? '＋ Adicionar hábito' : '✔ Salvar'}</button></div></div>`, { small: true });
     $('#x', m).onclick = M.closeModal;
-    $('#emG', m).onclick = (e) => { const b = e.target.closest('[data-e]'); if (!b) return; o.em = b.dataset.e; $$('#emG button', m).forEach((x) => x.classList.toggle('on', x === b)); SFX.play('click'); };
-    $('#hFreq', m).onclick = (e) => { const b = e.target.closest('[data-f]'); if (!b) return; o.freq = b.dataset.f; $$('#hFreq button', m).forEach((x) => x.classList.toggle('on', x === b)); $('#hDias', m).hidden = o.freq !== 'semana'; $('#hVz', m).hidden = o.freq !== 'vezes'; SFX.play('click'); };
-    $('#hDias', m).onclick = (e) => { const b = e.target.closest('[data-i]'); if (!b) return; const i = +b.dataset.i; o.dias = o.dias.includes(i) ? o.dias.filter((x) => x !== i) : [...o.dias, i]; b.classList.toggle('on', o.dias.includes(i)); SFX.play('click'); };
-    const ok = () => {
+    $('#emG', m).onclick = (e) => { const b = e.target.closest('[data-e]'); if (!b) return; o.em = b.dataset.e; acende(m, '#emG button', b); SFX.play('click'); };
+    $('#hFreq', m).onclick = (e) => { const b = e.target.closest('[data-f]'); if (!b) return; o.freq = b.dataset.f; acende(m, '#hFreq button', b); $('#hDias', m).hidden = o.freq !== 'semana'; $('#hVz', m).hidden = o.freq !== 'vezes'; SFX.play('click'); };
+    $('#hDias', m).onclick = (e) => { const b = e.target.closest('[data-i]'); if (!b) return; const i = +b.dataset.i; o.dias = o.dias.includes(i) ? o.dias.filter((x) => x !== i) : [...o.dias, i]; b.classList.toggle('on', o.dias.includes(i)); b.setAttribute('aria-pressed', o.dias.includes(i)); SFX.play('click'); };
+    const ok = (pausa) => {
       o.nome = $('#hNome', m).value.trim();
       if (!o.nome) return M.falta($('#hNome', m), '✍️ Dê um nome ao hábito');
       if (o.freq === 'semana' && !o.dias.length) return M.toast('Escolha pelo menos um dia da semana.');
       o.vezes = Math.max(1, Math.min(7, +$('#hVezes', m).value || 1));
       o.alvo = Math.max(1, Math.min(999, Math.round(+$('#hAlvo', m).value || 1))); o.un = $('#hUn', m).value; o.hora = $('#hHora', m).value;
       if (novo) H().push(Object.assign({ id: M.uid(), criado: M.today(), log: {} }, o)); else Object.assign(h, o, { log: h.log || {} });
-      M.save(); SFX.play('pop'); M.closeModal(); M.render(); M.toast(novo ? '🌱 Hábito criado. Marque quando fizer!' : '✅ Hábito salvo');
+      if (pausa === true) pausar(h, !h.pausa); // Pausar e Retomar também guardam o que estava escrito na janela
+      M.save(); SFX.play('pop'); M.closeModal(); M.render();
+      M.toast(novo ? '🌱 Hábito criado. Marque quando fizer!' : pausa !== true ? '✅ Hábito salvo' : h.pausa ? '⏸ Hábito pausado. Ele fica em “Pausados” até você retomar.' : '▶ Hábito retomado. Ele volta a valer hoje.');
     };
-    $('#hOk', m).onclick = ok; $('#hNome', m).onkeydown = (e) => { if (e.key === 'Enter') ok(); };
-    if ($('#hDel', m)) $('#hDel', m).onclick = () => { const i = H().indexOf(h); M.db.habits = H().filter((x) => x !== h); M.save(); SFX.play('trash'); M.closeModal(); M.render(); M.toast('🗑️ Hábito apagado', () => { H().splice(Math.max(0, i), 0, h); M.save(); M.render(); }); };
+    $('#hOk', m).onclick = () => ok(); $('#hNome', m).onkeydown = (e) => { if (e.key === 'Enter') ok(); };
+    if (!novo) {
+      $('#hPausa', m).onclick = () => ok(true);
+      // apagar manda para a Lixeira (dá para restaurar mesmo depois de fechar o MyLoot); o Desfazer do aviso vem do histórico
+      $('#hDel', m).onclick = () => { M.paraLixeira('habit', h); M.save(); SFX.play('trash'); M.closeModal(); M.render(); M.toast('🗑️ Hábito para a lixeira'); };
+    }
     if (novo && !o.nome) $('#hNome', m).focus();
   }
   function editarMeta(g) {
     const novo = !g;
     const o = Object.assign({ em: '🎯', nome: '', alvo: 0, atual: 0, un: 'R$', prazo: '' }, g ? JSON.parse(JSON.stringify(g)) : {});
     const num = (v) => (v ? String(v).replace('.', ',') : '');
-    const m = M.modal(`<div class="modal-h"><h2>${novo ? '🎯 Nova meta' : '✏️ Editar meta'}</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b">
-      <div class="fld"><label>Ícone</label>${escolheEmoji(EM_META.includes(o.em) ? EM_META : [o.em, ...EM_META], o.em)}</div>
-      <div class="fld"><label>O que você quer alcançar?</label><div class="com-mic"><input type="text" id="gNome" placeholder="Ex.: Faturar 10 mil em dezembro" value="${esc(o.nome)}">${M.micBtn('#gNome')}</div></div>
+    const m = M.modal(`<div class="modal-h"><h2>${novo ? '🎯 Nova meta' : '✏️ Editar meta'}</h2><button class="icon-btn" id="x" title="Fechar" aria-label="Fechar">✕</button></div><div class="modal-b">
+      <div class="fld"><label id="emL">Ícone</label>${escolheEmoji(EM_META.includes(o.em) ? EM_META : [o.em, ...EM_META], o.em)}</div>
+      <div class="fld"><label for="gNome">O que você quer alcançar?</label><div class="com-mic"><input type="text" id="gNome" placeholder="Ex.: Faturar 10 mil em dezembro" value="${esc(o.nome)}">${M.micBtn('#gNome')}</div></div>
       <div class="row">
-        <div class="fld"><label>Número da meta ${M.hint('O total que você quer alcançar. Ex.: 10000 (reais), 5 (clientes), 12 (livros).')}</label><input type="text" inputmode="decimal" id="gAlvo" placeholder="10000" value="${num(o.alvo)}"></div>
-        <div class="fld"><label>Em quê? ${M.hint('A unidade do número: reais, clientes, quilos… Escolha da lista ou escreva a sua.')}</label><input type="text" id="gUn" list="gUnL" value="${esc(o.un)}" placeholder="R$"><datalist id="gUnL">${UN_META.map((u) => `<option value="${u}">`).join('')}</datalist></div>
+        <div class="fld"><label for="gAlvo">Número da meta ${M.hint('O total que você quer alcançar. Ex.: 10000 (reais), 5 (clientes), 12 (livros).')}</label><input type="text" inputmode="decimal" id="gAlvo" placeholder="10000" value="${num(o.alvo)}"></div>
+        <div class="fld"><label for="gUn">Em quê? ${M.hint('A unidade do número: reais, clientes, quilos… Escolha da lista ou escreva a sua.')}</label><input type="text" id="gUn" list="gUnL" value="${esc(o.un)}" placeholder="R$"><datalist id="gUnL">${UN_META.map((u) => `<option value="${u}">`).join('')}</datalist></div>
       </div>
       <div class="row">
-        <div class="fld"><label>Quanto já tem ${M.hint('Se você já começou, coloque quanto já alcançou. Senão, deixe vazio.')}</label><input type="text" inputmode="decimal" id="gAtual" placeholder="0" value="${num(o.atual)}"></div>
-        <div class="fld"><label>Prazo ${M.hint('Opcional. A meta mostra quantos dias faltam e avisa se o prazo passou.')}</label><input type="date" id="gPrazo" value="${esc(o.prazo || '')}"></div>
+        <div class="fld"><label for="gAtual">Quanto já tem ${M.hint('Se você já começou, coloque quanto já alcançou. Senão, deixe vazio.')}</label><input type="text" inputmode="decimal" id="gAtual" placeholder="0" value="${num(o.atual)}"></div>
+        <div class="fld"><label for="gPrazo">Prazo ${M.hint('Opcional. A meta mostra quantos dias faltam e avisa se o prazo passou.')}</label><input type="date" id="gPrazo" value="${esc(o.prazo || '')}"></div>
       </div>
-      <div class="row" style="justify-content:space-between">${novo ? '<span></span>' : '<button class="btn danger" id="gDel" style="flex:none">🗑️ Apagar</button>'}<button class="btn" id="gOk" style="flex:none">✔ Salvar meta</button></div></div>`, { small: true });
+      <div class="jan-pe">${novo ? '' : `<button class="btn danger" id="gDel" title="Vai para a Lixeira. Dá para restaurar.">🗑️ Apagar</button><button class="btn ghost" id="gArqB" title="${o.arq ? 'Volta para a lista das suas metas' : 'Tira da lista e guarda em Arquivadas. Dá para desarquivar depois.'}">${o.arq ? '📤 Desarquivar' : '📦 Arquivar'}</button>`}<span class="grow"></span><button class="btn" id="gOk">${novo ? '＋ Adicionar meta' : '✔ Salvar'}</button></div></div>`, { small: true });
     $('#x', m).onclick = M.closeModal;
-    $('#emG', m).onclick = (e) => { const b = e.target.closest('[data-e]'); if (!b) return; o.em = b.dataset.e; $$('#emG button', m).forEach((x) => x.classList.toggle('on', x === b)); SFX.play('click'); };
-    const ok = () => {
+    $('#emG', m).onclick = (e) => { const b = e.target.closest('[data-e]'); if (!b) return; o.em = b.dataset.e; acende(m, '#emG button', b); SFX.play('click'); };
+    const ok = (arq) => {
       o.nome = $('#gNome', m).value.trim();
       if (!o.nome) return M.falta($('#gNome', m), '✍️ Escreva o que você quer alcançar');
       o.alvo = M.lerValor($('#gAlvo', m).value);
@@ -239,11 +286,44 @@
       o.atual = Math.max(0, M.lerValor($('#gAtual', m).value)); o.un = $('#gUn', m).value.trim(); o.prazo = $('#gPrazo', m).value;
       o.feitoEm = o.atual >= o.alvo ? (o.feitoEm || M.today()) : '';
       if (novo) G().push(Object.assign({ id: M.uid(), criado: M.today(), hist: [] }, o)); else Object.assign(g, o, { hist: g.hist || [] });
-      M.save(); SFX.play('pop'); M.closeModal(); M.render(); M.toast(novo ? '🎯 Meta criada. Vá somando o que avançar!' : '✅ Meta salva');
+      if (arq === true) arquiva(g, !g.arq); // Arquivar e Desarquivar também guardam o que estava escrito na janela
+      M.save(); SFX.play('pop'); M.closeModal(); M.render();
+      M.toast(novo ? '🎯 Meta criada. Vá somando o que avançar!' : arq === true ? avisoArq(g) : '✅ Meta salva');
     };
-    $('#gOk', m).onclick = ok; $('#gNome', m).onkeydown = (e) => { if (e.key === 'Enter') ok(); };
-    if ($('#gDel', m)) $('#gDel', m).onclick = () => { const i = G().indexOf(g); M.db.goals = G().filter((x) => x !== g); M.save(); SFX.play('trash'); M.closeModal(); M.render(); M.toast('🗑️ Meta apagada', () => { G().splice(Math.max(0, i), 0, g); M.save(); M.render(); }); };
+    $('#gOk', m).onclick = () => ok(); $('#gNome', m).onkeydown = (e) => { if (e.key === 'Enter') ok(); };
+    if (!novo) {
+      $('#gArqB', m).onclick = () => ok(true);
+      $('#gDel', m).onclick = () => { M.paraLixeira('goal', g); M.save(); SFX.play('trash'); M.closeModal(); M.render(); M.toast('🗑️ Meta para a lixeira'); };
+    }
     if (novo) $('#gNome', m).focus();
+  }
+  // avanços da meta: a lista do que foi somado (valor e data). Dá para corrigir um valor ou apagar qualquer linha.
+  // Mexe numa cópia e só vale no Salvar. O "quanto já tem" digitado na ficha (fora desta lista) é preservado.
+  function avancos(g) {
+    const L = (g.hist || []).map((x, i) => Object.assign({}, x, { i }));
+    const soma = (A) => A.reduce((s, x) => s + (Number(x.v) || 0), 0);
+    const vazio = '<small style="color:var(--faint)">Nenhum avanço na lista. Clique em Salvar para confirmar.</small>';
+    const linha = (x) => `<div class="av-row" data-i="${x.i}"><label for="av-${x.i}">${M.fmtDate(x.d)}</label>${g.un === 'R$' ? '<small>R$</small>' : ''}<input type="text" inputmode="decimal" id="av-${x.i}" value="${esc(String(x.v).replace('.', ','))}">${g.un && g.un !== 'R$' ? `<small>${esc(g.un)}</small>` : ''}<button type="button" class="icon-btn" data-del title="Apagar este avanço" aria-label="Apagar o avanço de ${M.fmtDate(x.d)}">🗑️</button></div>`;
+    const m = M.modal(`<div class="modal-h"><h2>📋 Avanços da meta</h2><button class="icon-btn" id="x" title="Fechar" aria-label="Fechar">✕</button></div><div class="modal-b">
+      <p class="av-dica">${esc(g.em || '🎯')} <b>${esc(g.nome)}</b>: tudo o que você já somou, do mais novo para o mais antigo. Corrija um valor ou apague uma linha e clique em Salvar.</p>
+      <input type="checkbox" id="avMud" hidden>
+      <div class="av-lista" id="avL">${L.slice().reverse().map(linha).join('') || vazio}</div>
+      <div class="jan-pe"><span class="grow"></span><button class="btn ghost" id="avNo">Cancelar</button><button class="btn" id="avOk">✔ Salvar</button></div></div>`, { small: true });
+    $('#x', m).onclick = $('#avNo', m).onclick = M.closeModal;
+    $('#avL', m).onclick = (e) => {
+      const r = e.target.closest('[data-del]') && e.target.closest('.av-row'); if (!r) return;
+      L.splice(L.findIndex((x) => x.i === +r.dataset.i), 1); r.remove(); SFX.play('trash');
+      if (!L.length) $('#avL', m).innerHTML = vazio;
+      $('#avMud', m).dispatchEvent(new Event('change', { bubbles: true })); // conta como mudança: fechar sem salvar pergunta antes
+    };
+    const ok = () => {
+      for (const x of L) { const c = $('#av-' + x.i, m), n = M.lerValor(c.value); if (!n) return M.falta(c, '✍️ Escreva o valor, ou apague a linha no 🗑️'); x.v = n; }
+      const nova = L.map((x) => { const y = Object.assign({}, x); delete y.i; return y; });
+      g.atual = Math.max(0, Math.round((g.atual - soma(g.hist || []) + soma(nova)) * 100) / 100); g.hist = nova;
+      g.feitoEm = g.atual >= g.alvo ? (g.feitoEm || M.today()) : '';
+      M.save(); SFX.play('pop'); M.closeModal(); M.render(); M.toast('✅ Avanços salvos');
+    };
+    $('#avOk', m).onclick = ok; m.onkeydown = (e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') ok(); };
   }
 
   // ----- Início: rotina de hoje em botões -----
