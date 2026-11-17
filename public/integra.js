@@ -19,7 +19,7 @@
   };
 
   M.sendMenu = (e, it) => M.ctxMenu(e, [
-    { em: '📓', t: 'Enviar para o Notion', fn: () => M.sendItem(it, 'notion') },
+    { em: '📒', t: 'Enviar para o Notion', fn: () => M.sendItem(it, 'notion') },
     { em: '📋', t: 'Enviar para o Trello', fn: () => M.sendItem(it, 'trello') },
   ]);
 
@@ -31,7 +31,7 @@
     const s = await M.intStatus(true);
     const dot = (ok) => `<span style="font:700 12px var(--mono);color:${ok ? 'var(--green)' : 'var(--faint)'}">${ok ? '● conectado' : '○ não conectado'}</span>`;
     box.innerHTML = `
-      <div class="cfg-row"><span class="l">📓 Notion ${M.hint('1) Em notion.so/profile/integrations crie uma integração interna e copie o “Internal Integration Secret”. 2) No Notion, abra a página onde os itens vão cair → ••• → Conexões → adicione a integração. 3) Cole o segredo aqui e escolha a página.')}</span>${dot(s.notion.ok)}</div>
+      <div class="cfg-row"><span class="l">📒 Notion ${M.hint('1) Em notion.so/profile/integrations crie uma integração interna e copie o “Internal Integration Secret”. 2) No Notion, abra a página onde os itens vão cair → ••• → Conexões → adicione a integração. 3) Cole o segredo aqui e escolha a página.')}</span>${dot(s.notion.ok)}</div>
       <div class="row" style="align-items:center"><input type="password" id="nTok" placeholder="${s.notion.temToken ? 'Segredo guardado ✔ (cole outro para trocar)' : 'Cole o segredo da integração (ntn_…)'}" autocomplete="off" style="flex:3"><button class="btn ghost" id="nLoad" style="flex:none">Buscar páginas</button></div>
       <div class="row" style="align-items:center;margin-top:6px"><select id="nPage" style="flex:3"><option value="">${s.notion.alvoNome ? esc(s.notion.alvoNome) : '— escolha a página de destino —'}</option></select><button class="btn" id="nSave" style="flex:none">Guardar</button><button class="btn ghost" id="nDel" style="flex:none">Remover</button></div>
       <div style="height:14px"></div>
@@ -45,7 +45,7 @@
         const r = await M.api('/api/int/notion/paginas', { method: 'POST', body: JSON.stringify({ token: $('#nTok').value.trim() }) });
         if (!r.paginas.length) return M.toast('Nenhuma página encontrada. Conecte a integração a uma página no Notion (••• → Conexões).');
         $('#nPage').innerHTML = r.paginas.map((p) => `<option value="${esc(p.id)}">${esc(p.nome)}</option>`).join('');
-        M.toast(`📓 ${r.paginas.length} página(s) encontrada(s)`);
+        M.toast(`📒 ${r.paginas.length} página(s) encontrada(s)`);
       } catch (e) { err(e); }
     };
     $('#nSave').onclick = async () => {

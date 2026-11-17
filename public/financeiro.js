@@ -42,8 +42,8 @@
     const totS = cats.reduce((s, c) => s + c[1], 0) || 1;
     v.innerHTML = `
       <div class="cal-h fin-h"><button class="icon-btn" id="fp">‹</button><h3>${nomeMes(mes)}</h3><button class="icon-btn" id="fn">›</button><button class="btn ghost sm" id="fh">Hoje</button>
-        <span class="grow" style="flex:1"></span>
         <button class="btn sm fin-e" id="fAddE">＋ Entrada</button><button class="btn sm fin-s" id="fAddS">− Saída</button>
+        <span class="grow" style="flex:1"></span>
         <button class="btn ghost sm" id="fCalc">🧮 Calcular preço</button><a class="btn ghost sm" id="fCsv" href="#">⬇️ Planilha (CSV)</a></div>
       ${atras.length ? `<div class="fin-alerta">⚠️ ${atras.length} conta${atras.length > 1 ? 's' : ''} de meses anteriores ainda em aberto (${M.reais(atras.reduce((s, f) => s + (f.tipo === 'entrada' ? f.valor : -f.valor), 0))}). <a data-atras="1">ver</a></div>` : ''}
       <div class="stats fin-stats">

@@ -31,6 +31,12 @@
   // campo obrigatório vazio: avisa, balança o campo e põe o cursor nele (o botão nunca fica "mudo")
   M.falta = (el, msg) => { if (!el) return; M.toast(msg); el.classList.remove('falta'); void el.offsetWidth; el.classList.add('falta'); el.focus(); SFX.play('error'); setTimeout(() => el.classList.remove('falta'), 900); };
 
+  // clicar em qualquer parte de um campo de data ou hora abre o calendário / relógio (não só no ícone pequeno)
+  document.addEventListener('click', (e) => { const el = e.target; if (el && el.tagName === 'INPUT' && (el.type === 'date' || el.type === 'time') && el.showPicker) { try { el.showPicker(); } catch (_) {} } });
+
+  // rodapé das fichas que salvam sozinhas (item e cliente): mostra que está salvo e dá um botão claro para concluir
+  M.rodapeSalvar = (novo) => `<div class="salvar-bar"><span class="sv-st">💾 Salva sozinho enquanto você escreve</span><span style="flex:1"></span>${novo ? '<button class="btn ghost" id="svNo" style="flex:none">Descartar</button>' : ''}<button class="btn" id="svOk" style="flex:none">✔ Salvar e fechar</button></div>`;
+
   // ----- janelas -----
   let onClose = null;
   M.modal = (html, opt) => {

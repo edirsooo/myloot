@@ -14,6 +14,14 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.7
+
+- ✅ **Nova tarefa numa caixa só**: campo, microfone e botão Adicionar lado a lado; embaixo, data (Hoje, Amanhã ou calendário), hora do lembrete, prioridade e repetição. Cada opção tem um “?” que explica para que serve.
+- 💾 **Salvar e fechar**: as fichas de item e de cliente continuam salvando sozinhas, mas agora têm o botão no rodapé; em cadastro novo aparece também “Descartar”.
+- ⏱️ **Modo foco com a bolinha do mouse**: role em cima do timer (ou dentro da janela do foco) para mudar o tempo de 5 em 5 minutos, de 5 a 180. A janela traz 6 tempos prontos.
+- 🧹 **Começo limpo**: uma instalação nova não vem mais com tarefas nem itens de exemplo, só a nota de boas-vindas e os materiais prontos.
+- 👀 **Mais fácil de enxergar**: calendário e relógio dos campos com ícone claro, botão “? Tutorial” no lugar do emoji escuro, “＋ Novo cliente” e “＋ Entrada” perto do começo da tela.
+
 ## Novidades da versão 2.6
 
 - 🎙️ **Microfone ao lado dos campos**: no título, na descrição e no conteúdo de um item, na tarefa nova, nas anotações do cliente e no lançamento do financeiro. Clique, fale, clique de novo: o texto entra no campo. (No computador; no celular use o microfone do teclado.)

@@ -42,35 +42,20 @@ function defaults() {
   };
 }
 
-// exemplos que vêm na primeira abertura (só quando ainda não existe db.json)
+// primeira abertura (só quando ainda não existe db.json): categorias básicas e a nota de boas-vindas.
+// Tarefas, clientes e financeiro nascem vazios; os materiais prontos entram pelos pacotes da pasta exemplos/.
 function seed() {
   const d = defaults();
   const now = Date.now();
-  const day = (n) => { const x = new Date(); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
   d.categories = [
     { id: 'c-ia', name: 'Inteligência Artificial', icon: '🤖', color: '#8b5cf6' },
-    { id: 'c-est', name: 'Estudos', icon: '🎓', color: '#3ad7ff' },
+    { id: 'c-est', name: 'Estudos', icon: '📘', color: '#3ad7ff' },
     { id: 'c-dev', name: 'Programação', icon: '💻', color: '#3cffaa' },
     { id: 'c-vida', name: 'Vida pessoal', icon: '🏡', color: '#ffbe46' },
   ];
   const mk = (i, o) => Object.assign({ id: 's' + i, type: 'nota', title: '', desc: '', content: '', checklist: [], links: [], attachments: [], cat: '', status: 'ver', tags: [], date: '', fav: false, created: now - i * 3600e3, updated: now - i * 3600e3 }, o);
   d.items = [
-    mk(1, { type: 'prompt', title: 'Resumir texto em 5 tópicos', cat: 'c-ia', status: 'ok', fav: true, tags: ['resumo', 'chatgpt'], desc: 'Prompt curto para resumir qualquer texto.', content: 'Resuma o texto abaixo em 5 tópicos curtos, em português simples, destacando o que é mais importante:\n\n[COLE O TEXTO AQUI]' }),
-    mk(2, { type: 'prompt', title: 'Explique como se eu tivesse 12 anos', cat: 'c-ia', status: 'and', tags: ['estudo'], desc: 'Para entender assuntos difíceis.', content: 'Explique [ASSUNTO] como se eu tivesse 12 anos. Use um exemplo do dia a dia e termine com 3 perguntas para eu testar o que aprendi.' }),
-    mk(3, { type: 'comando', title: 'Ver quem usa uma porta no Windows', cat: 'c-dev', tags: ['windows', 'rede'], desc: 'Descobre qual programa está ocupando a porta.', content: 'netstat -ano | findstr :4321' }),
-    mk(4, { type: 'comando', title: 'Criar pasta de projeto Node', cat: 'c-dev', tags: ['node'], content: 'mkdir meu-app && cd meu-app && npm init -y' }),
-    mk(5, { type: 'estudo', title: 'Material de estudo (exemplo)', cat: 'c-est', status: 'ver', tags: ['pdf'], desc: 'Arraste um PDF aqui para anexar. Dá para pré-visualizar e abrir no Windows.', checklist: [{ id: 'k1', t: 'Ler o capítulo 1', done: true }, { id: 'k2', t: 'Fazer resumo', done: false }, { id: 'k3', t: 'Revisar no fim de semana', done: false }] }),
-    mk(6, { type: 'instrucao', title: 'Passo a passo: publicar um site', cat: 'c-dev', status: 'and', tags: ['deploy'], desc: 'Checklist para publicar sem esquecer nada.', content: '1) Testar tudo localmente\n2) Conferir variáveis secretas\n3) Publicar\n4) Abrir o site e clicar em tudo', checklist: [{ id: 'k4', t: 'Testar localmente', done: true }, { id: 'k5', t: 'Conferir segredos', done: true }, { id: 'k6', t: 'Publicar', done: false }, { id: 'k7', t: 'Teste final', done: false }] }),
-    mk(7, { type: 'link', title: 'Documentação do Node.js', cat: 'c-dev', tags: ['docs', 'node'], content: 'https://nodejs.org/docs/latest/api/', links: [{ id: 'l1', url: 'https://developer.mozilla.org', label: 'developer.mozilla.org' }] }),
-    mk(8, { type: 'nota', title: 'Ideias para a semana', cat: 'c-vida', fav: true, tags: ['ideias'], date: day(2), desc: 'Anote tudo aqui antes de esquecer.', content: '• Organizar a mesa\n• Marcar consulta\n• Montar a rotina de estudos' }),
     mk(9, { type: 'nota', title: 'Bem-vindo ao MyLoot! 🎁', cat: 'c-vida', status: 'ver', fav: true, tags: ['comece-aqui'], desc: 'Guarde tudo num lugar só.', content: 'Dicas rápidas:\n• Ctrl+K busca em tudo\n• Arraste um arquivo para a janela para criar um item\n• Clique direito no cartão abre o menu\n• Concluir tarefas dá XP — suba de nível!' }),
-  ];
-  d.tasks = [
-    { id: 't1', text: 'Revisar o capítulo 2', date: day(-1), prio: 'alta', done: false, created: now },
-    { id: 't2', text: 'Responder mensagens importantes', date: day(0), prio: 'media', done: false, created: now },
-    { id: 't3', text: 'Separar documentos para o curso', date: day(1), prio: 'baixa', done: false, created: now },
-    { id: 't4', text: 'Estudar 30 minutos', date: day(3), prio: 'media', done: false, created: now },
-    { id: 't5', text: 'Pesquisar ideias de projeto', date: '', prio: 'baixa', done: false, created: now },
   ];
   return d;
 }

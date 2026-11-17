@@ -1,25 +1,30 @@
 {
-  "versao": "2.6.0",
+  "versao": "2.7.0",
   "data": "2026-11-17",
   "novidades": [
-    "🎙️ Microfone ao lado dos campos: fale em vez de digitar no título, na descrição, no conteúdo e nas tarefas",
-    "🧩 Novo item em 3 colunas: os modelos cabem numa tela só, com o atalho “Por voz”"
+    "✅ Nova tarefa numa caixa só: data, hora do lembrete, prioridade e repetição, cada um com explicação no “?”",
+    "💾 Botão “Salvar e fechar” nas fichas de item e de cliente (e “Descartar” em cadastro novo)",
+    "⏱️ Modo foco: escolha o tempo com a bolinha do mouse, de 5 em 5 minutos, ou num dos 6 tempos prontos"
   ],
   "historico": {
+    "2.6.0": [
+      "🎙️ Microfone ao lado dos campos: fale em vez de digitar no título, na descrição, no conteúdo e nas tarefas",
+      "🧩 Novo item em 3 colunas: os modelos cabem numa tela só, com o atalho “Por voz”"
+    ],
     "2.5.0": [
       "🎙️ Crie falando: grave um áudio (ou mande um do WhatsApp) e ele vira nota, tarefa ou conta",
       "✨ A IA separa o que você falou em vários itens de uma vez",
       "🔄 Celular e PC abertos juntos: o que você muda em um aparece no outro, sem perder nada",
       "🐞 Botão para reportar um problema ou mandar uma sugestão, direto num formulário",
-      "🔌 Conexões: outros programas do seu computador podem mandar itens para o MyLoot",
-      "🎓 Botão ao lado do nome de cada tela para rever o tutorial dela"
+      "🤝 Conexões: outros programas do seu computador podem mandar itens para o MyLoot",
+      "💡 Botão ao lado do nome de cada tela para rever o tutorial dela"
     ],
     "2.4.0": [
       "📱 Use no celular: ligue a chave e aponte a câmera para o QR Code",
       "👥 Clientes: contatos, funil e atalhos de WhatsApp, e-mail, Trello e pasta",
       "💰 Financeiro: fluxo de caixa, contas que repetem, parcelas e calculadora de preço",
       "💼 Kits prontos: 23 materiais (briefings, contratos, proposta, vendas e lançamento), com PDF",
-      "🎓 Tutorial guiado: cada tela explica os pontos principais na primeira vez",
+      "💡 Tutorial guiado: cada tela explica os pontos principais na primeira vez",
       "⏰ Tarefas que repetem e lembretes com horário",
       "🔒 Backup com senha e exportação para o Obsidian",
       "💻 Agora também roda no Mac e no Linux"

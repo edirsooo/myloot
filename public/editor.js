@@ -50,7 +50,7 @@
       // item novo vazio e sem nada: descarta sem barulho
       if (it._new && !it.title && !it.desc && !it.content && !it.attachments.length && !it.checklist.length) {
         M.db.items = M.db.items.filter((x) => x.id !== it.id); M.save();
-      }
+      } else if (it._new && M.db.items.includes(it)) M.toast('✅ Item salvo na Biblioteca'); // fechou no ✕: avisa que ficou guardado
       delete it._new; delete it._xp;
       M.render();
       // item aberto de dentro da ficha do cliente: volta para a ficha
@@ -91,7 +91,7 @@
           ${M.origemHTML(it)}
           <div class="fld"><label>Anexos ${M.hint('Arraste arquivos para cá. Eles são copiados para a pasta data/anexos.')}</label><div id="eAtt"></div><div id="ePrev"></div></div>
           ${M.ehMaterial(it) ? `<div class="dica-ia"><b>💡 Dica: personalize este documento com IA</b><p>Este material é um exemplo de referência (o PDF vem com a identidade da Prestes Design). Use como ponto de partida: mande o texto ou o PDF para o Claude, o Codex ou outra IA e peça para adaptar à sua marca, à sua identidade visual, à sua linguagem e às suas necessidades.</p><div class="cmd" id="ePromptIA">${esc(M.PROMPT_MARCA)}</div><button class="btn sm ghost" id="eCopiaIA">📋 Copiar comando</button></div>` : ''}
-        </div>`;
+        </div>${M.rodapeSalvar(it._new)}`;
       bind();
       drawCheck(); drawLinks(); drawAtt(); drawAi();
     }
@@ -142,6 +142,11 @@
 
     function bind() {
       $('#eX', m).onclick = M.closeModal;
+      $('#svOk', m).onclick = () => {
+        if (!it.title.trim() && !it.desc && !it.content && !it.attachments.length && !it.checklist.length) return M.falta($('#eTitle', m), '✍️ Escreva pelo menos um título');
+        const novo = it._new; delete it._new; M.closeModal(); if (novo) M.toast('✅ Item salvo na Biblioteca');
+      };
+      if ($('#svNo', m)) $('#svNo', m).onclick = () => { M.db.items = M.db.items.filter((x) => x.id !== it.id); delete it._new; M.save(); M.closeModal(); M.toast('Item descartado'); };
       $('#eDel', m).onclick = () => { M.closeModal(); M.trashItem(it); };
       $('#eFav', m).onclick = () => { it.fav = !it.fav; touch(); SFX.play(it.fav ? 'star' : 'click'); $('#eFav', m).textContent = it.fav ? '⭐' : '☆'; };
       $('#eCopy', m).onclick = () => M.copyItem(it);

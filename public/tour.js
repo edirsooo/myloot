@@ -43,7 +43,7 @@
       { s: ['#btnNew', '#bnav .novo'], t: 'Novo item', d: 'Crie em branco ou a partir de um modelo pronto (briefing, contrato, proposta, roteiro…).' },
     ],
     tasks: [
-      { s: '.tnew', t: 'Nova tarefa', d: 'Escreva (ou fale no 🎙️) e aperte Enter. Se terminar com “hoje” ou “amanhã”, a data entra sozinha.' },
+      { s: '.tnova', t: 'Nova tarefa', d: 'Escreva (ou fale no 🎙️) e aperte Enter. Se terminar com “hoje” ou “amanhã”, a data entra sozinha.' },
       { s: '.tgroup', t: 'Separadas por prazo', d: 'Atrasadas, hoje, próximas e sem data. Concluir uma tarefa dá pontos.' },
       { s: '.task', t: 'Detalhes da tarefa', d: 'Clique no texto para editar: data, lembrete com horário (o computador avisa), repetição (todo dia, toda semana, todo mês) e o cliente.' },
     ],
@@ -150,7 +150,7 @@
       const a = e.target.dataset.a; if (!a) return;
       if (a === 'vai') ir(1); else if (a === 'volta') ir(-1);
       else if (ativo.manual) fechar(true); // revendo por conta própria: sair não desliga os tutoriais das outras telas
-      else { M.db.settings.tourOff = true; fechar(true); M.toast('Tutorial pulado. Para ver de novo, toque no 🎓 ao lado do nome da tela.'); }
+      else { M.db.settings.tourOff = true; fechar(true); M.toast('Tutorial pulado. Para ver de novo, clique em “? Tutorial” ao lado do nome da tela.'); }
     };
     addEventListener('resize', pinta); document.addEventListener('keydown', tecla, true);
     ir(1);
@@ -177,12 +177,12 @@
   const antes = M.onRender;
   let ultima = '';
   M.onRender = (p) => { if (antes) antes(p); const tb = $('#tourBtn'); if (tb) tb.hidden = !M.TOURS[p]; if (p !== ultima) { ultima = p; M.tourTalvez(p); } };
-  // botão 🎓 ao lado do nome da tela: revê o tutorial daquela tela quando a pessoa quiser
+  // botão "? Tutorial" ao lado do nome da tela: revê o tutorial daquela tela quando a pessoa quiser
   M.tourRever = () => { if (ativo || M.modalOpen()) return; clearTimeout(espera); SFX.play('click'); M.tour(M.ui.page, true); };
   { const tb = $('#tourBtn'); if (tb) tb.onclick = M.tourRever; }
 
-  M.tourSection = () => `<section class="stat" id="tourSec"><div class="cfg-h">🎓 Tutorial</div>
-    <div class="cfg-row"><span class="l">Explicações de cada tela ${M.hint('Na primeira vez em cada tela, o MyLoot mostra os pontos principais passo a passo. Para rever só uma tela, toque no 🎓 ao lado do nome dela.')}</span><button class="btn ghost sm" id="tourDeNovo" style="flex:none">▶️ Ver o tutorial de novo</button></div></section>`;
+  M.tourSection = () => `<section class="stat" id="tourSec"><div class="cfg-h">💡 Tutorial</div>
+    <div class="cfg-row"><span class="l">Explicações de cada tela ${M.hint('Na primeira vez em cada tela, o MyLoot mostra os pontos principais passo a passo. Para rever só uma tela, clique em “? Tutorial” ao lado do nome dela.')}</span><button class="btn ghost sm" id="tourDeNovo" style="flex:none">▶️ Ver o tutorial de novo</button></div></section>`;
   M.tourBind = () => {
     const b = $('#tourDeNovo'); if (!b) return;
     b.onclick = () => { const s = M.db.settings; s.tour = {}; s.tourOff = false; M.save(); ultima = ''; M.go('home'); };

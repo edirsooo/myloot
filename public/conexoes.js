@@ -3,7 +3,7 @@
 (function () {
   const { esc, $ } = M;
 
-  M.cnxSection = () => `<section class="stat so-pc" id="cnxSec"><div class="cfg-h">🔌 Conexões ${M.hint('Deixa outro programa do seu computador mandar itens para o MyLoot. Cada programa usa um código só dele, que você pode desligar ou apagar. Ele só consegue acrescentar itens: não lê nem apaga o que você guardou.')}</div><div id="cnxBox"><small style="color:var(--dim)">…</small></div></section>`;
+  M.cnxSection = () => `<section class="stat so-pc" id="cnxSec"><div class="cfg-h">🤝 Conexões ${M.hint('Deixa outro programa do seu computador mandar itens para o MyLoot. Cada programa usa um código só dele, que você pode desligar ou apagar. Ele só consegue acrescentar itens: não lê nem apaga o que você guardou.')}</div><div id="cnxBox"><small style="color:var(--dim)">…</small></div></section>`;
 
   M.cnxBind = async () => {
     const box = $('#cnxBox'); if (!box || M.remoto) return;
@@ -20,7 +20,7 @@
       <div class="row" style="align-items:center;gap:8px;margin-top:8px"><input type="text" id="cnxNome" placeholder="Nome do programa (ex.: minha automação)" style="flex:2"><button class="btn ghost" id="cnxNovo" style="flex:none">＋ Gerar código de conexão</button></div>
       <small style="color:var(--faint);display:block;margin-top:8px">Endereço para o programa: <code>http://127.0.0.1:${r.porta}/api/entrada</code> · formato <code>${esc(r.formato)}</code>. Detalhes no arquivo NOTAS.md.</small>`;
     $('#cnxNovo').onclick = async () => {
-      try { const c = await M.api('/api/conexoes', { method: 'POST', body: JSON.stringify({ nome: $('#cnxNome').value }) }); await navigator.clipboard.writeText(c.codigo).catch(() => {}); SFX.play('coin'); M.toast('🔌 Conexão criada. O código já está copiado.'); }
+      try { const c = await M.api('/api/conexoes', { method: 'POST', body: JSON.stringify({ nome: $('#cnxNome').value }) }); await navigator.clipboard.writeText(c.codigo).catch(() => {}); SFX.play('coin'); M.toast('🤝 Conexão criada. O código já está copiado.'); }
       catch (e) { M.toast('⚠️ ' + e.message); }
       M.cnxBind();
     };

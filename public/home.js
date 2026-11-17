@@ -90,7 +90,8 @@
 
   // ----- timer de foco (25 min) -----
   // O relógio fica no servidor: fechar a aba não para o foco, e o computador avisa quando acabar.
-  let end = 0, min = 25, tick = 0, claiming = false;
+  let end = 0, min = 25, pref = 0, tick = 0, claiming = false; // pref: tempo escolhido com a rodinha do mouse, ainda não iniciado
+  const passo = (v, d) => Math.max(5, Math.min(180, d > 0 ? Math.floor(v / 5) * 5 + 5 : Math.ceil(v / 5) * 5 - 5));
   const fmt = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
   async function claim() {
     if (claiming) return; claiming = true;
@@ -103,7 +104,7 @@
   }
   function paint() {
     const el = $('#focus');
-    if (!end) { el.classList.remove('run'); $('#focusT').textContent = String(min).padStart(2, '0') + ':00'; document.title = 'MyLoot'; return; }
+    if (!end) { el.classList.remove('run'); $('#focusT').textContent = String(pref || min).padStart(2, '0') + ':00'; document.title = 'MyLoot'; return; }
     const left = end - Date.now();
     if (left <= 0) { end = 0; paint(); setTimeout(claim, 1200); return; }
     el.classList.add('run'); $('#focusT').textContent = fmt(left); document.title = fmt(left) + ' · MyLoot';
@@ -119,7 +120,7 @@
   M.focusStart = async (m) => {
     try {
       const r = await M.api('/api/focus/start', { method: 'POST', body: JSON.stringify({ min: m || 25 }) });
-      end = Date.now() + (r.end - r.agora); min = r.min; SFX.play('star'); paint();
+      end = Date.now() + (r.end - r.agora); min = r.min; pref = 0; SFX.play('star'); paint();
       M.toast(`⏱ Foco de ${min} min começou. Pode fechar a aba: o computador avisa no fim.`);
     } catch (e) { M.toast('⚠️ ' + e.message); }
   };
@@ -129,12 +130,31 @@
       await M.api('/api/focus/stop', { method: 'POST' }).catch(() => {});
       end = 0; SFX.play('click'); paint(); return;
     }
-    const m = M.modal(`<div class="modal-h"><h2>⏱ Modo foco</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div>Quanto tempo? ${M.hint('O relógio roda no servidor do MyLoot. Você pode fechar o navegador: quando acabar, aparece um aviso no computador. Só para se você desligar o MyLoot ou o computador.')}</div><div class="row">${[15, 25, 45, 60].map((n) => `<button class="btn ${n === 25 ? '' : 'ghost'}" data-m="${n}">${n} min</button>`).join('')}</div><button class="btn ghost sm" id="nt" style="align-self:flex-start">🔔 Testar o aviso</button></div>`, { small: true });
+    let v = pref || min || 25;
+    const m = M.modal(`<div class="modal-h"><h2>⏱ Modo foco</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b">
+      <div>Quanto tempo? ${M.hint('O relógio roda no servidor do MyLoot. Você pode fechar o navegador: quando acabar, aparece um aviso no computador. Só para se você desligar o MyLoot ou o computador.')}</div>
+      <div class="foco-num"><button class="icon-btn" id="fMenos" title="5 minutos a menos" aria-label="5 minutos a menos">−</button><b id="fVal"></b><button class="icon-btn" id="fMais" title="5 minutos a mais" aria-label="5 minutos a mais">＋</button></div>
+      <small class="foco-dica">Role a bolinha do mouse (ou use − e ＋) para mudar de 5 em 5 minutos.</small>
+      <div class="foco-grid">${[10, 15, 25, 45, 60, 90].map((n) => `<button class="btn ghost" data-m="${n}">${n} min</button>`).join('')}</div>
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px"><button class="btn ghost sm" id="nt" style="flex:none">🔔 Testar o aviso</button><button class="btn" id="fGo" style="flex:none"></button></div></div>`, { small: true });
+    const pinta = () => {
+      $('#fVal', m).textContent = v + ' min'; $('#fGo', m).textContent = '▶ Começar ' + v + ' min';
+      m.querySelectorAll('[data-m]').forEach((b) => b.classList.toggle('ghost', +b.dataset.m !== v));
+    };
+    const muda = (d) => { v = passo(v, d); pref = v; SFX.play('click'); pinta(); paint(); };
+    const comeca = () => { M.closeModal(); M.focusStart(v); };
     $('#x', m).onclick = M.closeModal;
     $('#nt', m).onclick = () => M.api('/api/notify-test', { method: 'POST' }).then(() => M.toast('Aviso enviado. Olhe o canto da tela.'));
-    m.onclick = (e) => { const b = e.target.closest('[data-m]'); if (b) { M.closeModal(); M.focusStart(+b.dataset.m); } };
+    $('#fMenos', m).onclick = () => muda(-1); $('#fMais', m).onclick = () => muda(1); $('#fGo', m).onclick = comeca;
+    // clicar num tempo escolhe; clicar de novo no mesmo (ou em Começar) inicia
+    m.querySelector('.foco-grid').onclick = (e) => { const b = e.target.closest('[data-m]'); if (!b) return; const n = +b.dataset.m; if (n === v) return comeca(); v = n; pref = v; SFX.play('click'); pinta(); paint(); };
+    m.addEventListener('wheel', (e) => { e.preventDefault(); muda(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+    m.onkeydown = (e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); muda(1); } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); muda(-1); } };
+    pinta(); $('#fGo', m).focus();
   };
   $('#focus').onclick = M.focusToggle;
+  // rodinha do mouse em cima do timer (parado) muda o tempo de 5 em 5 minutos
+  $('#focus').addEventListener('wheel', (e) => { if (end) return; e.preventDefault(); pref = passo(pref || min, e.deltaY < 0 ? 1 : -1); paint(); }, { passive: false });
   tick = setInterval(paint, 1000);
   setInterval(sync, 30000);
   addEventListener('focus', sync);

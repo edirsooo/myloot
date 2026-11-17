@@ -3,6 +3,9 @@
   const { esc, $, $$ } = M;
   M.pages = M.pages || {};
 
+  const PRIO_DICA = 'Alta: urgente, aparece primeiro e em vermelho. Média: o normal. Baixa: pode esperar. Dá para mudar depois clicando na etiqueta da tarefa.';
+  const PRIO_NOME = { alta: '🔴 Alta', media: '🟡 Média', baixa: '🔵 Baixa' };
+
   // "hoje" ou "amanhã" no fim do texto define a data sozinho
   M.parseTask = (raw) => {
     let text = raw.trim(), date = '';
@@ -56,7 +59,7 @@
     const late = !t.done && t.date && t.date < M.today();
     const cli = t.client && M.client ? M.client(t.client) : null;
     const extra = `${t.hora ? `<span class="tdate" title="Lembrete">⏰ ${esc(t.hora)}</span>` : ''}${t.rep ? `<span class="tdate" title="${esc((M.REP.find((r) => r[0] === t.rep) || [])[1] || '')}">🔁</span>` : ''}${cli ? `<span class="tag" title="Cliente">👤 ${esc(cli.nome)}</span>` : ''}`;
-    return `<div class="task ${t.done ? 'done' : ''}" data-id="${t.id}"><input type="checkbox" ${t.done ? 'checked' : ''}><span class="tx">${esc(t.text)}</span>${extra}${t.date ? `<span class="tdate" data-a="date" style="${late ? 'color:var(--red)' : ''};cursor:pointer" title="Mudar data">📅 ${M.fmtDate(t.date)}</span>` : `<span class="tdate" data-a="date" style="cursor:pointer;opacity:.6" title="Definir data">📅 —</span>`}<span class="prio ${t.prio}" data-a="prio" title="Clique para mudar a prioridade">${t.prio}</span><button class="xbtn" data-a="rm" title="Lixeira">✕</button></div>`;
+    return `<div class="task ${t.done ? 'done' : ''}" data-id="${t.id}"><input type="checkbox" ${t.done ? 'checked' : ''}><span class="tx">${esc(t.text)}</span>${extra}${t.date ? `<span class="tdate" data-a="date" style="${late ? 'color:var(--red)' : ''};cursor:pointer" title="Mudar data">📅 ${M.fmtDate(t.date)}</span>` : `<span class="tdate" data-a="date" style="cursor:pointer;opacity:.6" title="Definir data">📅 —</span>`}<span class="prio ${t.prio}" data-a="prio" title="Prioridade ${t.prio === 'media' ? 'média' : t.prio}. Clique para mudar (baixa, média, alta).">${t.prio === 'media' ? 'média' : t.prio}</span><button class="xbtn" data-a="rm" title="Lixeira">✕</button></div>`;
   }
 
   M.taskHTML = taskHTML;
@@ -73,19 +76,40 @@
     ];
     const done = M.db.tasks.filter((t) => t.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0)).slice(0, 12);
     v.innerHTML = `
-      <div class="tnew">
-        <input type="text" id="tIn" placeholder="Nova tarefa… (termine com “hoje” ou “amanhã” para marcar a data)" autocomplete="off">${M.micBtn('#tIn')}
-        <select id="tPr" title="Prioridade"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Média</option><option value="baixa">🔵 Baixa</option></select>
-        <input type="date" id="tDt" style="width:auto" title="Data (opcional)">
-        <button class="btn" id="tAdd">＋ Adicionar</button>
-        ${M.hint('Dica: escreva “Pagar conta amanhã” e a data entra sozinha.')}
+      <div class="tnova">
+        <div class="tn-t">✅ Nova tarefa ${M.hint('1) Escreva (ou fale no 🎙️) o que precisa fazer. 2) Se quiser, escolha data, hora, prioridade e repetição. 3) Aperte Enter ou clique em Adicionar. Dica: “Pagar conta amanhã” já entra com a data de amanhã.')}</div>
+        <div class="tn-l1">
+          <input type="text" id="tIn" placeholder="Escreva aqui o que você precisa fazer…" autocomplete="off">${M.micBtn('#tIn')}
+          <button class="btn" id="tAdd">＋ Adicionar</button>
+        </div>
+        <div class="tn-l2">
+          <div class="tn-op"><span class="lbl">📅 Data ${M.hint('Opcional. Clique em Hoje, em Amanhã ou no calendário para escolher outro dia.')}</span>
+            <span class="tn-data" id="tDias"><button type="button" class="chip-b" data-d="0">Hoje</button><button type="button" class="chip-b" data-d="1">Amanhã</button><input type="date" id="tDt" title="Escolher outro dia"></span></div>
+          <div class="tn-op"><span class="lbl">⏰ Hora ${M.hint('Opcional. No horário marcado o computador mostra um aviso, mesmo com a aba fechada. Sem data, vale para hoje.')}</span><input type="time" id="tHr" title="Escolher o horário do lembrete"></div>
+          <div class="tn-op"><span class="lbl">🚦 Prioridade ${M.hint(PRIO_DICA)}</span><select id="tPr"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Média</option><option value="baixa">🔵 Baixa</option></select></div>
+          <div class="tn-op"><span class="lbl">🔁 Repetir ${M.hint('Para o que volta sempre (ex.: postar todo dia, pagar o aluguel todo mês). Quando você conclui, a próxima já nasce na data certa.')}</span><select id="tRp">${M.REP.map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></div>
+        </div>
       </div>
       ${G.map(([k, n, L]) => L.length ? `<div class="tgroup ${k}"><h4>${n} <span>${L.length}</span></h4>${L.map(taskHTML).join('')}</div>` : '').join('')}
       ${!open.length ? '<div class="empty"><div class="big">🎉</div><h3>Nenhuma tarefa pendente</h3></div>' : ''}
       ${done.length ? `<div class="tgroup"><h4>✅ Concluídas recentemente</h4>${done.map(taskHTML).join('')}</div>` : ''}`;
-    const add = () => { const i = $('#tIn'); if (M.addTask(i.value, $('#tDt').value, $('#tPr').value)) { M.toast('✅ Tarefa criada'); M.render(); $('#tIn').focus(); } else M.falta(i, '✍️ Escreva a tarefa primeiro (ou fale no 🎙️)'); };
+    const add = () => {
+      const i = $('#tIn'), hora = $('#tHr').value, rep = $('#tRp').value;
+      const t = M.addTask(i.value, $('#tDt').value, $('#tPr').value);
+      if (!t) return M.falta(i, '✍️ Escreva a tarefa primeiro (ou fale no 🎙️)');
+      if (hora) t.hora = hora;
+      if (rep) t.rep = rep;
+      if ((hora || rep) && !t.date) t.date = M.today(); // lembrete e repetição precisam de um dia
+      M.save(); M.toast('✅ Tarefa criada'); M.render(); $('#tIn').focus();
+    };
     $('#tAdd').onclick = add;
     $('#tIn').onkeydown = (e) => { if (e.key === 'Enter') add(); };
+    // o botão fica apagado enquanto o campo está vazio: deixa claro que primeiro se escreve
+    const pintaBtn = () => $('#tAdd').classList.toggle('apagado', !$('#tIn').value.trim());
+    $('#tIn').oninput = pintaBtn; pintaBtn();
+    const pintaDias = () => { const d = $('#tDt').value; $$('#tDias .chip-b').forEach((b) => b.classList.toggle('on', d === M.addDays(M.today(), +b.dataset.d))); };
+    $('#tDias').onclick = (e) => { const b = e.target.closest('.chip-b'); if (!b) return; const d = M.addDays(M.today(), +b.dataset.d); $('#tDt').value = $('#tDt').value === d ? '' : d; SFX.play('click'); pintaDias(); };
+    $('#tDt').onchange = pintaDias;
     $('#tIn').focus();
     v.onclick = (e) => {
       const row = e.target.closest('.task'); if (!row) return;
@@ -103,7 +127,7 @@
     const C = M.db.clients || [];
     const m = M.modal(`<div class="modal-h"><h2>Editar tarefa</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div class="com-mic"><input type="text" id="et" value="${esc(t.text)}">${M.micBtn('#et')}</div>
       <div class="row"><div class="fld"><label>Data</label><input type="date" id="ed" value="${t.date}"></div><div class="fld"><label>Lembrete ${M.hint('No horário, aparece um aviso no computador (mesmo com a aba fechada). Precisa ter data.')}</label><input type="time" id="eh" value="${esc(t.hora || '')}"></div></div>
-      <div class="row"><div class="fld"><label>Repetir</label><select id="er">${M.REP.map(([k, n]) => `<option value="${k}" ${k === (t.rep || '') ? 'selected' : ''}>${n}</option>`).join('')}</select></div><div class="fld"><label>Prioridade</label><select id="ep">${M.PRIOS.map((p) => `<option ${p === t.prio ? 'selected' : ''}>${p}</option>`).join('')}</select></div></div>
+      <div class="row"><div class="fld"><label>Repetir ${M.hint('Quando você conclui, a próxima já nasce na data certa.')}</label><select id="er">${M.REP.map(([k, n]) => `<option value="${k}" ${k === (t.rep || '') ? 'selected' : ''}>${n}</option>`).join('')}</select></div><div class="fld"><label>Prioridade ${M.hint(PRIO_DICA)}</label><select id="ep">${M.PRIOS.map((p) => `<option value="${p}" ${p === t.prio ? 'selected' : ''}>${PRIO_NOME[p]}</option>`).join('')}</select></div></div>
       ${C.length ? `<div class="fld"><label>Cliente</label><select id="ec"><option value="">— nenhum —</option>${C.map((c) => `<option value="${c.id}" ${c.id === t.client ? 'selected' : ''}>${esc(c.nome || 'Sem nome')}</option>`).join('')}</select></div>` : ''}
       <div class="row" style="justify-content:space-between"><button class="btn danger" id="dl" style="flex:none">🗑️ Lixeira</button><button class="btn" id="ok" style="flex:none">Salvar</button></div></div>`, { small: true });
     $('#x', m).onclick = () => { M.closeModal(); if (depois) depois(); };
@@ -157,9 +181,9 @@
   };
 
   function quickAdd(date) {
-    const m = M.modal(`<div class="modal-h"><h2>Nova tarefa · ${M.fmtDate(date)}</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div class="com-mic"><input type="text" id="qt" placeholder="O que precisa ser feito?">${M.micBtn('#qt')}</div><div class="row" style="align-items:center"><select id="qp"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Média</option><option value="baixa">🔵 Baixa</option></select><button class="btn" id="qa" style="flex:none">＋ Criar</button></div></div>`, { small: true });
+    const m = M.modal(`<div class="modal-h"><h2>Nova tarefa · ${M.fmtDate(date)}</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div class="com-mic"><input type="text" id="qt" placeholder="O que precisa ser feito?">${M.micBtn('#qt')}</div><div class="row" style="align-items:flex-end"><div class="fld"><label>Prioridade ${M.hint(PRIO_DICA)}</label><select id="qp"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Média</option><option value="baixa">🔵 Baixa</option></select></div><div class="fld"><label>Hora ${M.hint('Opcional. No horário marcado o computador mostra um aviso.')}</label><input type="time" id="qh"></div><button class="btn" id="qa" style="flex:none">＋ Criar</button></div></div>`, { small: true });
     $('#x', m).onclick = M.closeModal; $('#qt', m).focus();
-    const ok = () => { if (M.addTask($('#qt', m).value, date, $('#qp', m).value)) { M.closeModal(); M.render(); } else M.falta($('#qt', m), '✍️ Escreva a tarefa primeiro'); };
+    const ok = () => { const t = M.addTask($('#qt', m).value, date, $('#qp', m).value); if (!t) return M.falta($('#qt', m), '✍️ Escreva a tarefa primeiro'); if ($('#qh', m).value) { t.hora = $('#qh', m).value; M.save(); } M.closeModal(); M.render(); };
     $('#qa', m).onclick = ok; $('#qt', m).onkeydown = (e) => { if (e.key === 'Enter') ok(); };
   }
 })();

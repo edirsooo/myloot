@@ -53,9 +53,9 @@
     const cnt = (id) => C.filter((c) => c.status === id).length;
     v.innerHTML = `
       <div class="hotbar" id="cliF"><div class="slot ${!filtro ? 'on' : ''}" data-f="">👥 Todos <span class="n">${C.length}</span></div>${M.CST.map((s) => `<div class="slot ${filtro === s.id ? 'on' : ''}" data-f="${s.id}" style="--c:${s.color}">${s.em} ${s.name} <span class="n">${cnt(s.id)}</span></div>`).join('')}</div>
-      <div class="toolbar"><input class="search" id="cliQ" type="search" placeholder="Buscar cliente…" value="${esc(busca)}"><span class="grow"></span>
-        <div class="seg" id="cliV"><button data-v="cards" class="${modo === 'cards' ? 'on' : ''}">▦ Cartões</button><button data-v="funil" class="${modo === 'funil' ? 'on' : ''}">▥ Funil</button></div>
-        <button class="btn" id="cliNovo">＋ Novo cliente</button></div>
+      <div class="toolbar"><button class="btn" id="cliNovo">＋ Novo cliente</button>
+        <input class="search" id="cliQ" type="search" placeholder="Buscar cliente…" value="${esc(busca)}">
+        <div class="seg" id="cliV"><button data-v="cards" class="${modo === 'cards' ? 'on' : ''}">▦ Cartões</button><button data-v="funil" class="${modo === 'funil' ? 'on' : ''}">▥ Funil</button></div>${M.hint('Cartões: todos os clientes lado a lado. Funil: uma coluna por status (Prospect, Ativo, Pausado, Encerrado); arraste o cliente de uma coluna para outra.')}</div>
       <div id="cliRes">${!C.length ? `<div class="empty"><div class="big">👥</div><h3>Nenhum cliente ainda</h3><p>Guarde contato, status, link do Trello e a pasta de cada cliente,<br>e junte as tarefas e os itens dele num lugar só.</p><button class="btn" data-novo="1" style="margin-top:12px">＋ Cadastrar o primeiro</button></div>`
         : modo === 'funil' ? `<div class="board">${M.CST.map((s) => { const cs = L.filter((c) => c.status === s.id); return `<div class="col" data-col="${s.id}"><h4>${s.em} ${s.name}<span class="n">${cs.length}</span></h4><div class="cards">${cs.map(cardHTML).join('')}</div></div>`; }).join('')}</div>`
         : L.length ? `<div class="grid">${L.map(cardHTML).join('')}</div>` : '<div class="empty"><div class="big">🔎</div><h3>Ninguém encontrado</h3></div>'}</div>`;
@@ -82,10 +82,12 @@
     v.ondragend = () => { drag = null; };
   };
 
+  let novoAberto = null; // cliente recém-criado com a ficha ainda aberta (mostra "Descartar")
   M.novoCliente = (o) => {
     const t = Date.now();
     const c = Object.assign({ id: M.uid(), nome: '', empresa: '', status: 'ativo', email: '', whats: '', insta: '', site: '', trello: '', pasta: '', notas: '', tags: [], created: t, updated: t, _novo: true }, o);
     (M.db.clients || (M.db.clients = [])).push(c);
+    novoAberto = c.id;
     M.openClient(c.id);
   };
 
@@ -117,7 +119,9 @@
     const touch = () => { c.updated = Date.now(); delete c._novo; M.save(); };
     const m = M.modal('<div></div>', { onClose: () => {
       M.cliAberto = null;
+      const eraNovo = novoAberto === c.id; novoAberto = null;
       if (c._novo && !c.nome.trim()) M.db.clients = M.db.clients.filter((x) => x !== c);
+      else if (eraNovo && M.db.clients.includes(c)) M.toast('✅ Cliente salvo'); // fechou no ✕: avisa que ficou guardado
       delete c._novo; M.save(); M.render();
     } });
     const campo = (k, lbl, ph, tipo) => `<div class="fld"><label>${lbl}</label><input type="${tipo || 'text'}" data-k="${k}" value="${esc(c[k])}" placeholder="${ph}"></div>`;
@@ -148,11 +152,13 @@
               ${soltos.length ? `<select id="cItLiga" style="flex:1;min-width:160px"><option value="">🔗 Ligar item que já existe…</option>${soltos.slice(0, 300).map((i) => `<option value="${i.id}">${M.type(i.type).em} ${esc(i.title || 'Sem título')}</option>`).join('')}</select>` : ''}</div></div>
           ${M.finDoCliente(c)}
           <div class="row" style="gap:8px"><button class="btn ghost sm" id="cTrello" style="flex:none">📤 Enviar para o Trello</button>${M.hint('Cria um cartão com os contatos, as anotações e as tarefas abertas na lista que você conectou em Configurações → Integrações.')}</div>
-        </div>`;
+        </div>${M.rodapeSalvar(novoAberto === c.id)}`;
       bind();
     }
     function bind() {
       $('#cX', m).onclick = M.closeModal;
+      $('#svOk', m).onclick = () => { if (!c.nome.trim()) return M.falta($('#cNome', m), '✍️ Dê um nome ao cliente primeiro'); const novo = novoAberto === c.id; novoAberto = null; delete c._novo; M.closeModal(); M.toast(novo ? '✅ Cliente cadastrado' : '✅ Cliente salvo'); };
+      if ($('#svNo', m)) $('#svNo', m).onclick = () => { M.db.clients = M.db.clients.filter((x) => x !== c); novoAberto = null; M.save(); M.closeModal(); M.toast('Cadastro descartado'); };
       $('#cDel', m).onclick = () => { M.closeModal(); if (c.nome.trim()) M.trashClient(c); };
       $('#cNome', m).oninput = (e) => { c.nome = e.target.value; touch(); $('.modal-h h2', m).textContent = c.nome || 'Novo cliente'; };
       $('#cNome', m).onchange = () => draw();

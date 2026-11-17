@@ -153,7 +153,7 @@
       { em: '📂', t: 'Abrir', fn: () => M.openItem(it.id) },
       { em: '📋', t: 'Copiar conteúdo', fn: () => M.copyItem(it) },
       { em: '⭐', t: it.fav ? 'Tirar dos favoritos' : 'Favoritar', fn: () => M.toggleFav(it.id) },
-      { em: '📓', t: 'Enviar para o Notion', fn: () => M.sendItem(it, 'notion') },
+      { em: '📒', t: 'Enviar para o Notion', fn: () => M.sendItem(it, 'notion') },
       { em: '📤', t: 'Enviar para o Trello', fn: () => M.sendItem(it, 'trello') },
       { em: '🧬', t: 'Duplicar', fn: () => { const c = M.newItem(JSON.parse(JSON.stringify(it))); c.id = M.uid(); c.title = (it.title || 'Sem título') + ' (cópia)'; c.checklist.forEach((x) => (x.id = M.uid())); M.db.items.push(c); M.save(); SFX.play('pop'); M.render(); M.toast('🧬 Duplicado'); } },
       ...(cats.length ? ['-', { sub: 'Mover para categoria' }, ...cats] : []),
