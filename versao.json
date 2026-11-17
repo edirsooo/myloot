@@ -1,18 +1,23 @@
 {
-  "versao": "2.15.0",
+  "versao": "2.15.1",
   "data": "2026-11-17",
   "novidades": [
-    "🏠 Início novo: “O que você quer guardar?” ficou maior, em duas colunas, com o campo de escrever em destaque",
-    "📅 Compromissos com hora de início e fim no Calendário; tarefas repetidas ganham “Pular esta vez” e “Encerrar repetição”",
-    "💾 Backup completo com os anexos, que restaura tudo em outro computador, e lista de cópias automáticas para voltar a um dia anterior",
-    "💰 Financeiro: “só este” ou “este e os próximos” ao mudar ou apagar uma série, renovar conta fixa e pagamentos clicáveis na ficha do cliente",
-    "📦 Arquivar itens, metas e ferramentas, ⏸ pausar hábitos, e a Lixeira agora guarda hábitos, metas e ferramentas",
-    "☑ Biblioteca: botão ⋯ em cada cartão e “Selecionar vários” para mover, etiquetar, arquivar ou apagar de uma vez",
-    "🛟 Se a gravação falhar, o MyLoot avisa, tenta de novo sozinho e guarda as mudanças; PC e celular mexendo na mesma ficha não se atropelam mais",
-    "🛠️ Histórico mais seguro, links e checklist da ficha editáveis, zoom por botões no mapa e muitos ajustes de teclado e toque",
-    "🐾 Mascotes: a abertura volta uma vez depois de cada atualização, com o número da versão no canto, e as falas combinam com cada personagem"
+    "🪟 Janela própria: no Windows, o MyLoot abre numa janela só dele, sem abas nem barra de endereço, e deixa um baú perto do relógio para abrir e fechar (dá para voltar ao navegador em Configurações → Servidor)",
+    "🤖 IA: o MyLoot agora acha o Claude Code e o Codex mesmo instalados depois de abrir o app ou fora do caminho padrão, e “Procurar de novo” funciona sem reiniciar",
+    "🧩 Sem a IA instalada, a chave fica desligada e aparece “como instalar”, com os comandos para copiar (o app do ChatGPT para computador não traz o Codex)"
   ],
   "historico": {
+    "2.15.0": [
+      "🏠 Início novo: “O que você quer guardar?” ficou maior, em duas colunas, com o campo de escrever em destaque",
+      "📅 Compromissos com hora de início e fim no Calendário; tarefas repetidas ganham “Pular esta vez” e “Encerrar repetição”",
+      "💾 Backup completo com os anexos, que restaura tudo em outro computador, e lista de cópias automáticas para voltar a um dia anterior",
+      "💰 Financeiro: “só este” ou “este e os próximos” ao mudar ou apagar uma série, renovar conta fixa e pagamentos clicáveis na ficha do cliente",
+      "📦 Arquivar itens, metas e ferramentas, ⏸ pausar hábitos, e a Lixeira agora guarda hábitos, metas e ferramentas",
+      "☑ Biblioteca: botão ⋯ em cada cartão e “Selecionar vários” para mover, etiquetar, arquivar ou apagar de uma vez",
+      "🛟 Se a gravação falhar, o MyLoot avisa, tenta de novo sozinho e guarda as mudanças; PC e celular mexendo na mesma ficha não se atropelam mais",
+      "🛠️ Histórico mais seguro, links e checklist da ficha editáveis, zoom por botões no mapa e muitos ajustes de teclado e toque",
+      "🐾 Mascotes: a abertura volta uma vez depois de cada atualização, com o número da versão no canto, e as falas combinam com cada personagem"
+    ],
     "2.14.0": [
       "🐾 Mascotes: agora um bichinho mora na sua tela. Escolha entre Claude, GPT, Gemini, Pinguim, Coruja e Slime (ou desligue) em Configurações → Diversão → Mascote",
       "🖱️ Ele digita junto com você, comemora cada tarefa, dança com a música e dá para pegar, balançar e soltar em cima dos quadros",

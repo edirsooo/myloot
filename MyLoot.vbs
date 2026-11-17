@@ -1,32 +1,14 @@
 Option Explicit
-Dim sh, fso, dir, url, i
+' Abre o MyLoot sem janela preta: o MyLoot.ps1 liga o servidor, abre a janela própria e põe o ícone na bandeja.
+Dim sh, fso, dir, ps1
 Set sh = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
 dir = fso.GetParentFolderName(WScript.ScriptFullName)
-url = "http://127.0.0.1:4321/"
+ps1 = dir & "\MyLoot.ps1"
 
-Function Vivo()
-  Dim h
-  On Error Resume Next
-  Set h = CreateObject("MSXML2.ServerXMLHTTP.6.0")
-  h.setTimeouts 500, 500, 800, 800
-  h.open "GET", url & "api/ping", False
-  h.send
-  Vivo = (Err.Number = 0 And h.Status = 200)
-  Err.Clear
-End Function
-
-If Not Vivo() Then
+If fso.FileExists(ps1) Then
   sh.CurrentDirectory = dir
-  sh.Run "node """ & dir & "\server.js""", 0, False
-  For i = 1 To 30
-    WScript.Sleep 300
-    If Vivo() Then Exit For
-  Next
-End If
-
-If Vivo() Then
-  sh.Run url
+  sh.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File """ & ps1 & """", 0, False
 Else
-  MsgBox "N�o consegui ligar o MyLoot." & vbCrLf & "Abra o ""Abrir MyLoot.bat"" para ver o erro (precisa do Node.js instalado).", 48, "MyLoot"
+  MsgBox "Faltou o arquivo MyLoot.ps1 na pasta do MyLoot." & vbCrLf & "Baixe o MyLoot de novo ou use o ""Abrir MyLoot.bat"".", 48, "MyLoot"
 End If

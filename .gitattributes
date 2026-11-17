@@ -1,5 +1,6 @@
 *.bat -text
 *.vbs -text
+*.ps1 -text
 *.pdf binary
 *.ico binary
 # scripts do Mac e do Linux precisam de fim de linha LF (senão não rodam)

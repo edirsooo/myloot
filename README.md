@@ -14,6 +14,12 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.15.1
+
+- 🪟 Janela própria: no Windows, o MyLoot abre numa janela só dele, sem abas nem barra de endereço, e deixa um baú perto do relógio para abrir e fechar (dá para voltar ao navegador em Configurações → Servidor)
+- 🤖 IA: o MyLoot agora acha o Claude Code e o Codex mesmo instalados depois de abrir o app ou fora do caminho padrão, e “Procurar de novo” funciona sem reiniciar
+- 🧩 Sem a IA instalada, a chave fica desligada e aparece “como instalar”, com os comandos para copiar (o app do ChatGPT para computador não traz o Codex)
+
 ## Novidades da versão 2.15
 Esta versão aplica uma revisão completa das funções do app (o que dá para criar, mudar, desfazer e recuperar em cada tela).
 - **Início:** o bloco "O que você quer guardar?" ficou maior, em duas colunas: à esquerda você escolhe Tarefa, Nota, Prompt ou Link; à direita escreve num campo claro, fala no microfone e guarda.
@@ -155,6 +161,16 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 3. Dê dois cliques em **`Instalar.bat`**. Ele cria o atalho "MyLoot" na área de trabalho e abre o app.
 
 Pronto. Nas próximas vezes, é só abrir pelo atalho.
+
+O MyLoot abre **numa janela só dele**, como um programa (sem abas nem barra de endereço), e deixa um **baú perto do relógio**:
+
+- **Clique no baú** para abrir a janela de novo.
+- **Fechar a janela não desliga o MyLoot**: lembretes e o timer de foco continuam.
+- Para desligar: botão direito no baú → **Fechar MyLoot**.
+- No Windows 11, o baú pode começar escondido na setinha **^** perto do relógio. Arraste para fora se quiser ele sempre à vista.
+- Prefere abrir numa aba do navegador? **Configurações → Servidor → Abrir o MyLoot: No navegador**.
+
+Usa o Edge, que já vem no Windows (ou o Chrome, se não tiver o Edge). Não instala nada além do atalho.
 
 ## Como instalar (Mac)
 

@@ -37,7 +37,7 @@ function defaults() {
   return {
     version: DB_VERSION,
     settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, musica: false, musicaVol: 0.2, musicaLoop: false, confetti: true, gamify: true, dailyGoal: 50,
-      view: 'grid', boardBy: 'status', aiModel: 'claude-opus-5-5', drive: { on: false, path: '' } },
+      view: 'grid', boardBy: 'status', janela: 'app', aiModel: 'claude-opus-5-5', drive: { on: false, path: '' } },
     categories: [], items: [], tasks: [], trash: [], clients: [], fin: [], habits: [], goals: [], tools: [],
     game: { xp: 0, log: {}, streak: { last: '', count: 0 }, achievements: {}, counters: {}, goalDays: 0 },
   };
@@ -404,23 +404,58 @@ function callClaude(key, model, system, user) {
 }
 
 // ---------- IAs locais: Claude Code e Codex (usam a assinatura já logada no computador, sem chave da API) ----------
-const IA_CMD = { claude: 'claude --version', codex: 'codex --version' };
+// O servidor herda o PATH de quando foi aberto: quem instala o Claude Code ou o Codex depois (ou abre o MyLoot por um atalho)
+// pode ficar com um PATH velho. Por isso a busca junta o PATH atual, o PATH gravado no Windows (registro) e as pastas onde
+// esses programas costumam ficar, e guarda o caminho completo do comando para usar na hora de chamar.
+const IA_NOMES = { claude: 'claude', codex: 'codex' };
 const iaCache = {};
-// sem travar o servidor: a checagem roda em paralelo e o app continua respondendo enquanto isso
 const iaRodando = {};
+function pathRegistro() {
+  if (!WIN) return '';
+  const le = (k) => { try { const o = cp.execSync(`reg query "${k}" /v Path`, { encoding: 'utf8', windowsHide: true, timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'] }); const m = o.match(/Path\s+REG_(?:EXPAND_)?SZ\s+(.*)/i); return m ? m[1].trim().replace(/%([^%]+)%/g, (_, v) => process.env[v] || '') : ''; } catch (_) { return ''; } };
+  return [le('HKCU\Environment'), le('HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment')].filter(Boolean).join(';');
+}
+function pastasExtras() {
+  const H = os.homedir(), E = process.env;
+  if (WIN) return [E.APPDATA && path.join(E.APPDATA, 'npm'), path.join(H, '.local', 'bin'), E.LOCALAPPDATA && path.join(E.LOCALAPPDATA, 'Programs', 'claude'), E.LOCALAPPDATA && path.join(E.LOCALAPPDATA, 'pnpm'), path.join(H, 'scoop', 'shims'), E.ProgramFiles && path.join(E.ProgramFiles, 'nodejs')].filter(Boolean);
+  return [path.join(H, '.local', 'bin'), path.join(H, '.npm-global', 'bin'), path.join(H, '.claude', 'local'), '/opt/homebrew/bin', '/usr/local/bin', path.join(H, '.bun', 'bin'), path.join(H, '.volta', 'bin')];
+}
+let pathIA = null;
+function pathCompleto() {
+  if (pathIA) return pathIA;
+  const sep = WIN ? ';' : ':', vistos = new Set(), L = [];
+  for (const d of [process.env.PATH || process.env.Path || '', pathRegistro(), pastasExtras().join(sep)].join(sep).split(sep)) {
+    const k = d.trim(); if (k && !vistos.has(k.toLowerCase())) { vistos.add(k.toLowerCase()); L.push(k); }
+  }
+  return (pathIA = L.join(sep));
+}
+const envIA = () => Object.assign({}, process.env, { PATH: pathCompleto(), Path: pathCompleto() });
+function acharComando(nome) {
+  const exts = WIN ? ['.cmd', '.exe', '.bat', '.ps1', ''] : [''];
+  for (const d of pathCompleto().split(WIN ? ';' : ':')) {
+    for (const e of exts) { const f = path.join(d, nome + e); try { if (fs.statSync(f).isFile() && (WIN ? e !== '' : true)) return f; } catch (_) {} }
+  }
+  return null;
+}
+const aspas = (f) => (/\s/.test(f) ? '"' + f + '"' : f);
+// sem travar o servidor: a checagem roda em paralelo e o app continua respondendo enquanto isso
 function iaInfo(nome, force) {
   if (iaCache[nome] && !force) return Promise.resolve(iaCache[nome]);
   if (iaRodando[nome]) return iaRodando[nome];
+  if (force) pathIA = null;          // "Procurar de novo" relê o PATH do Windows (programa instalado depois de abrir o MyLoot)
   iaRodando[nome] = new Promise((ok) => {
-    cp.exec(IA_CMD[nome], { encoding: 'utf8', timeout: 15000, windowsHide: true }, (err, out) => {
+    const cmd = acharComando(IA_NOMES[nome]);
+    if (!cmd) { iaCache[nome] = { ok: false, motivo: 'ausente' }; delete iaRodando[nome]; return ok(iaCache[nome]); }
+    cp.exec(aspas(cmd) + ' --version', { encoding: 'utf8', timeout: 20000, windowsHide: true, env: envIA() }, (err, out) => {
       out = String(out || '');
-      iaCache[nome] = err || !out.trim() ? { ok: false } : { ok: true, versao: (out.match(/\d+\.\d+[\d.]*/) || [''])[0] };
+      iaCache[nome] = err || !out.trim() ? { ok: false, motivo: 'falhou', caminho: cmd } : { ok: true, versao: (out.match(/\d+\.\d+[\d.]*/) || [''])[0], cmd };
       delete iaRodando[nome];
       ok(iaCache[nome]);
     });
   });
   return iaRodando[nome];
 }
+const cmdIA = (nome) => aspas((iaCache[nome] && iaCache[nome].cmd) || acharComando(IA_NOMES[nome]) || IA_NOMES[nome]);
 const pastaIA = (n) => { const d = path.join(require('os').tmpdir(), 'myloot-' + n); fs.mkdirSync(d, { recursive: true }); return d; };
 function callCodex(system, user) {
   return new Promise((ok, no) => {
@@ -428,7 +463,7 @@ function callCodex(system, user) {
     const dir = pastaIA('codex'), saida = path.join(dir, 'resposta.txt');
     try { fs.writeFileSync(saida, ''); } catch (_) {}
     const args = ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ephemeral', '--color', 'never', '-C', '"' + dir + '"', '-o', '"' + saida + '"', '-'];
-    const ch = cp.spawn('codex', args, { cwd: dir, shell: true, windowsHide: true });
+    const ch = cp.spawn(cmdIA('codex'), args, { cwd: dir, shell: true, windowsHide: true, env: envIA() });
     const err = [];
     const t = setTimeout(() => { ch.kill(); no(new Error('O Codex demorou demais. Tente de novo.')); }, 240000);
     ch.stdout.on('data', (c) => err.push(c));
@@ -450,7 +485,7 @@ function callClaudeCode(model, system, user) {
     // pasta vazia como diretório de trabalho: o Claude Code não enxerga nenhum projeto
     const dir = pastaIA('claude');
     const args = ['-p', '--output-format', 'json', '--model', model, '--system-prompt', JSON.stringify(system), '--tools', '""', '--no-session-persistence', '--strict-mcp-config'];
-    const ch = cp.spawn('claude', args, { cwd: dir, shell: true, windowsHide: true });
+    const ch = cp.spawn(cmdIA('claude'), args, { cwd: dir, shell: true, windowsHide: true, env: envIA() });
     const out = [], err = [];
     const t = setTimeout(() => { ch.kill(); no(new Error('O Claude Code demorou demais. Tente de novo.')); }, 240000);
     ch.stdout.on('data', (c) => out.push(c));
@@ -676,6 +711,8 @@ async function app(req, res) {
       if (req.method !== 'GET' && req.headers['x-myloot'] !== '1' && req.headers['x-mochila'] !== '1') return send(res, 403, { erro: 'cabeçalho' });
       if (!pc && SO_PC.includes(p)) return send(res, 403, { erro: 'Isso só dá para fazer no computador onde o MyLoot está instalado.' });
       if (p === '/api/ping') return send(res, 200, { ok: true, app: 'myloot', versao: UPD.local(ROOT).versao, remoto: !pc, sistema: process.platform });
+      // o lançador do Windows (MyLoot.ps1) pergunta onde abrir: janela própria ou navegador
+      if (p === '/api/janela') return send(res, 200, { modo: readDB().db.settings.janela === 'navegador' ? 'navegador' : 'app' });
       // ----- Conexões (gerenciar os códigos; só no PC) -----
       if (p === '/api/conexoes' && req.method === 'GET') return send(res, 200, { formato: CNX.FORMATO, porta: PORT, conexoes: CNX.listar() });
       if (p === '/api/conexoes' && req.method === 'POST') { const b = JSON.parse((await readBody(req, 4096)).toString('utf8') || '{}'); return send(res, 200, CNX.criar(b.nome)); }
@@ -819,7 +856,8 @@ async function app(req, res) {
       if (p === '/api/ai/status') {
         const f = u.searchParams.get('checar') === '1';
         const [claude, codex] = await Promise.all([iaInfo('claude', f), iaInfo('codex', f)]);
-        return send(res, 200, { temChave: !!readSecrets().anthropicKey, modelos: AI_MODELS, code: claude, claude, codex });
+        const so = (x) => ({ ok: x.ok, versao: x.versao, motivo: x.motivo });      // o caminho do programa fica só no servidor
+        return send(res, 200, { temChave: !!readSecrets().anthropicKey, modelos: AI_MODELS, code: so(claude), claude: so(claude), codex: so(codex) });
       }
       if (p === '/api/ai/key' && req.method === 'POST') {
         const { key } = JSON.parse((await readBody(req)).toString('utf8'));

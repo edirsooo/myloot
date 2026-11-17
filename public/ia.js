@@ -16,13 +16,47 @@
     return L;
   };
 
+  // ----- como instalar (o app do ChatGPT ou do Claude para computador NÃO traz o Codex nem o Claude Code: são programas de terminal à parte) -----
+  const GUIA = {
+    codex: { nome: 'Codex', pacote: 'npm install -g @openai/codex', login: 'codex', conta: 'ChatGPT (Plus, Pro, Business ou Edu)',
+      aviso: 'O aplicativo do ChatGPT para computador não traz o Codex. O Codex é um programa à parte, que roda no terminal e entra com a mesma conta do ChatGPT.' },
+    claude: { nome: 'Claude Code', pacote: 'npm install -g @anthropic-ai/claude-code', login: 'claude', conta: 'Claude (Pro ou Max)',
+      aviso: 'O aplicativo do Claude para computador não traz o Claude Code. O Claude Code é um programa à parte, que roda no terminal e entra com a mesma conta do Claude.' },
+  };
+  M.iaComoInstalar = (id) => {
+    const g = GUIA[id]; if (!g) return;
+    const cmd = (c) => `<div class="row" style="align-items:center;gap:8px;margin-top:6px"><code style="flex:1;padding:8px 10px;border-radius:8px;background:var(--bg2);border:2px solid var(--edge);font:700 13px var(--mono);user-select:all">${esc(c)}</code><button class="btn ghost sm" data-copia="${esc(c)}" style="flex:none">Copiar</button></div>`;
+    const m = M.modal(`<div class="modal-h"><h2>🧩 Como instalar o ${g.nome}</h2><button class="icon-btn" id="x">✕</button></div>
+      <div class="modal-b"><p style="margin:0">${g.aviso}</p>
+      <ol style="margin:0;padding-left:20px;display:grid;gap:10px">
+        <li>Abra o terminal (no Windows: tecla <span style="font-weight:700">Windows</span>, digite <span style="font-weight:700">PowerShell</span> e aperte Enter) e rode:${cmd(g.pacote)}</li>
+        <li>Ainda no terminal, rode o comando abaixo e entre com a sua conta do ${g.conta}:${cmd(g.login)}</li>
+        <li>Volte aqui e clique em <span style="font-weight:700">🔎 Procurar de novo</span>. Não precisa reiniciar o MyLoot.</li>
+      </ol>
+      <small style="color:var(--dim)">O comando usa o Node.js, o mesmo que o MyLoot já usa. Se o terminal disser que não conhece o <span style="font-weight:700">npm</span>, feche e abra o terminal de novo.</small>
+      <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn ghost" id="redo" style="flex:none">🔎 Procurar de novo</button><button class="btn" id="ok" style="flex:none">Entendi</button></div></div>`, { small: true });
+    m.querySelectorAll('[data-copia]').forEach((b) => { b.onclick = () => { navigator.clipboard.writeText(b.dataset.copia).then(() => M.toast('📋 Copiado'), () => M.toast('Selecione o texto e copie com Ctrl + C')); }; });
+    $('#x', m).onclick = () => M.closeModal(); $('#ok', m).onclick = () => M.closeModal();
+    $('#redo', m).onclick = async () => {
+      const b = $('#redo', m); b.disabled = true; b.textContent = 'Procurando…';
+      try {
+        const r = await M.iaStatus(true);
+        if (r[id] && r[id].ok) { M.closeModal(); SFX.play('coin'); M.toast(`✅ ${g.nome} encontrado${r[id].versao ? ' (v' + r[id].versao + ')' : ''}!`); if (M.ui.page === 'cfg') M.render(); return; }
+        b.disabled = false; b.textContent = '🔎 Procurar de novo';
+        M.toast(r[id] && r[id].motivo === 'falhou' ? `⚠️ Achei o ${g.nome}, mas ele não respondeu. Rode "${g.login}" no terminal para ver o erro.` : `Ainda não achei o ${g.nome}. Confira o passo 1.`);
+      } catch (e) { b.disabled = false; b.textContent = '🔎 Procurar de novo'; M.toast('⚠️ ' + e.message); }
+    };
+  };
+  const comoLink = (id) => ` · <a href="#" data-como="${id}" style="color:var(--accent);font-weight:700">como instalar</a>`;
+  const ligaComo = (raiz) => raiz.querySelectorAll('[data-como]').forEach((a) => { a.onclick = (e) => { e.preventDefault(); M.iaComoInstalar(a.dataset.como); }; });
+
   // ----- pop-up da primeira vez -----
   M.iaSetup = async () => {
     let s; try { s = await M.iaStatus(true); } catch (_) { return; }
     const achadas = M.IAS.filter((i) => s[i.id] && s[i.id].ok);
     const linhas = M.IAS.map((i) => {
       const ok = s[i.id] && s[i.id].ok;
-      return `<div class="cfg-row"><span class="l">${i.em} <span style="font-weight:700">${i.nome}</span><br><small style="color:var(--dim)">${ok ? '● encontrado' + (s[i.id].versao ? ' (v' + esc(s[i.id].versao) + ')' : '') + ' · ' + i.dica : '○ não encontrado neste computador'}</small></span>${ok ? M.sw('ia_' + i.id, ligada(i.id)) : ''}</div>`;
+      return `<div class="cfg-row"><span class="l">${i.em} <span style="font-weight:700">${i.nome}</span><br><small style="color:var(--dim)">${ok ? '● encontrado' + (s[i.id].versao ? ' (v' + esc(s[i.id].versao) + ')' : '') + ' · ' + i.dica : '○ não encontrado neste computador' + comoLink(i.id)}</small></span>${ok ? M.sw('ia_' + i.id, ligada(i.id)) : ''}</div>`;
     }).join('');
     const B = (t) => `<span style="font-weight:700">${t}</span>`;
     const topo = achadas.length === 2 ? `Encontrei o ${B('Claude Code')} e o ${B('Codex')} neste computador. Quer usar os dois?`
@@ -42,6 +76,7 @@
       if (n) { SFX.play('coin'); M.toast(`🤖 ${n === 2 ? 'Claude e Codex prontos' : 'IA pronta'}! Use o botão “Pedir à IA” dentro de um item.`); }
     };
     $('#ok', m).onclick = fim; $('#x', m).onclick = fim;
+    ligaComo(m);
   };
 
   // ----- seção nas Configurações -----
@@ -60,7 +95,15 @@
     const aiSt = (on) => { const e = $('#aiSt'); if (!e) return; e.textContent = on ? '● conectada' : '○ sem chave'; e.style.color = on ? 'var(--green)' : 'var(--faint)'; };
     const pinta = (r) => {
       aiSt(r.temChave);
-      M.IAS.forEach((i) => { const e = $('#iaSt_' + i.id); if (!e) return; const ok = r[i.id] && r[i.id].ok; e.textContent = ok ? '● encontrado' + (r[i.id].versao ? ' (v' + r[i.id].versao + ')' : '') : '○ não instalado'; e.style.color = ok ? 'var(--green)' : 'var(--faint)'; });
+      M.IAS.forEach((i) => {
+        const e = $('#iaSt_' + i.id); if (!e) return; const ok = r[i.id] && r[i.id].ok;
+        if (ok) e.textContent = '● encontrado' + (r[i.id].versao ? ' (v' + r[i.id].versao + ')' : '');
+        else { e.innerHTML = (r[i.id] && r[i.id].motivo === 'falhou' ? '○ achei, mas não respondeu' : '○ não encontrado neste computador') + comoLink(i.id); ligaComo(e); }
+        e.style.color = ok ? 'var(--green)' : 'var(--faint)';
+        // sem a IA instalada, a chave fica desligada e travada (antes ficava acesa com "não instalado" do lado)
+        const c = $('#iaOn_' + i.id);
+        if (c) { c.disabled = !ok; c.checked = ok && ligada(i.id); const sw = c.closest('label'); if (sw) { sw.style.opacity = ok ? '' : '.45'; sw.title = ok ? '' : 'Instale o ' + i.nome + ' para ligar'; } }
+      });
     };
     M.iaStatus(true).then(pinta).catch(() => {});
     M.IAS.forEach((i) => { const c = $('#iaOn_' + i.id); if (c) c.onchange = () => { s.aiTools = Object.assign({}, s.aiTools || {}, { [i.id]: c.checked }); M.save(); SFX.play('click'); }; });

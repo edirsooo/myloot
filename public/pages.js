@@ -88,7 +88,9 @@
       ${M.suporteSection()}
       <section class="stat"><div class="cfg-h">⚡ Atalhos do teclado</div><div class="sc">
         <kbd>Ctrl K</kbd><span>Busca global (ou a tecla <kbd>/</kbd>)</span><kbd>N</kbd><span>Novo item</span><kbd>V</kbd><span>Criar por voz</span><kbd>H</kbd><span>Início</span><kbd>B</kbd><span>Biblioteca</span><kbd>T</kbd><span>Tarefas</span><kbd>R</kbd><span>Rotina</span><kbd>C</kbd><span>Calendário</span><kbd>F</kbd><span>Começar ou parar o foco</span><kbd>Esc</kbd><span>Fechar janela</span><kbd>Clique direito</kbd><span>Menu do cartão</span></div></section>
-      <section class="stat so-pc"><div class="cfg-h">🖥️ Servidor</div><button class="btn danger" id="cOff">⏻ Desligar o MyLoot</button> ${M.hint('Desliga o servidor. Para abrir de novo, use o atalho da área de trabalho.')}</section>
+      <section class="stat so-pc"><div class="cfg-h">🖥️ Servidor</div>
+        ${M.sistema === 'win32' ? `<div class="cfg-row"><span class="l">Abrir o MyLoot ${M.hint('Vale para o atalho da área de trabalho e o ícone perto do relógio. Janela própria: abre sozinho, sem abas nem barra de endereço, como um programa. Fechar a janela não desliga o MyLoot; para desligar, use “Fechar MyLoot” no ícone perto do relógio.')}</span><div class="seg" id="cJanela">${[['app', 'Em janela própria'], ['navegador', 'No navegador']].map(([k, n]) => `<button data-j="${k}" class="${(s.janela || 'app') === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>` : ''}
+        <button class="btn danger" id="cOff">⏻ Desligar o MyLoot</button> ${M.hint('Desliga o servidor. Para abrir de novo, use o atalho da área de trabalho.')}</section>
     </div></div>`;
     const set = (k, val) => { s[k] = val; M.save(); M.applySettings(); };
     $('#cAuto').onchange = (e) => { set('themeAuto', e.target.checked); SFX.play('click'); M.render(); };
@@ -98,6 +100,7 @@
     $('#cGame').onchange = (e) => { set('gamify', e.target.checked); M.renderHud(); SFX.play('click'); };
     $('#cSnd').onchange = (e) => { set('sounds', e.target.checked); SFX.play('coin'); };
     $('#cConf').onchange = (e) => { set('confetti', e.target.checked); FX.burst(null, null, 30); };
+    if ($('#cJanela')) $('#cJanela').onclick = (e) => { const b = e.target.closest('[data-j]'); if (!b) return; set('janela', b.dataset.j); $$('#cJanela [data-j]').forEach((x) => x.classList.toggle('on', x === b)); SFX.play('click'); M.toast && M.toast(b.dataset.j === 'app' ? 'Na próxima vez, o MyLoot abre em janela própria.' : 'Na próxima vez, o MyLoot abre no navegador.'); };
     $('#cGoal').onchange = (e) => { set('dailyGoal', Math.max(10, Math.min(500, +e.target.value || 50))); M.renderHud(); };
 
     M.intBind();
@@ -116,7 +119,7 @@
       'Tutorial': 'Reveja a explicação de cada tela.', 'Atalhos do teclado': 'Teclas para ir mais rápido.', 'Usar no celular': 'Abra o MyLoot no celular pela rede Wi-Fi de casa.',
       'IA (Claude e Codex)': 'Escolha a IA que melhora, corrige e resume seus textos.', 'Notion e Trello': 'Mande itens para o Notion e para o Trello com um clique.',
       'Conexões': 'Deixe outros programas do computador mandarem itens ao MyLoot.', 'Google Drive': 'Copie tudo para a sua pasta do Drive.',
-      'Dados e backup': 'Baixe, restaure e exporte tudo o que você guardou.', 'Versão': 'Veja a versão e procure atualização.', 'Ajuda e problemas': 'Relate um problema ou peça ajuda.', 'Servidor': 'Onde o MyLoot está rodando neste computador.' };
+      'Dados e backup': 'Baixe, restaure e exporte tudo o que você guardou.', 'Versão': 'Veja a versão e procure atualização.', 'Ajuda e problemas': 'Relate um problema ou peça ajuda.', 'Servidor': 'Como o MyLoot abre neste computador e como desligar.' };
     const secs = $$('#cfgCols section.stat').filter((x) => x.offsetParent !== null);
     const nomeSec = (x) => { const h = x.querySelector('.cfg-h'); return ((h && h.firstChild && h.firstChild.textContent) || '').trim(); };
     const semEmoji = (s) => s.replace(/^[^\p{L}]+/u, '').trim();
@@ -183,7 +186,8 @@
     $('#cOff').onclick = async () => {
       if (!(await M.confirm('Desligar o servidor do MyLoot?', 'Desligar'))) return;
       try { await M.api('/api/shutdown', { method: 'POST' }); } catch (_) {}
-      document.body.innerHTML = '<div style="display:grid;place-items:center;height:100vh;font:700 20px monospace;color:#aaa;background:#070b18">MyLoot desligado. Pode fechar esta aba. 👋</div>';
+      document.body.innerHTML = '<div style="display:grid;place-items:center;height:100vh;font:700 20px monospace;color:#aaa;background:#070b18">MyLoot desligado. Pode fechar esta janela. 👋</div>';
+      setTimeout(() => { try { window.close(); } catch (_) {} }, 1200); // na janela própria ela fecha sozinha
     };
   };
 })();
