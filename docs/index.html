@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="pt-BR" data-type="software">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyLoot: app grátis para guardar, organizar e trabalhar</title>
+<meta name="description" content="MyLoot guarda prompts, links, notas, tarefas, clientes e o financeiro num app que roda no seu computador. Grátis, sem conta e de código aberto, para Windows, Mac e Linux.">
+<meta name="page-type" content="software">
+<meta name="site-kind" content="software">
+<meta name="theme-color" content="#070b18">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MyLoot: seu inventário pessoal, grátis e de código aberto">
+<meta property="og:description" content="Guarde, organize e trabalhe num app só, no seu computador. Com seis mascotes voxel.">
+<meta property="og:image" content="site/share.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="site/icon.png">
+<link rel="preload" href="site/fonts/Poppins-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="site/site.css">
+</head>
+<body>
+<a class="pular" href="#guardar">Pular para o conteúdo</a>
+
+<header class="topo" id="topo">
+  <div class="wrap topo-in">
+    <a class="marca" href="#inicio" aria-label="MyLoot, início"><img src="site/icon.png" alt="" width="34" height="34"><b>MyLoot</b></a>
+    <nav class="menu" id="menu" aria-label="Seções">
+      <a href="#guardar">Guardar</a><a href="#organizar">Organizar</a><a href="#trabalho">Trabalho</a><a href="#conectar">Conectar</a><a href="#diversao">Diversão</a><a href="#seguranca">Segurança</a>
+      <a class="btn btn-sol menu-baixar" href="#baixar">Baixar grátis</a>
+    </nav>
+    <button class="pausa" type="button" aria-pressed="false" aria-label="Pausar animações" title="Pausar animações"><span aria-hidden="true">❚❚</span></button>
+    <a class="btn btn-sol topo-baixar" href="#baixar">Baixar grátis</a>
+    <button class="menu-bt" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir o menu"><span></span><span></span></button>
+  </div>
+</header>
+
+<main>
+  <!-- Abertura: os seis mascotes caem no palco e acenam, como na abertura do app -->
+  <section class="hero" id="inicio" data-palco="claude,gpt,gemini,pinguim,coruja,slime" data-chega="chao" data-tam="1.15" aria-labelledby="h-hero">
+    <div class="cubos" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="wrap hero-in">
+      <p class="selo"><span>v2.15</span> Windows, Mac e Linux · no celular pelo Wi-Fi</p>
+      <h1 id="h-hero"><span class="logo-txt">MyLoot</span><span class="h1-frase">Seu inventário pessoal para guardar, organizar e trabalhar.</span></h1>
+      <p class="lead">Prompts, links, notas, tarefas, clientes e o financeiro num app que roda no seu computador, com XP, conquistas e seis mascotes que andam pela tela.</p>
+      <div class="acoes">
+        <a class="btn btn-sol btn-g" href="#baixar">Baixar o MyLoot</a>
+        <a class="btn btn-linha btn-g" href="#guardar">Conhecer as telas</a>
+      </div>
+      <p class="fatos"><b>Grátis</b><b>Sem conta</b><b>Código aberto</b></p>
+    </div>
+    <div class="hero-chao" data-piso data-fala="Que palco!|Daqui eu vejo tudo!" aria-hidden="true"></div>
+    <p class="dica wrap">Pegue um mascote e solte onde quiser.</p>
+  </section>
+
+  <!-- 01 Guardar · Claude -->
+  <section class="secao" id="guardar" data-palco="claude" data-inicio="0.78" data-oi="Eu guardo tudo!" aria-labelledby="h-guardar">
+    <div class="wrap">
+      <p class="palavra" aria-hidden="true"><span class="num">01</span><span class="pl" data-letras>Guardar</span></p>
+      <div class="grade">
+        <div class="texto">
+          <h2 id="h-guardar">Uma biblioteca para tudo o que você guarda</h2>
+          <p class="lead">Escreva no Início e o MyLoot guarda como tarefa, nota, prompt ou link. Na Biblioteca cada coisa vira um cartão, com etiqueta e ficha própria.</p>
+          <div class="abas" role="tablist" aria-label="Telas de Guardar">
+            <button role="tab" data-tela="inicio" data-piso data-fala="O Início!|Escreve aqui!" aria-selected="true"><b>Início</b><span>“O que você quer guardar?”</span></button>
+            <button role="tab" data-tela="biblioteca" data-piso data-fala="Olha a Biblioteca!|Quanto loot!"><b>Biblioteca</b><span>Cartões em grade, lista ou quadro</span></button>
+            <button role="tab" data-tela="busca" data-piso data-fala="Ctrl K!|Achei!"><b>Busca <kbd>Ctrl K</kbd></b><span>Acha qualquer coisa ou dá um comando</span></button>
+            <button role="tab" data-tela="ficha" data-piso data-fala="Ficha completinha!"><b>Ficha</b><span>Checklist, links e anexos</span></button>
+          </div>
+        </div>
+        <figure class="janela" data-piso data-fala="Boa vista daqui!|Gostei dessa tela!">
+          <div class="janela-barra" aria-hidden="true"><i></i><i></i><i></i><span>MyLoot</span></div>
+          <img src="site/telas/inicio.webp" width="1600" height="900" alt="Tela Início do MyLoot com o bloco “O que você quer guardar?” e o mapa de conexões" loading="lazy" decoding="async">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 Organizar · GPT -->
+  <section class="secao par" id="organizar" data-palco="gpt" data-inicio="0.22" data-jeito="digita" data-oi="Bora organizar!" aria-labelledby="h-organizar">
+    <div class="wrap">
+      <p class="palavra" aria-hidden="true"><span class="num">02</span><span class="pl" data-letras>Organizar</span></p>
+      <div class="grade">
+        <div class="texto">
+          <h2 id="h-organizar">Tarefas, agenda e hábitos no mesmo lugar</h2>
+          <p class="lead">As tarefas se dividem em Atrasadas, Hoje e Próximas. Compromissos têm hora de início e fim, os hábitos contam a sequência e o Foco segura 25 minutos sem distração.</p>
+          <div class="abas" role="tablist" aria-label="Telas de Organizar">
+            <button role="tab" data-tela="tarefas" data-piso data-fala="Tarefa a menos!|Bora fazer essa?" aria-selected="true"><b>Tarefas</b><span>Repetir, pular esta vez, prioridade</span></button>
+            <button role="tab" data-tela="calendario" data-piso data-fala="Que dia é hoje?"><b>Calendário</b><span>Compromissos com início e fim</span></button>
+            <button role="tab" data-tela="rotina" data-piso data-fala="Sequência de 🔥!"><b>Rotina</b><span>Hábitos, metas e o mapa do mês</span></button>
+            <button role="tab" data-tela="foco" data-piso data-fala="Modo foco! Tô junto."><b>Foco</b><span>Timer de 5 a 180 minutos</span></button>
+          </div>
+        </div>
+        <figure class="janela" data-piso data-fala="Anotando…|Tec tec tec…">
+          <div class="janela-barra" aria-hidden="true"><i></i><i></i><i></i><span>MyLoot</span></div>
+          <img src="site/telas/tarefas.webp" width="1600" height="900" alt="Tela Tarefas com as colunas Hoje, Próximas e Concluídas" loading="lazy" decoding="async">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 Trabalho · Coruja -->
+  <section class="secao" id="trabalho" data-palco="coruja" data-inicio="0.8" data-jeito="pensa" data-oi="Hora do trabalho!" aria-labelledby="h-trabalho">
+    <div class="wrap">
+      <p class="palavra" aria-hidden="true"><span class="num">03</span><span class="pl" data-letras>Trabalho</span></p>
+      <div class="grade">
+        <div class="texto">
+          <h2 id="h-trabalho">Clientes e financeiro para quem trabalha sozinho</h2>
+          <p class="lead">Cada cliente tem ficha com contato, status, anotações e pagamentos. O Financeiro mostra o saldo do mês, contas fixas, parcelas e o que ainda vai entrar.</p>
+          <div class="abas" role="tablist" aria-label="Telas de Trabalho">
+            <button role="tab" data-tela="cliente" data-piso data-fala="Cliente bom esse!|Vamos cuidar bem dele." aria-selected="true"><b>Clientes</b><span>Ficha, status e pagamentos</span></button>
+            <button role="tab" data-tela="financeiro" data-piso data-fala="Saldo positivo!|Hmm, as contas…"><b>Financeiro</b><span>Entradas, saídas e contas fixas</span></button>
+          </div>
+          <ul class="mini">
+            <li><b>R$</b> “Só este” ou “este e os próximos” ao mudar uma série</li>
+            <li><b>↻</b> Renovar conta fixa por mais 12 meses</li>
+          </ul>
+        </div>
+        <figure class="janela" data-piso data-fala="Hmm, interessante…|Deixa eu ver…">
+          <div class="janela-barra" aria-hidden="true"><i></i><i></i><i></i><span>MyLoot</span></div>
+          <img src="site/telas/cliente.webp" width="1600" height="900" alt="Ficha da cliente Ana Souza com status, contato e anotações" loading="lazy" decoding="async">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 Conectar · Gemini -->
+  <section class="secao par" id="conectar" data-palco="gemini" data-inicio="0.22" data-jeito="pensa" data-oi="Tudo conectado!" aria-labelledby="h-conectar">
+    <div class="wrap">
+      <p class="palavra" aria-hidden="true"><span class="num">04</span><span class="pl" data-letras>Conectar</span></p>
+      <div class="grade">
+        <div class="texto">
+          <h2 id="h-conectar">IA, Drive, Notion e o celular ligados ao MyLoot</h2>
+          <p class="lead">Use o Claude Code ou o Codex pela sua própria assinatura, sem pagar API. Copie a pasta para o Google Drive, mande itens para o Notion e o Trello e abra no celular pelo QR Code.</p>
+          <div class="abas" role="tablist" aria-label="Telas de Conectar">
+            <button role="tab" data-tela="ia" data-piso data-fala="Pensando com você…" aria-selected="true"><b>IA</b><span>Claude Code ou Codex, pela sua assinatura</span></button>
+            <button role="tab" data-tela="ferramentas_rec" data-piso data-fala="Quanta ferramenta!"><b>Ferramentas</b><span>As suas e as recomendadas</span></button>
+            <button role="tab" data-tela="drive" data-piso data-fala="Pro Drive!"><b>Google Drive</b><span>Cópia da pasta, sem sobrescrever</span></button>
+            <button role="tab" data-tela="enviar" data-piso data-fala="Mandei!"><b>Notion e Trello</b><span>Enviar um item com um clique</span></button>
+            <button role="tab" data-tela="celular" data-piso data-fala="No celular também!"><b>Celular</b><span>QR Code na rede de casa</span></button>
+          </div>
+        </div>
+        <figure class="janela" data-piso data-fala="Deixa a IA pensar…|Conexão boa!">
+          <div class="janela-barra" aria-hidden="true"><i></i><i></i><i></i><span>MyLoot</span></div>
+          <img src="site/telas/ia.webp" width="1600" height="900" alt="Ficha de prompt com o painel da IA para melhorar, resumir e traduzir" loading="lazy" decoding="async">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 Diversão · Slime -->
+  <section class="secao" id="diversao" data-palco="slime" data-inicio="0.8" data-jeito="danca" data-oi="Hora da festa!" aria-labelledby="h-diversao">
+    <div class="wrap">
+      <p class="palavra" aria-hidden="true"><span class="num">05</span><span class="pl" data-letras>Diversão</span></p>
+      <div class="grade">
+        <div class="texto">
+          <h2 id="h-diversao">Pontos, conquistas e um mascote que comemora com você</h2>
+          <p class="lead">Cada tarefa feita dá XP, o nível sobe com confete e as conquistas vão aparecendo. Escolha o seu mascote, dê um nome e solte a música de fundo.</p>
+          <div class="xp" data-piso data-fala="+XP!|Isso!" aria-live="polite">
+            <span class="xp-nivel">Nível <b id="xpNivel">1</b></span>
+            <span class="xp-barra"><i id="xpBarra"></i></span>
+            <span class="xp-num"><b id="xpNum">0</b>/50 XP</span>
+          </div>
+          <p class="xp-dica">Faça carinho ou solte o Slime aqui para ganhar XP.</p>
+          <div class="abas" role="tablist" aria-label="Telas de Diversão">
+            <button role="tab" data-tela="conquistas" data-piso data-fala="LEVEL UP!!|Conquista nova!" aria-selected="true"><b>Conquistas</b><span>Níveis, XP e medalhas</span></button>
+            <button role="tab" data-tela="mascote" data-piso data-fala="Escolhe eu!"><b>Mascotes</b><span>Seis para escolher e dar nome</span></button>
+            <button role="tab" data-tela="musica" data-piso data-fala="♪ Essa é boa!|♪ Solta o som!"><b>Música</b><span>Trilha de fundo com player</span></button>
+          </div>
+        </div>
+        <figure class="janela" data-piso data-fala="Que festa!|Uhuu!">
+          <div class="janela-barra" aria-hidden="true"><i></i><i></i><i></i><span>MyLoot</span></div>
+          <img src="site/telas/conquistas.webp" width="1600" height="900" alt="Tela Conquistas com XP dos últimos 7 dias e as medalhas" loading="lazy" decoding="async">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 Segurança · Pinguim -->
+  <section class="secao par" id="seguranca" data-palco="pinguim" data-inicio="0.22" data-oi="Tá tudo salvo!" aria-labelledby="h-seguranca">
+    <div class="wrap">
+      <p class="palavra" aria-hidden="true"><span class="num">06</span><span class="pl" data-letras>Segurança</span></p>
+      <div class="grade">
+        <div class="texto">
+          <h2 id="h-seguranca">Nada se perde: desfaça, recupere e leve tudo junto</h2>
+          <p class="lead">Seus dados ficam numa pasta sua. Todo aviso tem Desfazer, o histórico volta qualquer ação e a lixeira guarda o que foi apagado. O backup leva os anexos e o app se atualiza sozinho.</p>
+          <div class="abas" role="tablist" aria-label="Telas de Segurança">
+            <button role="tab" data-tela="desfazer" data-piso data-fala="Ctrl Z!|Desfeito!" aria-selected="true"><b>Desfazer</b><span>Cinco segundos em todo aviso</span></button>
+            <button role="tab" data-tela="historico" data-piso data-fala="Voltei no tempo!"><b>Histórico</b><span>Desfazer e refazer cada ação</span></button>
+            <button role="tab" data-tela="lixeira" data-piso data-fala="Restaura isso!"><b>Lixeira</b><span>Itens, hábitos, metas e ferramentas</span></button>
+            <button role="tab" data-tela="backup" data-piso data-fala="Backup feito!"><b>Backup</b><span>Um .zip com os anexos</span></button>
+            <button role="tab" data-tela="novidades" data-piso data-fala="Versão nova!"><b>Atualização</b><span>Automática, com as novidades</span></button>
+          </div>
+        </div>
+        <figure class="janela" data-piso data-fala="Tudo guardadinho.|Seguro aqui em cima!">
+          <div class="janela-barra" aria-hidden="true"><i></i><i></i><i></i><span>MyLoot</span></div>
+          <img src="site/telas/desfazer.webp" width="1600" height="900" alt="Aviso de tarefa concluída com o botão Desfazer" loading="lazy" decoding="async">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final: baixar e instalar; os seis comemoram -->
+  <section class="final" id="baixar" data-palco="claude,gpt,gemini,pinguim,coruja,slime" data-chega="chao" aria-labelledby="h-baixar">
+    <div class="wrap">
+      <p class="palavra pequena" aria-hidden="true"><span class="pl" data-letras>Baixar</span></p>
+      <h2 id="h-baixar" class="final-titulo">Grátis · Sem conta · Código aberto</h2>
+      <p class="lead">Precisa só do Node.js. O MyLoot abre numa janela só dele e deixa um baú perto do relógio do Windows.</p>
+      <div class="acoes">
+        <a class="btn btn-sol btn-g" id="btnBaixar" href="https://github.com/edirsooo/myloot/archive/refs/heads/main.zip" data-piso data-festa data-fala="Bora instalar!|Uhuu!">Baixar o ZIP</a>
+        <a class="btn btn-linha btn-g" href="https://github.com/edirsooo/myloot">Ver no GitHub</a>
+      </div>
+      <div class="instalar" data-piso data-fala="É rapidinho!">
+        <div class="so" role="tablist" aria-label="Sistema">
+          <button role="tab" id="so-win" aria-controls="p-win" aria-selected="true">Windows</button>
+          <button role="tab" id="so-mac" aria-controls="p-mac" aria-selected="false">Mac</button>
+          <button role="tab" id="so-lin" aria-controls="p-lin" aria-selected="false">Linux</button>
+        </div>
+        <ol class="passos" id="p-win" role="tabpanel" aria-labelledby="so-win">
+          <li>Instale o <a href="https://nodejs.org">Node.js</a> (versão LTS).</li>
+          <li>Baixe o ZIP e extraia a pasta onde quiser.</li>
+          <li>Dê dois cliques em <code>Instalar.bat</code>: ele cria o atalho e abre o app.</li>
+        </ol>
+        <ol class="passos" id="p-mac" role="tabpanel" aria-labelledby="so-mac" hidden>
+          <li>Instale o <a href="https://nodejs.org">Node.js</a> (versão LTS).</li>
+          <li>Baixe o ZIP e extraia.</li>
+          <li>Botão direito em <code>Instalar.command</code> → Abrir → Abrir de novo.</li>
+        </ol>
+        <ol class="passos" id="p-lin" role="tabpanel" aria-labelledby="so-lin" hidden>
+          <li>Instale o Node.js (LTS) pelo site ou pelo gerenciador de pacotes.</li>
+          <li>Baixe o ZIP e extraia.</li>
+          <li>No terminal, dentro da pasta: <code>sh instalar.sh</code></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="rodape">
+  <div class="wrap rodape-in">
+    <a class="marca" href="#inicio"><img src="site/icon.png" alt="" width="28" height="28"><b>MyLoot</b></a>
+    <p>Licença MIT · <a href="https://github.com/edirsooo/myloot">Código no GitHub</a> · <a href="https://github.com/edirsooo/myloot/blob/main/docs/video/myloot-tutorial.mp4">Tutorial em vídeo</a></p>
+    <p class="feito">Feito por <img src="site/prestes.png" alt="" width="18" height="18"> prestes design</p>
+  </div>
+</footer>
+
+<script src="site/voxel.js" defer></script>
+<script src="site/mascote.js" defer></script>
+<script src="site/site.js" defer></script>
+</body>
+</html>
