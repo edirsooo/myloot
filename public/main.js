@@ -14,6 +14,7 @@
     document.body.classList.toggle('compact', !!s.compact);
     SFX.on = !!s.sounds; FX.confetti = !!s.confetti;
     M.renderHud();
+    if (M.pet) M.pet.aplica();
   };
 
   matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if (M.db && M.db.settings.themeAuto) M.applySettings(); });

@@ -1,13 +1,18 @@
 {
-  "versao": "2.13.0",
+  "versao": "2.14.0",
   "data": "2026-11-17",
   "novidades": [
-    "🧰 Ferramentas: adicione as suas em “Minhas ferramentas” (nome, link, para que serve), edite e remova; as sugestões ficam em “Recomendadas”",
-    "🕘 Histórico de ações no topo: desfaça ou refaça o que você criou, mudou, concluiu ou apagou (Ctrl + Z desfaz a última)",
-    "↩ Todo aviso depois de uma ação ganhou o botão Desfazer, que fica 5 segundos na tela",
-    "🔁 Música: botão para repetir a mesma faixa em vez de pular para a próxima"
+    "🐾 Mascotes: agora um bichinho mora na sua tela. Escolha entre Claude, GPT, Gemini, Pinguim, Coruja e Slime (ou desligue) em Configurações → Diversão → Mascote",
+    "🖱️ Ele digita junto com você, comemora cada tarefa, dança com a música e dá para pegar, balançar e soltar em cima dos quadros",
+    "👋 Na primeira vez, os mascotes dão as boas-vindas numa abertura animada (dá para rever em Configurações → Diversão)"
   ],
   "historico": {
+    "2.13.0": [
+      "🧰 Ferramentas: adicione as suas em “Minhas ferramentas” (nome, link, para que serve), edite e remova; as sugestões ficam em “Recomendadas”",
+      "🕘 Histórico de ações no topo: desfaça ou refaça o que você criou, mudou, concluiu ou apagou (Ctrl + Z desfaz a última)",
+      "↩ Todo aviso depois de uma ação ganhou o botão Desfazer, que fica 5 segundos na tela",
+      "🔁 Música: botão para repetir a mesma faixa em vez de pular para a próxima"
+    ],
     "2.12.0": [
       "🎬 Tutoriais em vídeo em Configurações → Tutorial: celular em casa, fora de casa com o Tailscale, backup, IA e contas fixas",
       "📱 iPhone: o topo não fica mais atrás do relógio e a tela ocupa a altura toda"

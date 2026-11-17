@@ -1,0 +1,39 @@
+/* Mascote (pet.js): bichinho voxel que anda pela tela */
+#pet{position:fixed;left:0;top:0;width:0;height:0;z-index:290;pointer-events:none;will-change:transform}
+#pet[hidden]{display:none}
+.pet-cv{position:absolute;pointer-events:none}
+.pet-hit{position:absolute;pointer-events:auto;cursor:grab;touch-action:none;border-radius:12px;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+#pet.pego .pet-hit{cursor:grabbing}
+.pet-fala{position:absolute;left:0;transform:translateX(-50%);white-space:nowrap;background:#fff;color:#141826;font-weight:700;font-size:12.5px;line-height:1.2;padding:6px 10px;border-radius:10px;border:2px solid #141826;box-shadow:0 3px 0 #0006;pointer-events:none}
+.pet-fala::after{content:"";position:absolute;left:50%;bottom:-7px;width:10px;height:10px;background:#fff;border-right:2px solid #141826;border-bottom:2px solid #141826;transform:translateX(-50%) rotate(45deg)}
+.pet-fala.lado::after{display:none}
+.pet-fala.on{animation:petFala .25s cubic-bezier(.2,1.6,.4,1)}
+@keyframes petFala{from{transform:translateX(-50%) scale(.6);opacity:0}}
+.pet-pisou{animation:petPisou .45s ease-out}
+@keyframes petPisou{30%{transform:translateY(4px)}}
+/* escolha do mascote em Configurações → Diversão */
+.pet-cfg{padding:6px 0 4px}
+.pet-esc{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+.pet-esc button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 10px 6px;border-radius:12px;border:2px solid var(--edge);background:var(--bg2);color:var(--text);cursor:pointer;font-weight:700;font-size:12.5px}
+.pet-esc button:hover{border-color:var(--edge2)}
+.pet-esc button.on{border-color:var(--accent);background:var(--accent-soft)}
+.pet-esc canvas{width:64px;height:64px}
+.pet-dica{display:block;color:var(--dim);margin-top:8px;line-height:1.45}
+.pet-boas p{margin:0 0 8px;color:var(--dim);line-height:1.5}
+.pet-boas .pet-esc{gap:6px}
+.pet-boas .pet-esc button{padding:6px 5px 5px;flex:1 1 70px;min-width:0}
+.pet-boas .pet-esc canvas{width:54px;height:54px}
+/* abertura de boas-vindas */
+.pet-ola{position:fixed;inset:0;z-index:9600;background:radial-gradient(ellipse at 50% 42%,#221a4e 0%,#0b1024 58%,#070b18 100%);cursor:pointer;overflow:hidden;animation:petOlaEntra .35s ease-out}
+.pet-ola canvas{position:absolute;inset:0;width:100%;height:100%}
+.pet-ola.sai{opacity:0;transition:opacity .45s}
+.pet-ola-logo{position:absolute;left:50%;top:24%;transform:translate(-50%,-50%) scale(.6);opacity:0;display:flex;flex-direction:column;align-items:center;gap:8px;color:#fff;text-align:center;pointer-events:none;transition:transform .55s cubic-bezier(.2,1.5,.4,1),opacity .35s;white-space:nowrap}
+.pet-ola-logo.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.pet-ola-logo .ln{display:flex;align-items:center;gap:16px}
+.pet-ola-logo .ic{width:clamp(48px,8vw,84px);height:auto;border-radius:16px}
+.pet-ola-logo b{font:700 clamp(40px,8vw,88px)/1 var(--mono,monospace);letter-spacing:3px;text-shadow:0 5px 0 #0008}
+.pet-ola-logo small{display:flex;align-items:center;gap:8px;font-size:clamp(13px,2.2vw,20px);font-weight:600;color:#c9cfee}
+.pet-ola-logo small img{height:1.25em;width:auto}
+.pet-ola-pular{position:absolute;right:16px;bottom:calc(14px + env(safe-area-inset-bottom));background:none;border:0;color:#aab0d2;font-weight:700;font-size:13px;cursor:pointer;padding:8px 10px}
+@keyframes petOlaEntra{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.pet-fala.on,.pet-pisou{animation:none}}

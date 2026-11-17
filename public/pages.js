@@ -67,6 +67,7 @@
         <div class="cfg-row"><span class="l">Pontos e níveis ${M.hint('Desligando, somem o XP, a meta, a sequência e o level up. Suas conquistas ficam guardadas.')}</span>${M.sw('cGame', s.gamify)}</div>
         <div class="cfg-row"><span class="l">Sons de jogo ${M.hint('Sons curtinhos feitos no próprio navegador.')}</span>${M.sw('cSnd', s.sounds)}</div>
         <div class="cfg-row"><span class="l">Confete ${M.hint('Explosão de quadradinhos ao subir de nível ou concluir algo.')}</span>${M.sw('cConf', s.confetti)}</div>
+        ${M.pet ? M.pet.cfgHTML() : ''}
         <div class="cfg-row"><span class="l">Meta do dia (XP) ${M.hint('Quantos pontos você quer fazer por dia.')}</span><input type="number" id="cGoal" min="10" max="500" step="10" value="${s.dailyGoal}" style="width:90px"></div>
       </section>
       <section class="stat"><div class="cfg-h">🏷️ Categorias</div><div id="cCats"></div><button class="btn ghost sm" id="cCatAdd" style="margin-top:6px">＋ Nova categoria</button></section>
@@ -109,10 +110,11 @@
     M.dadosBind();
     M.suporteBind();
     M.cnxBind();
+    if (M.pet) M.pet.cfgBind();
 
     // menu das seções, no jeito do Canva e da Hostinger: grupos à esquerda (em cima no celular) e uma seção por vez à direita
     const GRUPOS = [['Geral', /Aparência|Diversão|Categorias|Tutorial|Atalhos/], ['Conectar', /celular|IA \(|Notion|Conexões|Drive/], ['Sistema', /backup|Versão|Ajuda|Servidor/]];
-    const DESC = { 'Aparência': 'Tema, tamanho das letras e modo compacto.', 'Diversão': 'Pontos, níveis, sons, confete e a meta do dia.', 'Categorias': 'Crie, renomeie e pinte as categorias da Biblioteca.',
+    const DESC = { 'Aparência': 'Tema, tamanho das letras e modo compacto.', 'Diversão': 'Pontos, níveis, sons, confete, mascote e a meta do dia.', 'Categorias': 'Crie, renomeie e pinte as categorias da Biblioteca.',
       'Tutorial': 'Reveja a explicação de cada tela.', 'Atalhos do teclado': 'Teclas para ir mais rápido.', 'Usar no celular': 'Abra o MyLoot no celular pela rede Wi-Fi de casa.',
       'IA (Claude e Codex)': 'Escolha a IA que melhora, corrige e resume seus textos.', 'Notion e Trello': 'Mande itens para o Notion e para o Trello com um clique.',
       'Conexões': 'Deixe outros programas do computador mandarem itens ao MyLoot.', 'Google Drive': 'Copie tudo para a sua pasta do Drive.',

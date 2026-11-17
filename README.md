@@ -14,6 +14,12 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.14
+- **Mascotes:** agora um bichinho voxel mora na sua tela (já vem ligado): Claude, GPT, Gemini, Pinguim, Coruja ou Slime. Em Configurações → Diversão → Mascote você troca, dá nome, escolhe o tamanho ou desliga.
+- **Boas-vindas:** na primeira vez, os seis aparecem numa abertura animada e você escolhe o seu.
+- **Ele reage ao que você faz:** abre o notebook quando você digita, comemora tarefa concluída e XP, faz festa no level up, pensa enquanto a IA trabalha, dança com a música e dorme quando você para.
+- **Dá para brincar:** um clique é carinho; segure para levantar e balançar; chacoalhe e ele fica tonto; solte em cima de uma tarefa, de um cartão ou de um quadro e ele pisa ali; segure o clique em outro lugar e ele corre atrás. O botão direito troca, põe para dormir ou guarda.
+
 ## Novidades da versão 2.13
 - **Minhas ferramentas:** a tela de Ferramentas tem duas abas. Em "Minhas ferramentas" você adiciona qualquer site ou programa (nome, link, para que serve, grupo), edita e remove. Em "Recomendadas" ficam as sugestões que vêm com o MyLoot; "Salvar" copia uma delas para as suas.
 - **Histórico de ações:** o botão 🕘 no topo mostra o que você fez desde que abriu o app (criou, mudou, concluiu, apagou, anexou), com Desfazer e Refazer em cada linha. `Ctrl + Z` desfaz a última ação e `Ctrl + Y` refaz. No celular o histórico fica no menu "Mais" e na Lixeira. A lista vale enquanto o app está aberto; a Lixeira continua guardando o que foi apagado.
