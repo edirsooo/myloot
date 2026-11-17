@@ -14,6 +14,13 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.9
+
+- 🎯 **Rotina (hábitos)**: uma tela nova, inspirada no HabitNow. Crie hábitos com ícone, frequência (todo dia, dias da semana ou X vezes por semana), quantidade por dia (8 copos, 30 minutos) e lembrete. Um clique marca como feito; o 🔥 conta os dias seguidos e as bolinhas mostram os últimos 7 dias. Dá para voltar o dia e marcar o que esqueceu.
+- 🏆 **Metas com progresso**: um número com prazo (faturar 10 mil no mês, fechar 5 clientes). Vá somando o que avançou; a barra enche e, em 100%, tem comemoração.
+- 🗓️ **Mapa do mês**: cada dia fica mais forte conforme os hábitos cumpridos. O resumo também aparece no Calendário (🎯 2/3) e no Início, onde dá para marcar os hábitos de hoje.
+- 🔢 **Números com ponto**: “10.000” agora é entendido como dez mil nas metas e no Financeiro.
+
 ## Novidades da versão 2.8
 
 - 📝 **Rascunho, como no Trello**: ao mudar um item ou um cliente que já existia, as mudanças ficam guardadas como rascunho até você clicar em “Salvar e fechar”. Se fechar sem salvar, o cartão continua com a versão antiga e ganha o selo “📝 rascunho”; ao abrir de novo, o que você tinha escrito está lá, com os botões “Salvar” e “Descartar alterações”.

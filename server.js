@@ -37,7 +37,7 @@ function defaults() {
     version: DB_VERSION,
     settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, confetti: true, gamify: true, dailyGoal: 50,
       view: 'grid', boardBy: 'status', aiModel: 'claude-opus-5-5', drive: { on: false, path: '' } },
-    categories: [], items: [], tasks: [], trash: [], clients: [], fin: [],
+    categories: [], items: [], tasks: [], trash: [], clients: [], fin: [], habits: [], goals: [],
     game: { xp: 0, log: {}, streak: { last: '', count: 0 }, achievements: {}, counters: {}, goalDays: 0 },
   };
 }
@@ -69,7 +69,7 @@ function migrate(raw) {
   out.settings.drive = Object.assign({}, d.settings.drive, (raw.settings || {}).drive || {});
   out.game = Object.assign({}, d.game, raw.game || {});
   out.game.streak = Object.assign({}, d.game.streak, out.game.streak || {});
-  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin']) if (!Array.isArray(out[k])) out[k] = [];
+  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin', 'habits', 'goals']) if (!Array.isArray(out[k])) out[k] = [];
   out.fin.forEach((f) => {
     f.id = f.id || uid(); f.tipo = f.tipo === 'saida' ? 'saida' : 'entrada'; f.valor = Math.round((Number(f.valor) || 0) * 100) / 100;
     f.data = /^\d{4}-\d\d-\d\d$/.test(f.data || '') ? f.data : today(); f.pago = !!f.pago;
@@ -471,6 +471,17 @@ function lembretes() {
     const [h, m] = t.hora.split(':').map(Number), k = `${t.id}|${hoje}|${t.hora}`;
     if (min < h * 60 + m || min > h * 60 + m + 180 || avisados.includes(k)) continue;
     notify('⏰ ' + t.text, `Lembrete do MyLoot · hoje às ${t.hora}`);
+    avisados.push(k); mudou = true;
+  }
+  // hábitos da Rotina com lembrete: avisa no horário se o hábito do dia ainda não foi marcado
+  const ds = agora.getDay();
+  for (const h of db.habits || []) {
+    if (h.pausa || !/^\d\d:\d\d$/.test(h.hora || '') || (h.criado && hoje < h.criado)) continue;
+    if (h.freq === 'semana' && !(h.dias || []).includes(ds)) continue;
+    if ((Number((h.log || {})[hoje]) || 0) >= Math.max(1, Number(h.alvo) || 1)) continue;
+    const [hh, mm] = h.hora.split(':').map(Number), k = `hab|${h.id}|${hoje}|${h.hora}`;
+    if (min < hh * 60 + mm || min > hh * 60 + mm + 180 || avisados.includes(k)) continue;
+    notify(`${h.em || '🎯'} ${h.nome}`, `Hábito da sua Rotina · hoje às ${h.hora}`);
     avisados.push(k); mudou = true;
   }
   // contas a pagar e a receber que vencem hoje: um aviso só, a partir das 9h

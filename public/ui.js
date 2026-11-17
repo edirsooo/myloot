@@ -137,6 +137,7 @@
       ['🏠', 'Ir para Início', 'H', () => M.go('home')],
       ['📦', 'Ir para Biblioteca', 'B', () => M.go('lib')],
       ['✅', 'Ir para Tarefas', 'T', () => M.go('tasks')],
+      ['🎯', 'Ir para Rotina (hábitos e metas)', 'R', () => M.go('rot')],
       ['🗓️', 'Ir para Calendário', 'C', () => M.go('cal')],
       ['👥', 'Ir para Clientes', 'L', () => M.go('clients')],
       ['💰', 'Ir para Financeiro', 'M', () => M.go('fin')],

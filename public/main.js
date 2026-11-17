@@ -2,7 +2,7 @@
 (function () {
   const { esc, $, $$ } = M;
   const PAGES = [
-    ['home', '🏠', 'Início'], ['lib', '📦', 'Biblioteca'], ['tasks', '✅', 'Tarefas'], ['cal', '🗓️', 'Calendário'], ['clients', '👥', 'Clientes'], ['fin', '💰', 'Financeiro'], ['tools', '🧰', 'Ferramentas'],
+    ['home', '🏠', 'Início'], ['lib', '📦', 'Biblioteca'], ['tasks', '✅', 'Tarefas'], ['rot', '🎯', 'Rotina'], ['cal', '🗓️', 'Calendário'], ['clients', '👥', 'Clientes'], ['fin', '💰', 'Financeiro'], ['tools', '🧰', 'Ferramentas'],
     ['ach', '🏆', 'Conquistas'], ['trash', '🗑️', 'Lixeira'], ['cfg', '⚙️', 'Configurações'],
   ];
 
@@ -48,7 +48,7 @@
   M.render = () => {
     const p = M.ui.page, v = $('#view');
     if (!M.modalOpen()) M.rasc.arruma();
-    ['onclick', 'oncontextmenu', 'ondragstart', 'ondragover', 'ondrop', 'ondragend'].forEach((k) => { v[k] = null; });
+    ['onclick', 'onkeydown', 'oncontextmenu', 'ondragstart', 'ondragover', 'ondrop', 'ondragend'].forEach((k) => { v[k] = null; });
     $('#nav').innerHTML = PAGES.map(([id, em, n]) => {
       const c = id === 'tasks' ? M.db.tasks.filter((t) => !t.done).length : id === 'lib' ? M.db.items.length : id === 'trash' ? M.db.trash.length : id === 'clients' ? (M.db.clients || []).length : '';
       return `<button class="nav-i ${p === id ? 'on' : ''}" data-p="${id}"><span class="em">${em}</span>${n}<span class="cnt">${c || ''}</span></button>`;
@@ -85,6 +85,7 @@
     else if (e.key.toLowerCase() === 'c') M.go('cal');
     else if (e.key.toLowerCase() === 'f') M.focusToggle();
     else if (e.key.toLowerCase() === 't') M.go('tasks');
+    else if (e.key.toLowerCase() === 'r') M.go('rot');
     else if (e.key.toLowerCase() === 'b') M.go('lib');
   });
 

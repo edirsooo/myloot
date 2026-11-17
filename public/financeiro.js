@@ -10,7 +10,7 @@
   M.FORMAS = ['PIX', 'Cartão', 'Boleto', 'Transferência', 'Dinheiro'];
   const fin = () => M.db.fin || (M.db.fin = []);
   M.reais = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  M.lerValor = (s) => { s = String(s || '').replace(/[^\d,.-]/g, ''); if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); const n = parseFloat(s); return isFinite(n) ? Math.round(n * 100) / 100 : 0; };
+  M.lerValor = (s) => { s = String(s || '').replace(/[^\d,.-]/g, ''); if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ''); /* "10.000" é dez mil, não dez */ const n = parseFloat(s); return isFinite(n) ? Math.round(n * 100) / 100 : 0; };
   const mesDe = (ymd) => ymd.slice(0, 7);
   const nomeMes = (ym) => new Date(ym + '-15T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const somaMes = (ym, n) => { const [y, m] = ym.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };

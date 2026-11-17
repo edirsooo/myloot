@@ -47,9 +47,16 @@
       { s: '.tgroup', t: 'Separadas por prazo', d: 'Atrasadas, hoje, próximas e sem data. Concluir uma tarefa dá pontos.' },
       { s: '.task', t: 'Detalhes da tarefa', d: 'Clique no texto para editar: data, lembrete com horário (o computador avisa), repetição (todo dia, toda semana, todo mês) e o cliente.' },
     ],
+    rot: [
+      { s: '#hNovo', t: 'Crie seus hábitos', d: 'Hábito é o que você quer repetir: beber água, ler, treinar. Escolha os dias e, se quiser, uma quantidade por dia e um lembrete.' },
+      { s: '.rot-hab', t: 'Marque o que fez', d: 'Clique no círculo para marcar. O 🔥 conta os dias seguidos e as bolinhas mostram os últimos 7 dias. Cada hábito cumprido dá pontos.' },
+      { s: '.rot-nav', t: 'Volte o dia', d: 'Esqueceu de marcar ontem? Use as setas para voltar e marcar o dia que passou.' },
+      { s: ['#gNovo', '.rot-metas'], t: 'Metas com progresso', d: 'Meta é um número com prazo: faturar 10 mil, fechar 5 clientes. Vá somando o que avançou; ao chegar em 100% tem comemoração.' },
+      { s: '.rot-mes', t: 'O mês de relance', d: 'Cada quadradinho é um dia: quanto mais forte a cor, mais hábitos cumpridos. Clique num dia para ver aquele dia.' },
+    ],
     cal: [
       { s: '.cal-h', t: 'Calendário do mês', d: 'Use as setas para mudar de mês e “Hoje” para voltar.' },
-      { s: '.cal', t: 'Seus dias', d: 'Clique num dia para criar uma tarefa. Arraste uma tarefa para outro dia para remarcar. Itens com data também aparecem aqui.' },
+      { s: '.cal', t: 'Seus dias', d: 'Clique num dia para criar uma tarefa. Arraste uma tarefa para outro dia para remarcar. Itens com data também aparecem aqui, e o 🎯 mostra quantos hábitos da Rotina você cumpriu no dia.' },
     ],
     clients: [
       { s: '#cliNovo', t: 'Seus clientes', d: 'Cadastre nome, WhatsApp, e-mail, Instagram, o quadro do Trello e a pasta do cliente no computador.' },

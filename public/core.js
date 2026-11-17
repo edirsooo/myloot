@@ -174,7 +174,7 @@
   M.levelName = (l) => LEVELS[Math.min(l - 1, LEVELS.length - 1)];
 
   // quanto cada ação vale e o limite por dia (anti-farm)
-  const RULES = { item: { xp: 10, cap: 100 }, task: { xp: 15, cap: 150 }, check: { xp: 2, cap: 20 }, copy: { xp: 3, cap: 15 }, attach: { xp: 5, cap: 25 }, focus: { xp: 20, cap: 80 }, bonus: { xp: 25, cap: 25 } };
+  const RULES = { item: { xp: 10, cap: 100 }, task: { xp: 15, cap: 150 }, check: { xp: 2, cap: 20 }, copy: { xp: 3, cap: 15 }, attach: { xp: 5, cap: 25 }, focus: { xp: 20, cap: 80 }, bonus: { xp: 25, cap: 25 }, habit: { xp: 5, cap: 40 }, goal: { xp: 25, cap: 50 } };
 
   M.ACH = [
     { id: 'first', em: '🌱', n: 'Primeiro bloco', d: 'Crie seu primeiro item', t: (g) => g.counters.item >= 1 },
@@ -190,6 +190,9 @@
     { id: 'goal', em: '⭐', n: 'Meta batida', d: 'Bata a meta do dia', t: (g) => g.goalDays >= 1 },
     { id: 'lvl5', em: '💎', n: 'Diamante', d: 'Chegue ao nível 5', t: (g) => M.levelOf(g.xp) >= 5 },
     { id: 'attach', em: '📎', n: 'Colecionador', d: 'Anexe um arquivo', t: (g) => g.counters.attach >= 1 },
+    { id: 'hab1', em: '🌱', n: 'Primeiro passo', d: 'Marque um hábito como feito', t: (g) => g.counters.habit >= 1 },
+    { id: 'hab7', em: '🔥', n: 'Hábito de ferro', d: 'Cumpra um hábito 7 dias seguidos', t: () => !!M.rotinaMaiorSeq && M.rotinaMaiorSeq() >= 7 },
+    { id: 'meta1', em: '🏆', n: 'Meta batida', d: 'Chegue a 100% numa meta', t: (g) => g.counters.goal >= 1 },
   ];
 
   M.dayLog = () => {

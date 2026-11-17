@@ -144,6 +144,13 @@
   M.editTask = editTask;
 
   // ----- calendário -----
+  // resumo da rotina no dia (quantos hábitos foram cumpridos)
+  const rotDia = (k, today) => {
+    if (!M.rotinaDia || k > today) return '';
+    const r = M.rotinaDia(k); if (!r.total) return '';
+    const nv = r.feitos === 0 ? 0 : Math.max(1, Math.round((r.feitos / r.total) * 4));
+    return `<span class="rot-chip n${nv}" title="Rotina: ${r.feitos} de ${r.total} hábito${r.total > 1 ? 's' : ''} cumprido${r.feitos === 1 ? '' : 's'}">🎯 ${r.feitos}/${r.total}</span>`;
+  };
   M.pages.cal = () => {
     const u = M.ui; if (!u.calMonth) { const n = new Date(); u.calMonth = [n.getFullYear(), n.getMonth()]; }
     const [Y, Mo] = u.calMonth, first = new Date(Y, Mo, 1), start = new Date(Y, Mo, 1 - first.getDay());
@@ -156,7 +163,7 @@
       <div class="cal">${['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'].map((d) => `<div class="dow">${d}</div>`).join('')}${days.map((d) => {
         const k = M.ymd(d);
         const ts = M.db.tasks.filter((t) => t.date === k), its = M.db.items.filter((i) => i.date === k);
-        return `<div class="day ${d.getMonth() !== Mo ? 'out' : ''} ${k === today ? 'today' : ''} ${d.getDay() % 6 === 0 ? 'we' : ''}" data-d="${k}"><span class="dn">${d.getDate()}</span>${ts.map((t) => `<div class="chip ${t.prio} ${t.done ? 'done' : ''}" draggable="true" data-t="${t.id}" title="${esc(t.text)}">${esc(t.text)}</div>`).join('')}${its.map((i) => `<div class="chip it" style="--c:${M.type(i.type).color}" data-i="${i.id}" title="${esc(i.title)}">${M.type(i.type).em} ${esc(i.title || 'Sem título')}</div>`).join('')}</div>`;
+        return `<div class="day ${d.getMonth() !== Mo ? 'out' : ''} ${k === today ? 'today' : ''} ${d.getDay() % 6 === 0 ? 'we' : ''}" data-d="${k}"><span class="dn">${d.getDate()}</span>${rotDia(k, today)}${ts.map((t) => `<div class="chip ${t.prio} ${t.done ? 'done' : ''}" draggable="true" data-t="${t.id}" title="${esc(t.text)}">${esc(t.text)}</div>`).join('')}${its.map((i) => `<div class="chip it" style="--c:${M.type(i.type).color}" data-i="${i.id}" title="${esc(i.title)}">${M.type(i.type).em} ${esc(i.title || 'Sem título')}</div>`).join('')}</div>`;
       }).join('')}</div>`;
     const go = (n) => { const d = new Date(Y, Mo + n, 1); u.calMonth = [d.getFullYear(), d.getMonth()]; M.render(); };
     $('#cp').onclick = () => go(-1); $('#cn').onclick = () => go(1);

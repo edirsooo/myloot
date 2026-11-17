@@ -1,11 +1,16 @@
 {
-  "versao": "2.8.0",
+  "versao": "2.9.0",
   "data": "2026-11-17",
   "novidades": [
-    "📝 Rascunho: o que você muda numa ficha fica guardado até clicar em Salvar; dá para salvar ou descartar depois",
-    "↩️ Botões de voltar e avançar no topo: volte para a tela (e a ficha) em que você estava"
+    "🎯 Rotina: crie hábitos (todo dia, dias da semana ou X vezes por semana), marque o que fez e veja a sequência de dias 🔥",
+    "🏆 Metas com progresso: um número com prazo (faturar 10 mil, fechar 5 clientes); vá somando até 100%",
+    "🗓️ Mapa do mês: cada dia mostra quantos hábitos você cumpriu, também no Calendário e no Início"
   ],
   "historico": {
+    "2.8.0": [
+      "📝 Rascunho: o que você muda numa ficha fica guardado até clicar em Salvar; dá para salvar ou descartar depois",
+      "↩️ Botões de voltar e avançar no topo: volte para a tela (e a ficha) em que você estava"
+    ],
     "2.7.0": [
       "✅ Nova tarefa numa caixa só: data, hora do lembrete, prioridade e repetição, cada um com explicação no “?”",
       "💾 Botão “Salvar e fechar” nas fichas de item e de cliente (e “Descartar” em cadastro novo)",
