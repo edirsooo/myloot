@@ -16,11 +16,15 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.15.2
+
+- 🤖 Codex: se você tem o app do ChatGPT (ou do Codex) para computador, o MyLoot agora acha e usa o Codex que vem dentro dele, já logado na sua conta, sem instalar nada pelo terminal
+
 ## Novidades da versão 2.15.1
 
 - 🪟 Janela própria: no Windows, o MyLoot abre numa janela só dele, sem abas nem barra de endereço, e deixa um baú perto do relógio para abrir e fechar (dá para voltar ao navegador em Configurações → Servidor)
 - 🤖 IA: o MyLoot agora acha o Claude Code e o Codex mesmo instalados depois de abrir o app ou fora do caminho padrão, e “Procurar de novo” funciona sem reiniciar
-- 🧩 Sem a IA instalada, a chave fica desligada e aparece “como instalar”, com os comandos para copiar (o app do ChatGPT para computador não traz o Codex)
+- 🧩 Sem a IA instalada, a chave fica desligada e aparece “como instalar”, com os comandos para copiar
 
 ## Novidades da versão 2.15
 Esta versão aplica uma revisão completa das funções do app (o que dá para criar, mudar, desfazer e recuperar em cada tela).

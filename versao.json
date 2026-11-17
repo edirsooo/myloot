@@ -1,12 +1,15 @@
 {
-  "versao": "2.15.1",
+  "versao": "2.15.2",
   "data": "2026-11-17",
   "novidades": [
-    "🪟 Janela própria: no Windows, o MyLoot abre numa janela só dele, sem abas nem barra de endereço, e deixa um baú perto do relógio para abrir e fechar (dá para voltar ao navegador em Configurações → Servidor)",
-    "🤖 IA: o MyLoot agora acha o Claude Code e o Codex mesmo instalados depois de abrir o app ou fora do caminho padrão, e “Procurar de novo” funciona sem reiniciar",
-    "🧩 Sem a IA instalada, a chave fica desligada e aparece “como instalar”, com os comandos para copiar (o app do ChatGPT para computador não traz o Codex)"
+    "🤖 Codex: se você tem o app do ChatGPT (ou do Codex) para computador, o MyLoot agora acha e usa o Codex que vem dentro dele, já logado na sua conta, sem instalar nada pelo terminal"
   ],
   "historico": {
+    "2.15.1": [
+      "🪟 Janela própria: no Windows, o MyLoot abre numa janela só dele, sem abas nem barra de endereço, e deixa um baú perto do relógio para abrir e fechar (dá para voltar ao navegador em Configurações → Servidor)",
+      "🤖 IA: o MyLoot agora acha o Claude Code e o Codex mesmo instalados depois de abrir o app ou fora do caminho padrão, e “Procurar de novo” funciona sem reiniciar",
+      "🧩 Sem a IA instalada, a chave fica desligada e aparece “como instalar”, com os comandos para copiar"
+    ],
     "2.15.0": [
       "🏠 Início novo: “O que você quer guardar?” ficou maior, em duas colunas, com o campo de escrever em destaque",
       "📅 Compromissos com hora de início e fim no Calendário; tarefas repetidas ganham “Pular esta vez” e “Encerrar repetição”",

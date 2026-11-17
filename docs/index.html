@@ -40,6 +40,7 @@
   "featureList":["Biblioteca de prompts, links, notas e PDFs","Busca com Ctrl K","Tarefas, calendário, rotina e modo foco","Clientes e financeiro","IA com Claude Code ou Codex pela própria assinatura","Google Drive, Notion, Trello e celular por QR Code","XP, conquistas, mascotes e música","Desfazer, histórico, lixeira e backup completo"],
   "offers":{"@type":"Offer","price":"0","priceCurrency":"BRL"},
   "author":{"@type":"Organization","name":"Prestes Design","url":"https://prestesdesign.com.br"}},
+ {"@type":"VideoObject","name":"MyLoot 2.15: apresentação geral","description":"Os seis mascotes do MyLoot apresentam Guardar, Organizar, Trabalho, Conectar, Diversão e Segurança, com as telas reais do app.","thumbnailUrl":"https://myloot.prestesdesign.com.br/site/video/apresentacao-2-15.jpg","contentUrl":"https://myloot.prestesdesign.com.br/site/video/apresentacao-2-15.mp4","uploadDate":"2026-11-17","duration":"PT2M15S","inLanguage":"pt-BR"},
  {"@type":"WebSite","name":"MyLoot","url":"https://myloot.prestesdesign.com.br/","inLanguage":"pt-BR","publisher":{"@type":"Organization","name":"Prestes Design","url":"https://prestesdesign.com.br","logo":"https://myloot.prestesdesign.com.br/site/prestes.png"}}
 ]}
 </script>
@@ -75,12 +76,26 @@
       <p class="lead">Prompts, links, notas, tarefas, clientes e o financeiro num app que roda no seu computador, com XP, conquistas e seis mascotes que andam pela tela.</p>
       <div class="acoes">
         <a class="btn btn-sol btn-g" href="#baixar">Baixar o MyLoot</a>
-        <a class="btn btn-linha btn-g" href="#guardar">Conhecer as telas</a>
+        <a class="btn btn-linha btn-g" href="#video">Ver o vídeo</a>
       </div>
       <p class="fatos"><b>Grátis</b><b>Sem conta</b><b>Código aberto</b></p>
     </div>
     <div class="hero-chao" data-piso data-fala="Que palco!|Daqui eu vejo tudo!" aria-hidden="true"></div>
     <p class="dica wrap">Pegue um mascote e solte onde quiser.</p>
+  </section>
+
+  <!-- Vídeo de apresentação 2.15 (versão leve para web; o original fica no projeto de motion) -->
+  <section class="assista" id="video" data-faixa="" aria-labelledby="h-video">
+    <div class="wrap">
+      <h2 id="h-video">Veja o MyLoot em 2 minutos</h2>
+      <p class="lead">Os seis mascotes apresentam cada parte do app, com as telas de verdade.</p>
+      <div class="tela-video">
+        <video controls preload="none" playsinline poster="site/video/apresentacao-2-15.jpg" width="1280" height="720" aria-label="Vídeo de apresentação do MyLoot 2.15">
+          <source src="site/video/apresentacao-2-15-vertical.mp4" type="video/mp4" media="(max-width: 700px) and (orientation: portrait)">
+          <source src="site/video/apresentacao-2-15.mp4" type="video/mp4">
+        </video>
+      </div>
+    </div>
   </section>
 
   <!-- 01 Guardar · Claude -->

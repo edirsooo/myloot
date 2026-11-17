@@ -117,6 +117,14 @@ kbd,code{font:700 .82em var(--mono);background:var(--panel2);border:1px solid va
 .janela img.troca{animation:troca .3s ease-out}
 @keyframes troca{from{opacity:.2;transform:scale(1.015)}}
 
+/* vídeo de apresentação */
+.assista{position:relative;min-height:100svh;display:flex;align-items:center;padding:calc(var(--topo) + 16px) 0 48px;text-align:center;border-top:1px solid var(--edge);background:radial-gradient(ellipse 60% 50% at 50% 55%,rgba(143,116,255,.18),transparent 70%),var(--bg2)}
+.assista h2{font-size:clamp(28px,3.4vw,46px)}
+.assista .lead{color:var(--dim);margin:10px auto 26px;max-width:52ch}
+.tela-video{max-width:min(1080px,calc((100svh - 300px) * 16 / 9));margin:0 auto;border-radius:var(--r);overflow:hidden;border:1px solid var(--edge2);box-shadow:0 30px 60px -20px rgba(0,0,0,.7),0 0 0 6px rgba(255,126,0,.12);background:#000}
+.tela-video video{display:block;width:100%;height:auto;aspect-ratio:16/9}
+@media (max-width:700px) and (orientation:portrait){.tela-video{max-width:min(100%,calc((100svh - 330px) * 9 / 16))}.tela-video video{aspect-ratio:9/16}}
+
 /* XP do Slime */
 .xp{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;background:var(--panel);border:1px solid var(--edge2);font-size:14px}
 .xp-nivel{font-weight:700;white-space:nowrap}
@@ -147,7 +155,7 @@ kbd,code{font:700 .82em var(--mono);background:var(--panel2);border:1px solid va
 /* encaixe: no computador cada seção ocupa a tela e a rolagem para na próxima */
 @media (min-width:901px) and (min-height:680px){
   html{scroll-snap-type:y mandatory;scroll-padding-top:0}
-  .hero,.secao{scroll-snap-align:start;height:100svh;min-height:0}
+  .hero,.secao,.assista{scroll-snap-align:start;height:100svh;min-height:0}
   .final{scroll-snap-align:start}
   .rodape{scroll-snap-align:end}
 }

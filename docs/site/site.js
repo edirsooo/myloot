@@ -158,7 +158,8 @@
     requestAnimationFrame(f);
   }
   function toca(nome) {
-    if (!tocando || !nome || nome === faixa) return;
+    if (!tocando || nome === faixa) return;
+    if (!nome) { faixa = ''; players.forEach((a) => fade(a, 0, 600, () => a.pause())); return; }   // seção do vídeo: a música do site sai
     faixa = nome; const velho = players[atual]; atual = 1 - atual; const novo = players[atual];
     novo.src = 'site/musica/' + nome + '.mp3'; novo.currentTime = 0; novo.volume = 0;
     novo.play().then(() => fade(novo, volume, 700)).catch(() => {});
@@ -170,6 +171,9 @@
     if (on) { faixa = ''; toca((ativa || secoes[0]).dataset.faixa); } else { faixa = ''; players.forEach((a) => fade(a, 0, 400, () => a.pause())); }
   }
   som.addEventListener('click', () => liga(!tocando));
+  // o vídeo tem som próprio: ao dar play, a música do site para
+  const vid = q('.tela-video video');
+  if (vid && matchMedia('(max-width: 700px) and (orientation: portrait)').matches) vid.poster = 'site/video/apresentacao-2-15-vertical.jpg'; if (vid) vid.addEventListener('play', () => { if (tocando) liga(false); });
   // quem ligou a música antes volta com ela no primeiro toque ou tecla (o navegador não deixa tocar sozinho)
   let lembra = false; try { lembra = localStorage.getItem('myloot-site-musica') === '1'; } catch (_) {}
   if (lembra) { const um = (e) => { if (e.target.closest && e.target.closest('.som')) return; removeEventListener('pointerdown', um, true); removeEventListener('keydown', um, true); if (!tocando) liga(true); }; addEventListener('pointerdown', um, true); addEventListener('keydown', um, true); }

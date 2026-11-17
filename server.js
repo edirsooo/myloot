@@ -433,8 +433,32 @@ const envIA = () => Object.assign({}, process.env, { PATH: pathCompleto(), Path:
 function acharComando(nome) {
   const exts = WIN ? ['.cmd', '.exe', '.bat', '.ps1', ''] : [''];
   for (const d of pathCompleto().split(WIN ? ';' : ':')) {
-    for (const e of exts) { const f = path.join(d, nome + e); try { if (fs.statSync(f).isFile() && (WIN ? e !== '' : true)) return f; } catch (_) {} }
+    for (const e of exts) {
+      const f = path.join(d, nome + e);
+      // atalho de app da Microsoft Store (pasta WindowsApps) não abre com stat; lstat basta para saber que existe
+      try { if (fs.statSync(f).isFile() && (WIN ? e !== '' : true)) return f; } catch (_) { try { if (WIN && e === '.exe' && fs.lstatSync(f)) return f; } catch (__) {} }
+    }
   }
+  return dentroDeApp(nome);
+}
+// O app do ChatGPT/Codex para computador traz o Codex dentro dele (Windows: pacote da Store "OpenAI.Codex", em
+// app\resources\codex.exe; Mac: dentro do .app), já logado na conta do ChatGPT. Ele não entra no PATH, então procuramos lá.
+let appsCodex = null;
+function dentroDeApp(nome) {
+  if (nome !== 'codex') return null;
+  const L = [];
+  if (WIN) {
+    if (appsCodex === null) {
+      try {
+        appsCodex = cp.execSync('powershell -NoProfile -NonInteractive -Command "Get-AppxPackage -Name OpenAI.* | ForEach-Object { $_.InstallLocation }"', { encoding: 'utf8', windowsHide: true, timeout: 15000, stdio: ['ignore', 'pipe', 'ignore'] })
+          .split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+      } catch (_) { appsCodex = []; }
+    }
+    for (const d of appsCodex) L.push(path.join(d, 'app', 'resources', 'codex.exe'));
+  } else if (MAC) {
+    for (const a of ['/Applications', path.join(os.homedir(), 'Applications')]) for (const n of ['ChatGPT.app', 'Codex.app']) L.push(path.join(a, n, 'Contents', 'Resources', 'codex'));
+  }
+  for (const f of L) { try { if (fs.statSync(f).isFile()) return f; } catch (_) {} }
   return null;
 }
 const aspas = (f) => (/\s/.test(f) ? '"' + f + '"' : f);
@@ -442,7 +466,7 @@ const aspas = (f) => (/\s/.test(f) ? '"' + f + '"' : f);
 function iaInfo(nome, force) {
   if (iaCache[nome] && !force) return Promise.resolve(iaCache[nome]);
   if (iaRodando[nome]) return iaRodando[nome];
-  if (force) pathIA = null;          // "Procurar de novo" relê o PATH do Windows (programa instalado depois de abrir o MyLoot)
+  if (force) { pathIA = null; appsCodex = null; }          // "Procurar de novo" relê o PATH do Windows e os apps instalados depois de abrir o MyLoot
   iaRodando[nome] = new Promise((ok) => {
     const cmd = acharComando(IA_NOMES[nome]);
     if (!cmd) { iaCache[nome] = { ok: false, motivo: 'ausente' }; delete iaRodando[nome]; return ok(iaCache[nome]); }

@@ -16,12 +16,12 @@
     return L;
   };
 
-  // ----- como instalar (o app do ChatGPT ou do Claude para computador NÃO traz o Codex nem o Claude Code: são programas de terminal à parte) -----
+  // ----- como instalar (o app do ChatGPT/Codex para computador traz o Codex dentro dele e o servidor acha; o app do Claude não traz o Claude Code) -----
   const GUIA = {
     codex: { nome: 'Codex', pacote: 'npm install -g @openai/codex', login: 'codex', conta: 'ChatGPT (Plus, Pro, Business ou Edu)',
-      aviso: 'O aplicativo do ChatGPT para computador não traz o Codex. O Codex é um programa à parte, que roda no terminal e entra com a mesma conta do ChatGPT.' },
+      aviso: 'Tem o aplicativo do ChatGPT (ou do Codex) para computador? Abra o app uma vez, entre na sua conta e clique em “Procurar de novo”: o MyLoot usa o Codex que vem dentro dele. Sem o app, dá para instalar o Codex pelo terminal:' },
     claude: { nome: 'Claude Code', pacote: 'npm install -g @anthropic-ai/claude-code', login: 'claude', conta: 'Claude (Pro ou Max)',
-      aviso: 'O aplicativo do Claude para computador não traz o Claude Code. O Claude Code é um programa à parte, que roda no terminal e entra com a mesma conta do Claude.' },
+      aviso: 'O aplicativo do Claude para computador não traz o Claude Code. O Claude Code é um programa à parte, que roda no terminal e entra com a mesma conta do Claude:' },
   };
   M.iaComoInstalar = (id) => {
     const g = GUIA[id]; if (!g) return;
