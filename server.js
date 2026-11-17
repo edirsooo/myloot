@@ -299,6 +299,7 @@ const INT = require('./integracoes');
 const UPD = require('./atualizar');
 const EXP = require('./exportar');
 const REDE = require('./celular')(DATA);
+const CNX = require('./conexoes')(DATA);
 const SECRETS = path.join(DATA, 'segredos.json');
 const AI_MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'];
 const readSecrets = () => { try { return JSON.parse(fs.readFileSync(SECRETS, 'utf8')); } catch (_) { return {}; } };
@@ -559,7 +560,7 @@ function applyPacks(db) {
 
 // ---------- rotas ----------
 // o que só o próprio computador pode fazer (o celular usa e mexe nos dados, mas não desliga, não troca chaves nem abre coisas no PC)
-const SO_PC = ['/api/shutdown', '/api/open', '/api/reveal', '/api/abrir-pasta', '/api/atualizacao/aplicar', '/api/rede', '/api/rede/trocar', '/api/ai/key', '/api/int/salvar', '/api/restore', '/api/drive/sync', '/api/notify-test'];
+const SO_PC = ['/api/shutdown', '/api/open', '/api/reveal', '/api/abrir-pasta', '/api/atualizacao/aplicar', '/api/rede', '/api/rede/trocar', '/api/ai/key', '/api/int/salvar', '/api/restore', '/api/drive/sync', '/api/notify-test', '/api/conexoes', '/api/conexoes/mudar', '/api/conexoes/apagar'];
 
 async function app(req, res) {
   try {
@@ -589,10 +590,33 @@ async function app(req, res) {
       res.writeHead(302, { Location: '/entrar' }); return res.end();
     }
 
+    // ----- Conexões: outro programa deste computador manda itens (só acrescenta; exige o código da conexão) -----
+    if (p === '/api/entrada' || p === '/api/entrada/ping') {
+      if (!pc) return send(res, 403, { erro: 'A entrada de outros apps só funciona no computador onde o MyLoot está instalado.' });
+      const cors = { 'Access-Control-Allow-Origin': req.headers.origin || '*', 'Access-Control-Allow-Headers': 'content-type, x-myloot-conexao', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Max-Age': '600', Vary: 'Origin' };
+      if (req.method === 'OPTIONS') { res.writeHead(204, cors); return res.end(); }
+      const cx = CNX.achar(req.headers['x-myloot-conexao']);
+      if (!cx) return send(res, 401, { erro: 'Código de conexão inválido ou desligado. Gere um em Configurações → Conexões.' }); // sem CORS: página nenhuma lê esta resposta
+      if (p === '/api/entrada/ping') return send(res, 200, { ok: true, app: 'myloot', versao: UPD.local(ROOT).versao, formato: CNX.FORMATO, conexao: cx.nome }, null, cors);
+      if (req.method !== 'POST') return send(res, 405, { erro: 'Use POST.' }, null, cors);
+      try {
+        const corpo = JSON.parse((await readBody(req, 8e6)).toString('utf8'));
+        const { db } = readDB();
+        const r = CNX.receber(db, cx, corpo, uid);
+        writeDB(db); CNX.usou(cx.id, r.itens.length);
+        return send(res, 200, r, null, cors);
+      } catch (e) { return send(res, 400, { erro: e.message }, null, cors); }
+    }
+
     if (p.startsWith('/api/')) {
       if (req.method !== 'GET' && req.headers['x-myloot'] !== '1' && req.headers['x-mochila'] !== '1') return send(res, 403, { erro: 'cabeçalho' });
       if (!pc && SO_PC.includes(p)) return send(res, 403, { erro: 'Isso só dá para fazer no computador onde o MyLoot está instalado.' });
       if (p === '/api/ping') return send(res, 200, { ok: true, app: 'myloot', versao: UPD.local(ROOT).versao, remoto: !pc, sistema: process.platform });
+      // ----- Conexões (gerenciar os códigos; só no PC) -----
+      if (p === '/api/conexoes' && req.method === 'GET') return send(res, 200, { formato: CNX.FORMATO, porta: PORT, conexoes: CNX.listar() });
+      if (p === '/api/conexoes' && req.method === 'POST') { const b = JSON.parse((await readBody(req, 4096)).toString('utf8') || '{}'); return send(res, 200, CNX.criar(b.nome)); }
+      if (p === '/api/conexoes/mudar' && req.method === 'POST') { const b = JSON.parse((await readBody(req, 4096)).toString('utf8') || '{}'); return send(res, 200, CNX.mudar(b.id, b) || { erro: 'não achei' }); }
+      if (p === '/api/conexoes/apagar' && req.method === 'POST') { const b = JSON.parse((await readBody(req, 4096)).toString('utf8') || '{}'); CNX.apagar(b.id); return send(res, 200, { ok: true }); }
       // ----- celular / rede -----
       if (p === '/api/rede' && req.method === 'GET') return send(res, 200, REDE.status(PORT));
       if (p === '/api/rede' && req.method === 'POST') {

@@ -59,6 +59,7 @@
       ${M.celSection()}
       ${M.tourSection()}
       <div class="so-pc" style="display:contents">${M.intSection()}</div>
+      ${M.cnxSection()}
       ${M.iaSection()}
       <section class="stat so-pc"><div class="cfg-h">Google Drive</div>
         <div class="cfg-row"><span class="l">Copiar para o Drive ${M.hint('Precisa do app “Google Drive para computador”. Cada item vira um arquivo .md numa pasta por tipo, com os anexos junto.')}</span>${M.sw('cDrive', s.drive.on)}</div>
@@ -93,6 +94,7 @@
     M.tourBind();
     M.dadosBind();
     M.suporteBind();
+    M.cnxBind();
 
     function drawCats() {
       $('#cCats').innerHTML = M.db.categories.map((c) => `<div class="catrow" data-id="${c.id}"><input type="text" class="ico" value="${esc(c.icon)}" maxlength="4"><input type="text" class="nm" value="${esc(c.name)}"><input type="color" value="${c.color}"><button class="xbtn" title="Apagar categoria">✕</button></div>`).join('') || '<small style="color:var(--faint)">Nenhuma categoria ainda.</small>';

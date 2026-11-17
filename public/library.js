@@ -13,6 +13,7 @@
       if (u.status && it.status !== u.status) return false;
       if (u.tag && !it.tags.includes(u.tag)) return false;
       if (u.fav && !it.fav) return false;
+      if (u.ref && !it.origem) return false;
       if (q && !M.norm(it.title + ' ' + it.desc + ' ' + it.content + ' ' + it.tags.join(' ') + ' ' + it.attachments.map((a) => a.name).join(' ')).includes(q)) return false;
       return true;
     });
@@ -84,6 +85,7 @@
         <select id="fst"><option value="">Qualquer status</option>${M.STATUS.map((x) => `<option value="${x.id}" ${u.status === x.id ? 'selected' : ''}>${x.name}</option>`).join('')}</select>
         <select id="ftag"><option value="">Todas as etiquetas</option>${M.allTags().map((x) => `<option ${u.tag === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>
         ${M.sw('ffav', u.fav, '⭐ Favoritos', 'Mostra só os itens marcados com estrela.')}
+        ${M.db.items.some((i) => i.origem) ? M.sw('fref', u.ref, '📥 Recebidos', 'Mostra só o que chegou de outro programa pelas Conexões.') : ''}
         <span class="grow"></span>
         <small id="libcount" style="color:var(--faint);font-family:var(--mono)"></small>
         ${s.view === 'board' ? `<select id="fby" title="Colunas do quadro"><option value="status" ${s.boardBy === 'status' ? 'selected' : ''}>Colunas: status</option><option value="cat" ${s.boardBy === 'cat' ? 'selected' : ''}>Colunas: categoria</option><option value="type" ${s.boardBy === 'type' ? 'selected' : ''}>Colunas: tipo</option></select>` : ''}
@@ -99,6 +101,7 @@
     $('#fst').onchange = (e) => { u.status = e.target.value; rr(); };
     $('#ftag').onchange = (e) => { u.tag = e.target.value; rr(); };
     $('#ffav').onchange = (e) => { u.fav = e.target.checked; rr(); };
+    if ($('#fref')) $('#fref').onchange = (e) => { u.ref = e.target.checked; rr(); };
     if ($('#fby')) $('#fby').onchange = (e) => { s.boardBy = e.target.value; M.save(); rr(); };
     $('#views').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; s.view = b.dataset.v; M.save(); SFX.play('click'); M.render(); };
 

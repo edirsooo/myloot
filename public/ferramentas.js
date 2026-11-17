@@ -76,7 +76,8 @@
 
   M.pages.tools = () => {
     const v = $('#view');
-    v.innerHTML = `
+    if (M.parceiroHTML() === '' && !M._parceiroVisto) { M._parceiroVisto = true; M.parceiroCarregar().then((p) => { if (p && M.ui.page === 'tools') M.render(); }); }
+    v.innerHTML = `${M.parceiroHTML()}
       <div class="hotbar" id="fG"><div class="slot ${!st.g ? 'on' : ''}" data-g="">🧰 Tudo <span class="n">${F.length}</span></div>${GRUPOS.map((g) => `<div class="slot ${st.g === g.id ? 'on' : ''}" data-g="${g.id}" style="--c:${g.cor}">${g.em} ${g.nome} <span class="n">${F.filter((f) => f.g === g.id).length}</span></div>`).join('')}</div>
       <div class="toolbar"><input class="search" id="fQ" type="search" placeholder="Buscar ferramenta… (ex.: vídeo, Photoshop)" value="${esc(st.q)}" style="max-width:340px">
         ${M.hint('Links tirados dos guias em PDF que vêm no MyLoot. “Guardar” cria um item do tipo Link na sua Biblioteca. Preços e planos mudam sempre: confira no site oficial.')}

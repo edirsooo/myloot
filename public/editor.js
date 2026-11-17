@@ -88,6 +88,7 @@
           <div class="fld"><label>Etiquetas ${M.hint('Separe com vírgula. Ex: ia, estudo, urgente')}</label><input type="text" id="eTags" value="${esc(it.tags.join(', '))}" placeholder="ia, estudo…" list="tagList"><datalist id="tagList">${M.allTags().map((x) => `<option value="${esc(x)}">`).join('')}</datalist></div>
           <div class="fld"><label>Checklist</label><div id="eCheck"></div></div>
           <div class="fld"><label>Links</label><div id="eLinks"></div></div>
+          ${M.origemHTML(it)}
           <div class="fld"><label>Anexos ${M.hint('Arraste arquivos para cá. Eles são copiados para a pasta data/anexos.')}</label><div id="eAtt"></div><div id="ePrev"></div></div>
           ${M.ehMaterial(it) ? `<div class="dica-ia"><b>💡 Dica: personalize este documento com IA</b><p>Este material é um exemplo de referência (o PDF vem com a identidade da Prestes Design). Use como ponto de partida: mande o texto ou o PDF para o Claude, o Codex ou outra IA e peça para adaptar à sua marca, à sua identidade visual, à sua linguagem e às suas necessidades.</p><div class="cmd" id="ePromptIA">${esc(M.PROMPT_MARCA)}</div><button class="btn sm ghost" id="eCopiaIA">📋 Copiar comando</button></div>` : ''}
         </div>`;
