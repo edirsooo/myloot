@@ -27,7 +27,7 @@
     const t = M.type(it.type), cat = M.cat(it.cat), p = progress(it);
     const st = M.STATUS.find((s) => s.id === it.status);
     const preview = it.desc || (it.type === 'link' ? it.content : it.content);
-    const meta = `${cat ? `<span class="tag">${esc(cat.icon)} ${esc(cat.name)}</span>` : ''}<span class="st ${it.status}">${st.name}</span>${it.tags.slice(0, 3).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}${it.date ? `<span class="mi">${M.ic('data', 14)} ${M.fmtDate(it.date)}</span>` : ''}${it.attachments.length ? `<span class="mi" title="Anexos">${M.ic('clipe', 14)} ${it.attachments.length}</span>` : ''}`;
+    const meta = `${it.rascunho ? '<span class="tag rasc" title="Tem alterações não salvas. Abra para salvar ou descartar.">📝 rascunho</span>' : ''}${cat ? `<span class="tag">${esc(cat.icon)} ${esc(cat.name)}</span>` : ''}<span class="st ${it.status}">${st.name}</span>${it.tags.slice(0, 3).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}${it.date ? `<span class="mi">${M.ic('data', 14)} ${M.fmtDate(it.date)}</span>` : ''}${it.attachments.length ? `<span class="mi" title="Anexos">${M.ic('clipe', 14)} ${it.attachments.length}</span>` : ''}`;
     const fav = `<button class="favbtn ${it.fav ? 'on' : ''}" data-fav="${it.id}" title="Favorito">⭐</button>`;
     if (view === 'list') {
       return `<div class="card" style="--c:${hex(t.color)}" draggable="true" data-id="${it.id}"><div class="top"><span class="badge">${t.em} ${t.name}</span></div><div class="mid"><h3>${esc(it.title || 'Sem título')}</h3></div><div class="meta">${meta}</div>${fav}</div>`;

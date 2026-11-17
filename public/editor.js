@@ -44,9 +44,12 @@
     if (!it) return;
     M.cur = it;
     SFX.play('open');
-    const touch = () => { it.updated = Date.now(); M.save(); };
+    let base = M.rasc.abrir(it); // traz de volta o rascunho guardado (se houver) e tira a foto da versão salva
+    const touch = () => { if (!it._new) M.rasc.tocar(it, base); it.updated = Date.now(); M.save(); M.rodapePinta(m, it, it._new); };
     const m = M.modal('<div></div>', { onClose: () => {
       M.cur = null;
+      // item que já existia e foi mudado sem "Salvar": o cartão fica com a versão antiga e as mudanças viram rascunho
+      if (!it._new && M.db.items.includes(it)) { if (M.rasc.guardar(it)) M.toast('📝 Alterações guardadas como rascunho. Abra o item de novo para salvar ou descartar.'); M.save(); }
       // item novo vazio e sem nada: descarta sem barulho
       if (it._new && !it.title && !it.desc && !it.content && !it.attachments.length && !it.checklist.length) {
         M.db.items = M.db.items.filter((x) => x.id !== it.id); M.save();
@@ -94,6 +97,7 @@
         </div>${M.rodapeSalvar(it._new)}`;
       bind();
       drawCheck(); drawLinks(); drawAtt(); drawAi();
+      M.rodapePinta(m, it, it._new);
     }
 
     // ----- Claude: melhorar, resumir, corrigir… -----
@@ -144,8 +148,11 @@
       $('#eX', m).onclick = M.closeModal;
       $('#svOk', m).onclick = () => {
         if (!it.title.trim() && !it.desc && !it.content && !it.attachments.length && !it.checklist.length) return M.falta($('#eTitle', m), '✍️ Escreva pelo menos um título');
-        const novo = it._new; delete it._new; M.closeModal(); if (novo) M.toast('✅ Item salvo na Biblioteca');
+        const novo = it._new, mudou = M.rasc.pendente(it);
+        delete it._new; M.rasc.salvar(it); M.save(); M.closeModal();
+        if (novo) M.toast('✅ Item salvo na Biblioteca'); else if (mudou) M.toast('✅ Alterações salvas');
       };
+      if ($('#svRev', m)) $('#svRev', m).onclick = () => { M.rasc.reverter(it); base = M.rasc.foto(it); M.save(); SFX.play('undo'); draw(); M.toast('↩ Alterações descartadas: voltou a versão salva'); };
       if ($('#svNo', m)) $('#svNo', m).onclick = () => { M.db.items = M.db.items.filter((x) => x.id !== it.id); delete it._new; M.save(); M.closeModal(); M.toast('Item descartado'); };
       $('#eDel', m).onclick = () => { M.closeModal(); M.trashItem(it); };
       $('#eFav', m).onclick = () => { it.fav = !it.fav; touch(); SFX.play(it.fav ? 'star' : 'click'); $('#eFav', m).textContent = it.fav ? '⭐' : '☆'; };
@@ -208,10 +215,10 @@
       };
       const dz = $('#eDz', m), fi = $('#eFile', m);
       dz.onclick = () => fi.click();
-      fi.onchange = () => M.attachFiles(it, [...fi.files], drawAtt);
+      fi.onchange = () => M.attachFiles(it, [...fi.files], () => { touch(); drawAtt(); });
       dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('over'); };
       dz.ondragleave = () => dz.classList.remove('over');
-      dz.ondrop = (e) => { e.preventDefault(); e.stopPropagation(); dz.classList.remove('over'); M.attachFiles(it, [...e.dataTransfer.files], drawAtt); };
+      dz.ondrop = (e) => { e.preventDefault(); e.stopPropagation(); dz.classList.remove('over'); M.attachFiles(it, [...e.dataTransfer.files], () => { touch(); drawAtt(); }); };
     }
 
     function preview(a) {

@@ -1,12 +1,16 @@
 {
-  "versao": "2.7.0",
+  "versao": "2.8.0",
   "data": "2026-11-17",
   "novidades": [
-    "✅ Nova tarefa numa caixa só: data, hora do lembrete, prioridade e repetição, cada um com explicação no “?”",
-    "💾 Botão “Salvar e fechar” nas fichas de item e de cliente (e “Descartar” em cadastro novo)",
-    "⏱️ Modo foco: escolha o tempo com a bolinha do mouse, de 5 em 5 minutos, ou num dos 6 tempos prontos"
+    "📝 Rascunho: o que você muda numa ficha fica guardado até clicar em Salvar; dá para salvar ou descartar depois",
+    "↩️ Botões de voltar e avançar no topo: volte para a tela (e a ficha) em que você estava"
   ],
   "historico": {
+    "2.7.0": [
+      "✅ Nova tarefa numa caixa só: data, hora do lembrete, prioridade e repetição, cada um com explicação no “?”",
+      "💾 Botão “Salvar e fechar” nas fichas de item e de cliente (e “Descartar” em cadastro novo)",
+      "⏱️ Modo foco: escolha o tempo com a bolinha do mouse, de 5 em 5 minutos, ou num dos 6 tempos prontos"
+    ],
     "2.6.0": [
       "🎙️ Microfone ao lado dos campos: fale em vez de digitar no título, na descrição, no conteúdo e nas tarefas",
       "🧩 Novo item em 3 colunas: os modelos cabem numa tela só, com o atalho “Por voz”"

@@ -17,10 +17,37 @@
   };
 
   matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if (M.db && M.db.settings.themeAuto) M.applySettings(); });
-  M.go = (p) => { M.ui.page = p; document.body.classList.remove('menu'); M.render(); };
+  // ----- trocar de tela, com voltar e avançar (botões do topo, do navegador e Alt + setas) -----
+  let hN = 0, hMax = 0; // posição atual e última posição do histórico desta aba
+  const pintaNav = () => { const v = $('#navVolta'), a = $('#navAvanca'); if (v) v.disabled = hN <= 0; if (a) a.disabled = hN >= hMax; };
+  const fichaAberta = () => ({ cli: M.cliAberto || null, item: M.cur ? M.cur.id : null });
+  const trocar = (p) => {
+    // ficha aberta fica como estava (rascunho, se mudou) e sai da frente da tela nova
+    if (M.modalOpen()) { M.cliAberto = null; M.closeModal(); }
+    M.ui.page = p; document.body.classList.remove('menu'); M.render(); pintaNav();
+  };
+  M.go = (p) => {
+    if (!M.pages[p]) return;
+    if (p !== M.ui.page) {
+      // guarda na tela de onde saiu qual ficha estava aberta: ao voltar, ela reabre
+      try { history.replaceState(Object.assign({ p: M.ui.page, n: hN }, fichaAberta()), ''); history.pushState({ p, n: ++hN }, '', '#' + p); hMax = hN; } catch (_) {}
+    }
+    trocar(p);
+  };
+  addEventListener('popstate', (e) => {
+    const s = e.state || {}, p = s.p || location.hash.slice(1);
+    if (!M.db || !M.pages[p]) return;
+    hN = s.n || 0; if (hN > hMax) hMax = hN;
+    trocar(p);
+    if (s.cli && M.client && M.client(s.cli)) M.openClient(s.cli);
+    else if (s.item && M.db.items.some((i) => i.id === s.item)) M.openItem(s.item);
+  });
+  $('#navVolta').onclick = () => history.back();
+  $('#navAvanca').onclick = () => history.forward();
 
   M.render = () => {
     const p = M.ui.page, v = $('#view');
+    if (!M.modalOpen()) M.rasc.arruma();
     ['onclick', 'oncontextmenu', 'ondragstart', 'ondragover', 'ondrop', 'ondragend'].forEach((k) => { v[k] = null; });
     $('#nav').innerHTML = PAGES.map(([id, em, n]) => {
       const c = id === 'tasks' ? M.db.tasks.filter((t) => !t.done).length : id === 'lib' ? M.db.items.length : id === 'trash' ? M.db.trash.length : id === 'clients' ? (M.db.clients || []).length : '';
@@ -83,6 +110,7 @@
     // endereço direto: #lib, #tasks, #cal, #ach, #cfg ou #item=ID
     const hash = location.hash.slice(1);
     if (M.pages[hash]) M.ui.page = hash;
+    try { history.replaceState({ p: M.ui.page, n: 0 }, ''); } catch (_) {}
     M.render();
     if (hash.startsWith('item=')) M.openItem(hash.slice(5));
     M.focusPaint();

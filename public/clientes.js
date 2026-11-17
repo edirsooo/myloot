@@ -41,7 +41,7 @@
     const s = cst(c.status), tA = M.db.tasks.filter((t) => t.client === c.id && !t.done).length, nI = M.db.items.filter((i) => i.client === c.id).length;
     return `<div class="card cli" data-cli="${c.id}" draggable="true" style="--c:${s.color}">
       <div class="top"><span class="av" style="background:${corDe(c.nome)}">${esc(iniciais(c.nome))}</span><div style="min-width:0;flex:1"><h3>${esc(c.nome || 'Sem nome')}</h3>${c.empresa ? `<p style="-webkit-line-clamp:1">${esc(c.empresa)}</p>` : ''}</div><span class="badge">${s.em} ${s.name}</span></div>
-      <div class="meta">${tA ? `<span class="mi">✅ ${tA} tarefa${tA > 1 ? 's' : ''}</span>` : ''}${nI ? `<span class="mi">📦 ${nI} ite${nI > 1 ? 'ns' : 'm'}</span>` : ''}${c.tags.slice(0, 3).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}</div>
+      <div class="meta">${c.rascunho ? '<span class="tag rasc" title="Tem alterações não salvas. Abra para salvar ou descartar.">📝 rascunho</span>' : ''}${tA ? `<span class="mi">✅ ${tA} tarefa${tA > 1 ? 's' : ''}</span>` : ''}${nI ? `<span class="mi">📦 ${nI} ite${nI > 1 ? 'ns' : 'm'}</span>` : ''}${c.tags.slice(0, 3).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}</div>
       ${M.cliLinks(c).length ? `<div class="cli-bar">${botoes(c)}</div>` : ''}</div>`;
   }
 
@@ -116,12 +116,15 @@
     const c = M.client(id); if (!c) return;
     M.cliAberto = c.id;
     SFX.play('open');
-    const touch = () => { c.updated = Date.now(); delete c._novo; M.save(); };
+    let base = M.rasc.abrir(c); // traz de volta o rascunho guardado (se houver) e tira a foto da versão salva
+    const touch = () => { if (novoAberto !== c.id) M.rasc.tocar(c, base); c.updated = Date.now(); delete c._novo; M.save(); M.rodapePinta(m, c, novoAberto === c.id); };
     const m = M.modal('<div></div>', { onClose: () => {
       M.cliAberto = null;
       const eraNovo = novoAberto === c.id; novoAberto = null;
       if (c._novo && !c.nome.trim()) M.db.clients = M.db.clients.filter((x) => x !== c);
       else if (eraNovo && M.db.clients.includes(c)) M.toast('✅ Cliente salvo'); // fechou no ✕: avisa que ficou guardado
+      // cliente que já existia e foi mudado sem "Salvar": fica a versão antiga e as mudanças viram rascunho
+      if (!eraNovo && M.db.clients.includes(c) && M.rasc.guardar(c)) M.toast('📝 Alterações guardadas como rascunho. Abra a ficha de novo para salvar ou descartar.');
       delete c._novo; M.save(); M.render();
     } });
     const campo = (k, lbl, ph, tipo) => `<div class="fld"><label>${lbl}</label><input type="${tipo || 'text'}" data-k="${k}" value="${esc(c[k])}" placeholder="${ph}"></div>`;
@@ -154,10 +157,12 @@
           <div class="row" style="gap:8px"><button class="btn ghost sm" id="cTrello" style="flex:none">📤 Enviar para o Trello</button>${M.hint('Cria um cartão com os contatos, as anotações e as tarefas abertas na lista que você conectou em Configurações → Integrações.')}</div>
         </div>${M.rodapeSalvar(novoAberto === c.id)}`;
       bind();
+      M.rodapePinta(m, c, novoAberto === c.id);
     }
     function bind() {
       $('#cX', m).onclick = M.closeModal;
-      $('#svOk', m).onclick = () => { if (!c.nome.trim()) return M.falta($('#cNome', m), '✍️ Dê um nome ao cliente primeiro'); const novo = novoAberto === c.id; novoAberto = null; delete c._novo; M.closeModal(); M.toast(novo ? '✅ Cliente cadastrado' : '✅ Cliente salvo'); };
+      $('#svOk', m).onclick = () => { if (!c.nome.trim()) return M.falta($('#cNome', m), '✍️ Dê um nome ao cliente primeiro'); const novo = novoAberto === c.id; novoAberto = null; delete c._novo; M.rasc.salvar(c); M.save(); M.closeModal(); M.toast(novo ? '✅ Cliente cadastrado' : '✅ Cliente salvo'); };
+      if ($('#svRev', m)) $('#svRev', m).onclick = () => { M.rasc.reverter(c); base = M.rasc.foto(c); M.save(); SFX.play('undo'); draw(); M.toast('↩ Alterações descartadas: voltou a versão salva'); };
       if ($('#svNo', m)) $('#svNo', m).onclick = () => { M.db.clients = M.db.clients.filter((x) => x !== c); novoAberto = null; M.save(); M.closeModal(); M.toast('Cadastro descartado'); };
       $('#cDel', m).onclick = () => { M.closeModal(); if (c.nome.trim()) M.trashClient(c); };
       $('#cNome', m).oninput = (e) => { c.nome = e.target.value; touch(); $('.modal-h h2', m).textContent = c.nome || 'Novo cliente'; };

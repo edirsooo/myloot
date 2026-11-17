@@ -14,6 +14,12 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.8
+
+- 📝 **Rascunho, como no Trello**: ao mudar um item ou um cliente que já existia, as mudanças ficam guardadas como rascunho até você clicar em “Salvar e fechar”. Se fechar sem salvar, o cartão continua com a versão antiga e ganha o selo “📝 rascunho”; ao abrir de novo, o que você tinha escrito está lá, com os botões “Salvar” e “Descartar alterações”.
+- ↩️ **Voltar e avançar**: setas no topo (e os botões do navegador, ou Alt + setas) levam para a tela anterior. Se havia uma ficha aberta, ela reabre.
+- 🧷 **Nada some no meio do cadastro**: uma janela aberta de dentro da ficha do cliente (tarefa, lançamento, modelos) volta para a ficha ao ser fechada, mesmo com Esc ou clique fora.
+
 ## Novidades da versão 2.7
 
 - ✅ **Nova tarefa numa caixa só**: campo, microfone e botão Adicionar lado a lado; embaixo, data (Hoje, Amanhã ou calendário), hora do lembrete, prioridade e repetição. Cada opção tem um “?” que explica para que serve.

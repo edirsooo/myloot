@@ -35,7 +35,45 @@
   document.addEventListener('click', (e) => { const el = e.target; if (el && el.tagName === 'INPUT' && (el.type === 'date' || el.type === 'time') && el.showPicker) { try { el.showPicker(); } catch (_) {} } });
 
   // rodapé das fichas que salvam sozinhas (item e cliente): mostra que está salvo e dá um botão claro para concluir
-  M.rodapeSalvar = (novo) => `<div class="salvar-bar"><span class="sv-st">💾 Salva sozinho enquanto você escreve</span><span style="flex:1"></span>${novo ? '<button class="btn ghost" id="svNo" style="flex:none">Descartar</button>' : ''}<button class="btn" id="svOk" style="flex:none">✔ Salvar e fechar</button></div>`;
+  M.rodapeSalvar = (novo) => `<div class="salvar-bar"><span class="sv-st" id="svSt"></span><span style="flex:1"></span>${novo ? '<button class="btn ghost" id="svNo" style="flex:none">Descartar</button>' : '<button class="btn ghost" id="svRev" style="flex:none" hidden>↩ Descartar alterações</button>'}<button class="btn" id="svOk" style="flex:none">✔ Salvar e fechar</button></div>`;
+  M.rodapePinta = (m, o, novo) => {
+    const st = m && $('#svSt', m); if (!st) return;
+    const p = !novo && M.rasc.pendente(o);
+    st.textContent = novo ? '🆕 Ficha nova: clique em Salvar para concluir' : p ? '📝 Alterações ainda não salvas (ficam guardadas como rascunho)' : '✔ Tudo salvo';
+    st.parentElement.classList.toggle('pend', !!p);
+    const r = $('#svRev', m); if (r) r.hidden = !p;
+  };
+
+  // ----- rascunho das fichas (item e cliente), no estilo do Trello -----
+  // O que a pessoa muda numa ficha que já existia fica como rascunho até ela clicar em "Salvar".
+  // Fechar sem salvar deixa o cartão com a versão antiga e guarda o rascunho; ao reabrir, ele volta para ela decidir.
+  // Enquanto a ficha está aberta: os campos têm a versão em edição e `_salvo` guarda a versão salva.
+  // Com a ficha fechada: os campos têm a versão salva e `rascunho` guarda a versão em edição.
+  const FORA = ['_salvo', 'rascunho', '_new', '_novo', '_xp', 'updated', 'id'];
+  // chaves em ordem alfabética: a comparação não depende da ordem em que os campos foram criados
+  const foto = (o) => { const c = {}; for (const k of Object.keys(o).sort()) if (!FORA.includes(k)) c[k] = o[k]; return JSON.stringify(c); };
+  const aplica = (o, json) => { const d = JSON.parse(json); for (const k of Object.keys(o)) if (!FORA.includes(k) && !(k in d)) delete o[k]; Object.assign(o, d); };
+  M.rasc = {
+    foto,
+    abrir(o) { if (o.rascunho) { const r = o.rascunho; delete o.rascunho; if (!o._salvo) o._salvo = foto(o); try { aplica(o, r); } catch (_) {} } return foto(o); },
+    tocar(o, base) { if (!o._salvo) o._salvo = base; },
+    pendente: (o) => !!o._salvo && o._salvo !== foto(o),
+    salvar(o) { delete o._salvo; delete o.rascunho; },
+    reverter(o) { if (o._salvo) { try { aplica(o, o._salvo); } catch (_) {} } delete o._salvo; delete o.rascunho; },
+    guardar(o) {
+      if (M.rasc.pendente(o)) { const r = foto(o); try { aplica(o, o._salvo); } catch (_) {} o.rascunho = r; delete o._salvo; return true; }
+      delete o._salvo; return false;
+    },
+    // ficha que ficou "em edição" sem janela (aba fechada no meio, queda de energia): vira rascunho.
+    // Espera 2 minutos sem mexer, para não atrapalhar quem está editando a mesma ficha em outro aparelho.
+    arruma() {
+      if (!M.db) return;
+      let mudou = false;
+      const aberto = (o) => (M.cur && M.cur.id === o.id) || M.cliAberto === o.id;
+      for (const o of [...M.db.items, ...(M.db.clients || [])]) if (o._salvo && !aberto(o) && Date.now() - (o.updated || 0) > 120000) { M.rasc.guardar(o); mudou = true; }
+      if (mudou) M.save();
+    },
+  };
 
   // ----- janelas -----
   let onClose = null;
@@ -55,6 +93,9 @@
     ov.classList.remove('on'); ov.innerHTML = '';
     const f = onClose; onClose = null;
     if (f) f();
+    // janela aberta de dentro da ficha de um cliente (tarefa, lançamento, modelos, confirmação): ao fechar de qualquer jeito
+    // (✕, Esc ou clique fora), volta para a ficha em vez de sumir com ela
+    setTimeout(() => { if (!M.modalOpen() && M.cliAberto && M.client && M.client(M.cliAberto)) M.openClient(M.cliAberto); }, 0);
   };
   M.modalOpen = () => $('#overlay').classList.contains('on');
   M.confirm = (msg, okLabel) => new Promise((res) => {
