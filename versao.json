@@ -1,12 +1,15 @@
 {
-  "versao": "2.9.0",
+  "versao": "2.9.1",
   "data": "2026-11-17",
   "novidades": [
-    "🎯 Rotina: crie hábitos (todo dia, dias da semana ou X vezes por semana), marque o que fez e veja a sequência de dias 🔥",
-    "🏆 Metas com progresso: um número com prazo (faturar 10 mil, fechar 5 clientes); vá somando até 100%",
-    "🗓️ Mapa do mês: cada dia mostra quantos hábitos você cumpriu, também no Calendário e no Início"
+    "👀 Telas mais fáceis de ler em monitor grande: Lixeira, Configurações, Tarefas e Biblioteca em colunas, com o botão perto do nome"
   ],
   "historico": {
+    "2.9.0": [
+      "🎯 Rotina: crie hábitos (todo dia, dias da semana ou X vezes por semana), marque o que fez e veja a sequência de dias 🔥",
+      "🏆 Metas com progresso: um número com prazo (faturar 10 mil, fechar 5 clientes); vá somando até 100%",
+      "🗓️ Mapa do mês: cada dia mostra quantos hábitos você cumpriu, também no Calendário e no Início"
+    ],
     "2.8.0": [
       "📝 Rascunho: o que você muda numa ficha fica guardado até clicar em Salvar; dá para salvar ou descartar depois",
       "↩️ Botões de voltar e avançar no topo: volte para a tela (e a ficha) em que você estava"

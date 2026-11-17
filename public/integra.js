@@ -24,7 +24,7 @@
   ]);
 
   // ----- seção nas Configurações -----
-  M.intSection = () => `<section class="stat" id="intSec"><div class="cfg-h">Integrações: Notion e Trello</div><div id="intBody"><small style="color:var(--dim)">Carregando…</small></div></section>`;
+  M.intSection = () => `<section class="stat" id="intSec"><div class="cfg-h">📤 Notion e Trello</div><div id="intBody"><small style="color:var(--dim)">Carregando…</small></div></section>`;
 
   M.intBind = async () => {
     const box = $('#intBody'); if (!box) return;

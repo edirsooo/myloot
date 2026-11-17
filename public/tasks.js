@@ -90,9 +90,9 @@
           <div class="tn-op"><span class="lbl">🔁 Repetir ${M.hint('Para o que volta sempre (ex.: postar todo dia, pagar o aluguel todo mês). Quando você conclui, a próxima já nasce na data certa.')}</span><select id="tRp">${M.REP.map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></div>
         </div>
       </div>
-      ${G.map(([k, n, L]) => L.length ? `<div class="tgroup ${k}"><h4>${n} <span>${L.length}</span></h4>${L.map(taskHTML).join('')}</div>` : '').join('')}
-      ${!open.length ? '<div class="empty"><div class="big">🎉</div><h3>Nenhuma tarefa pendente</h3></div>' : ''}
-      ${done.length ? `<div class="tgroup"><h4>✅ Concluídas recentemente</h4>${done.map(taskHTML).join('')}</div>` : ''}`;
+      ${!open.length ? '<div class="empty" style="padding:26px 20px"><div class="big">🎉</div><h3>Nenhuma tarefa pendente</h3></div>' : ''}
+      <div class="tcols">${G.map(([k, n, L]) => L.length ? `<div class="tgroup ${k}"><h4>${n} <span>${L.length}</span></h4>${L.map(taskHTML).join('')}</div>` : '').join('')}
+      ${done.length ? `<div class="tgroup feitas"><h4>✅ Concluídas recentemente</h4>${done.map(taskHTML).join('')}</div>` : ''}</div>`;
     const add = () => {
       const i = $('#tIn'), hora = $('#tHr').value, rep = $('#tRp').value;
       const t = M.addTask(i.value, $('#tDt').value, $('#tPr').value);

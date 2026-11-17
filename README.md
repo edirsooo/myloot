@@ -20,6 +20,7 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 - 🏆 **Metas com progresso**: um número com prazo (faturar 10 mil no mês, fechar 5 clientes). Vá somando o que avançou; a barra enche e, em 100%, tem comemoração.
 - 🗓️ **Mapa do mês**: cada dia fica mais forte conforme os hábitos cumpridos. O resumo também aparece no Calendário (🎯 2/3) e no Início, onde dá para marcar os hábitos de hoje.
 - 🔢 **Números com ponto**: “10.000” agora é entendido como dez mil nas metas e no Financeiro.
+- 👀 **Monitor grande sem cansar a vista (2.9.1)**: a Lixeira virou painéis por tipo, as Configurações têm um menu de seções e cartões em até três colunas, e as Tarefas e a Biblioteca em lista se dividem em colunas. O botão fica sempre perto do nome, sem linha atravessando a tela.
 
 ## Novidades da versão 2.8
 

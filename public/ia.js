@@ -45,7 +45,7 @@
   };
 
   // ----- seção nas Configurações -----
-  M.iaSection = () => `<section class="stat"><div class="cfg-h">IA (Claude e Codex)</div>
+  M.iaSection = () => `<section class="stat"><div class="cfg-h">🤖 IA (Claude e Codex)</div>
     ${M.IAS.map((i) => `<div class="cfg-row"><span class="l">${i.em} ${i.nome} ${M.hint(i.dica + ' Precisa estar instalado e logado.')}<br><small id="iaSt_${i.id}" style="font:700 12px var(--mono);color:var(--faint)">…</small></span>${M.sw('iaOn_' + i.id, ligada(i.id))}</div>`).join('')}
     <div class="cfg-row"><span class="l">Qual usar ${M.hint('Automático: usa o Claude Code; se não tiver, o Codex; se não tiver nenhum, a chave da API. Dentro do item também dá para escolher na hora.')}</span><select id="aiVia" style="width:auto"><option value="auto">Automático</option><option value="claude">Claude Code</option><option value="codex">Codex</option><option value="api">Chave da API do Claude</option></select></div>
     <div class="cfg-row"><span class="l">Chave da API do Claude (opcional) ${M.hint('Só para quem não tem Claude Code nem Codex. Crie em console.anthropic.com → API Keys. Fica só neste computador, em data/segredos.json, fora do backup e do Drive.')}</span><span id="aiSt" style="font:700 12px var(--mono)"></span></div>

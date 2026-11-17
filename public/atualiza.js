@@ -83,7 +83,7 @@
     return true;
   };
 
-  M.versaoSection = () => `<section class="stat"><div class="cfg-h">Versão</div>
+  M.versaoSection = () => `<section class="stat"><div class="cfg-h">🎁 Versão</div>
     <div class="cfg-row"><span class="l">MyLoot <span id="verAtual" style="font:700 12px var(--mono)">…</span> ${M.hint('O app olha o GitHub quando abre e avisa quando sai versão nova. A atualização troca só os arquivos do app: seus itens, anexos e chaves (pasta data) ficam como estão.')}</span><button class="btn ghost sm" id="verChk" style="flex:none">🔎 Procurar atualização</button></div></section>`;
   M.versaoBind = () => {
     M.api('/api/versao').then((v) => { const e = $('#verAtual'); if (e) e.textContent = 'v' + v.versao; }).catch(() => {});

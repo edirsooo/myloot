@@ -350,6 +350,47 @@ body.light .hab-chk{color:#fff}
   .hab .icon-btn[data-a=ed]{order:7}
 }
 
+/* ----- telas largas: nada de linha atravessando a tela nem de espaço vazio ao lado ----- */
+/* Lixeira: um painel por tipo, lado a lado; nome, data e botão ficam juntos */
+.lix-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(420px,100%),1fr));gap:16px;align-items:start}
+.lix-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px solid var(--edge);border-radius:11px;background:var(--panel2);margin-bottom:6px}
+.lix-row .em{font-size:19px;flex:none;line-height:1}
+.lix-row .tx{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.lix-row .tx b{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lix-row .tx small{color:var(--dim);font-size:11.5px}
+.lix-row .btn{flex:none}
+@media (max-width:700px){.lix-row{flex-wrap:wrap}.lix-row .tx{flex:1 1 calc(100% - 40px)}.lix-row .tx b{white-space:normal}.lix-row .btn{margin-left:auto}}
+/* Configurações: menu das seções + cartões em até 3 colunas */
+.cfg-wrap{display:grid;grid-template-columns:196px minmax(0,1fr);gap:18px;align-items:start;max-width:1660px}
+.cfg-menu{position:sticky;top:0;display:flex;flex-direction:column;gap:2px;background:var(--panel);border:2px solid var(--edge);border-radius:14px;padding:8px;box-shadow:var(--shadow)}
+.cfg-menu button{text-align:left;border:0;background:none;color:var(--dim);font:600 13px var(--f);padding:7px 9px;border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cfg-menu button:hover{background:var(--accent-soft);color:var(--text)}
+.cfg-cols{columns:3 390px;column-gap:16px}
+.cfg-cols section.stat{break-inside:avoid;margin:0 0 16px}
+.cfg-cols .cfg-h{margin:0 0 6px;font-size:12.5px}
+.sc kbd{justify-self:start}
+.stat.pisca{animation:pisca 1.2s ease-out}
+@keyframes pisca{0%,55%{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}}
+@media (max-width:900px){.cfg-wrap{grid-template-columns:minmax(0,1fr)}.cfg-menu{position:static;flex-direction:row;overflow-x:auto;padding:6px}.cfg-menu button{flex:none}}
+/* Tarefas: Atrasadas, Hoje, Próximas e Sem data lado a lado */
+.tcols{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(360px,100%),1fr));gap:0 18px;align-items:start}
+.tgroup.feitas{opacity:.85}
+/* Biblioteca em lista: duas ou três colunas de linhas curtas em vez de uma linha da largura da tela */
+#libres .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(520px,100%),1fr));gap:8px;align-items:start}
+/* linha da lista em dois andares: tipo, nome e estrela em cima; etiquetas embaixo (o nome nunca fica espremido) */
+#libres .list .card{flex-wrap:wrap;row-gap:6px}
+#libres .list .card .mid{flex:1 1 200px}
+#libres .list .card .favbtn{order:2}
+#libres .list .card .meta{order:3;flex:1 1 100%}
+/* Financeiro: a página para em 1380 px e a lista de lançamentos fica mais estreita (descrição perto do valor) */
+.fin-h,.fin-stats,.fin-grid{max-width:1380px}
+@media (min-width:901px){.fin-grid{grid-template-columns:minmax(0,1.2fr) minmax(300px,1fr)}}
+/* Conquistas: o gráfico dos 7 dias não estica até o fim da tela */
+#view h2.sec + .stat{max-width:760px}
+/* Início: campo da captura rápida com o botão Guardar logo ao lado */
+.qc-linha{max-width:700px}
+@media (max-width:700px){#libres .list{grid-template-columns:minmax(0,1fr)}}
+
 /* voltar e avançar no topo */
 .nav-h{flex:none;font-size:16px;font-weight:800;color:var(--text)}
 .nav-h:disabled{opacity:.3;cursor:default}
