@@ -36,6 +36,7 @@
     const meses = Array.from({ length: 6 }, (_, i) => somaMes(mes, i - 5));
     const graf = meses.map((m) => { const x = M.finResumo(fin().filter((f) => mesDe(f.data) === m)); return { m, e: x.rec + x.aRec, s: x.pag + x.aPag }; });
     const max = Math.max(1, ...graf.map((g) => Math.max(g.e, g.s)));
+    const curto = (n) => n >= 1000 ? (n / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil' : String(Math.round(n));
     const porCat = {};
     doMes.filter((f) => f.tipo === 'saida').forEach((f) => { porCat[f.cat || 'Outros'] = (porCat[f.cat || 'Outros'] || 0) + f.valor; });
     const cats = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
@@ -46,17 +47,15 @@
         <span class="grow" style="flex:1"></span>
         <button class="btn ghost sm" id="fCalc">🧮 Calcular preço</button><a class="btn ghost sm" id="fCsv" href="#">⬇️ Planilha (CSV)</a></div>
       ${atras.length ? `<div class="fin-alerta">⚠️ ${atras.length} conta${atras.length > 1 ? 's' : ''} de meses anteriores ainda em aberto (${M.reais(atras.reduce((s, f) => s + (f.tipo === 'entrada' ? f.valor : -f.valor), 0))}). <a data-atras="1">ver</a></div>` : ''}
-      <div class="stats fin-stats">
-        <div class="stat"><b class="pos">${M.reais(R.rec)}</b><small>Recebido</small></div>
-        <div class="stat"><b class="neg">${M.reais(R.pag)}</b><small>Pago</small></div>
-        <div class="stat"><b class="${R.saldo >= 0 ? 'pos' : 'neg'}">${M.reais(R.saldo)}</b><small>Saldo do mês ${M.hint('Recebido menos pago, só o que já aconteceu.')}</small></div>
-        <div class="stat"><b>${M.reais(R.aRec)}</b><small>A receber</small></div>
-        <div class="stat"><b>${M.reais(R.aPag)}</b><small>A pagar</small></div>
-        <div class="stat"><b class="${R.prev >= 0 ? 'pos' : 'neg'}">${M.reais(R.prev)}</b><small>Previsão do mês ${M.hint('Como o mês fecha se tudo o que está previsto for recebido e pago.')}</small></div>
+      <div class="fin-resumo">
+        <div class="stat fr-saldo"><span class="fr-t">💰 Saldo do mês ${M.hint('Recebido menos pago, só o que já aconteceu.')}</span><b class="${R.saldo >= 0 ? 'pos' : 'neg'}">${M.reais(R.saldo)}</b><small>recebido menos pago</small></div>
+        <div class="stat fr-grupo"><span class="fr-t">⬇️ Entradas</span><div class="fr-par"><div><small>Recebido</small><b class="pos">${M.reais(R.rec)}</b></div><div><small>A receber</small><b>${M.reais(R.aRec)}</b></div></div></div>
+        <div class="stat fr-grupo"><span class="fr-t">⬆️ Saídas</span><div class="fr-par"><div><small>Pago</small><b class="neg">${M.reais(R.pag)}</b></div><div><small>A pagar</small><b>${M.reais(R.aPag)}</b></div></div></div>
+        <div class="stat fr-prev"><span class="fr-t">📅 Previsão do mês ${M.hint('Como o mês fecha se tudo o que está previsto for recebido e pago.')}</span><b class="${R.prev >= 0 ? 'pos' : 'neg'}">${M.reais(R.prev)}</b></div>
       </div>
       <div class="fin-grid">
         <div class="panel"><h4>📒 Lançamentos <span class="seg" id="fF" style="margin-left:auto">${[['', 'Tudo'], ['entrada', 'Entradas'], ['saida', 'Saídas'], ['pend', 'Pendentes']].map(([k, n]) => `<button data-f="${k}" class="${filtro === k ? 'on' : ''}">${n}</button>`).join('')}</span></h4>
-          ${L.length ? L.map((f) => {
+          ${L.length ? '<div class="fin-cab"><span class="c1">Pago?</span><span class="fd">Data</span><span class="fx">Descrição</span><span>Valor</span></div>' : ''}${L.length ? L.map((f) => {
             const cli = f.client && M.client ? M.client(f.client) : null, late = !f.pago && f.data < hoje;
             return `<div class="fin-row ${f.pago ? 'ok' : ''} ${late ? 'late' : ''}" data-f="${f.id}"><input type="checkbox" ${f.pago ? 'checked' : ''} title="${f.tipo === 'entrada' ? 'Recebido' : 'Pago'}">
               <span class="fd">${f.data.slice(8)}/${f.data.slice(5, 7)}</span><span class="fx"><b>${esc(f.desc || (f.tipo === 'entrada' ? 'Entrada' : 'Saída'))}</b><small>${esc(f.cat || '')}${f.forma ? ' · ' + esc(f.forma) : ''}${cli ? ' · 👤 ' + esc(cli.nome) : ''}${f.parc ? ' · ' + esc(f.parc) : ''}${f.serie && !f.parc ? ' · 🔁' : ''}${late ? ' · <i>atrasado</i>' : ''}</small></span>
@@ -64,7 +63,7 @@
           }).join('') : `<div class="empty" style="padding:30px"><div class="big">💰</div><h3>Nada lançado em ${nomeMes(mes)}</h3><p>Lance o que entrou e o que saiu. Contas fixas podem repetir todo mês.</p></div>`}
         </div>
         <div style="display:flex;flex-direction:column;gap:16px">
-          <div class="panel"><h4>📊 Últimos 6 meses</h4><div class="fin-graf">${graf.map((g) => `<div class="fg" title="${nomeMes(g.m)}: entrou ${M.reais(g.e)} · saiu ${M.reais(g.s)}"><div class="fb"><i class="e" style="height:${(g.e / max) * 100}%"></i><i class="s" style="height:${(g.s / max) * 100}%"></i></div><small>${new Date(g.m + '-15T12:00:00').toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</small></div>`).join('')}</div>
+          <div class="panel"><h4>📊 Últimos 6 meses</h4><div class="fin-gw"><div class="fin-eixo"><span>${curto(max)}</span><span>${curto(max / 2)}</span><span>0</span></div><div class="fin-graf">${graf.map((g) => `<div class="fg" title="${nomeMes(g.m)}: entrou ${M.reais(g.e)} · saiu ${M.reais(g.s)}"><div class="fb"><i class="e" style="height:${(g.e / max) * 100}%"></i><i class="s" style="height:${(g.s / max) * 100}%"></i></div><small>${new Date(g.m + '-15T12:00:00').toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</small></div>`).join('')}</div></div>
             <div class="g-leg" style="margin-top:8px"><span><i style="background:var(--green)"></i>Entradas</span><span><i style="background:var(--red)"></i>Saídas</span></div></div>
           <div class="panel"><h4>🧾 Para onde foi o dinheiro</h4>${cats.length ? cats.map(([c, val]) => `<div class="quest"><span>${esc(c)}</span><div class="bar"><i style="width:${(val / totS) * 100}%;background:linear-gradient(90deg,var(--red),#ff9a8a)"></i></div><small style="width:auto">${M.reais(val)}</small></div>`).join('') : '<small style="color:var(--faint)">Sem saídas neste mês.</small>'}</div>
         </div>

@@ -66,7 +66,7 @@
     ],
     fin: [
       { s: ['#fAddE', '.fin-h'], t: 'Lance o que entra e o que sai', d: 'Use ＋ Entrada e − Saída. Contas fixas podem repetir todo mês e compras podem ser parceladas.' },
-      { s: '.fin-stats', t: 'O resumo do mês', d: 'Recebido, pago e saldo mostram o que já aconteceu. A receber, a pagar e a previsão mostram como o mês deve fechar.' },
+      { s: '.fin-resumo', t: 'O resumo do mês', d: 'Recebido, pago e saldo mostram o que já aconteceu. A receber, a pagar e a previsão mostram como o mês deve fechar.' },
       { s: '.fin-grid > .panel', t: 'Lançamentos', d: 'Marque a caixinha quando receber ou pagar. Clique na linha para editar. O que está atrasado fica com a borda vermelha.' },
       { s: '#fCalc', t: 'Quanto cobrar', d: 'A calculadora mostra o valor da sua hora e o preço de um projeto, contando custos, impostos e folgas.' },
       { s: '#fCsv', t: 'Leve para a planilha', d: 'Baixe o mês em CSV para abrir no Excel ou no Google Planilhas, ou mandar para o contador.' },

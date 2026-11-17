@@ -41,7 +41,7 @@
     const sumFin = contas.length ? ` · <a data-go="fin" style="color:var(--amber);cursor:pointer">💰 ${contas.length} conta${contas.length > 1 ? 's' : ''} para hoje ou atrasada${contas.length > 1 ? 's' : ''}</a>` : '';
     const date = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     const modes = [['tarefa', '✅ Tarefa'], ['nota', '📝 Nota'], ['prompt', '✨ Prompt'], ['link', '🔗 Link']];
-    const ph = { tarefa: 'Nova tarefa… (termine com “hoje” ou “amanhã”)', nota: 'Anote uma ideia rápida…', prompt: 'Cole um prompt para guardar…', link: 'Cole um link…' };
+    const ph = { tarefa: 'Escreva a tarefa e aperte Enter…', nota: 'Anote uma ideia rápida…', prompt: 'Cole um prompt para guardar…', link: 'Cole um link…' };
     v.innerHTML = `<div class="home-wrap"><div class="home">
       <div class="hero wide"><img class="pix" src="/bau.png" alt="">
         <div class="grow"><h1>${hi}! 👋</h1><p style="text-transform:capitalize">${date}</p><p>${sum}${sumFin}</p>
@@ -49,8 +49,8 @@
         </div>
         ${s.gamify ? `<div class="ring" style="--p:${pct}" title="Meta de hoje: ${dayXp} / ${s.dailyGoal} XP"><span>${pct}%<small>META</small></span></div>` : ''}
       </div>
-      <div class="qc wide"><div class="seg" id="qcM">${modes.map(([k, n]) => `<button data-m="${k}" class="${qcMode === k ? 'on' : ''}">${n}</button>`).join('')}</div><div class="qc-linha"><input type="text" id="qcIn" placeholder="${ph[qcMode]}" autocomplete="off">${M.micBtn('#qcIn') || '<button type="button" class="mic-in" id="qcVoz" title="Criar por voz" aria-label="Criar por voz">🎙️</button>'}<button class="btn" id="qcGo">Guardar ↵</button></div></div>
-      <div class="panel"><h4>🌞 Para hoje <a data-go="tasks">ver todas →</a></h4>${[...late, ...now].map(M.taskHTML).join('') || '<div class="empty" style="padding:22px">Tudo em dia ✨</div>'}${M.rotinaHojeHTML ? M.rotinaHojeHTML() : ''}</div>
+      <div class="qc wide"><div class="qc-lab">O que você quer guardar?</div><div class="seg" id="qcM">${modes.map(([k, n]) => `<button data-m="${k}" class="${qcMode === k ? 'on' : ''}">${n}</button>`).join('')}</div><div class="qc-linha"><input type="text" id="qcIn" placeholder="${ph[qcMode]}" autocomplete="off">${M.micBtn('#qcIn') || '<button type="button" class="mic-in" id="qcVoz" title="Criar por voz" aria-label="Criar por voz">🎙️</button>'}<button class="btn" id="qcGo">Guardar ↵</button></div></div>
+      <div class="panel principal"><h4>🌞 Para hoje <a data-go="tasks">ver todas →</a></h4>${[...late, ...now].map(M.taskHTML).join('') || '<div class="empty" style="padding:22px">Tudo em dia ✨</div>'}${M.rotinaHojeHTML ? M.rotinaHojeHTML() : ''}</div>
       <div class="panel">${s.gamify ? `<h4>🎯 Missões do dia ${M.hint('Complete as três para ganhar um bônus de XP. Zera todo dia.')}</h4>${M.quests().map((q) => `<div class="quest ${q.v >= q.max ? 'ok' : ''}"><span>${q.em} ${q.t}</span><div class="bar"><i style="width:${Math.min(100, (q.v / q.max) * 100)}%"></i></div><small>${q.v >= q.max ? '✔' : q.v + '/' + q.max}</small></div>`).join('')}<div style="height:10px"></div>` : ''}
         <h4>⛏️ Em andamento</h4>${doing.map(rowItem).join('') || '<small style="color:var(--faint)">Nada em andamento.</small>'}</div>
       <div class="panel"><h4>⭐ Favoritos</h4>${favs.map(rowItem).join('') || '<small style="color:var(--faint)">Marque um item com a estrela.</small>'}</div>

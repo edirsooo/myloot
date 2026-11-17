@@ -14,6 +14,13 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/img/home.png)
 
+## Novidades da versão 2.10
+- **Mais fácil saber onde clicar:** as abas da Biblioteca (Tipo), dos Clientes (Status) e das Ferramentas (Grupo) têm rótulo e sublinhado; cada cartão mostra “Abrir →” e cada cliente “Abrir ficha →”. A Biblioteca ganhou uma frase dizendo para que serve, e a troca Grade/Lista/Tabela/Quadro fica separada dos filtros.
+- **Tarefas:** título em cima, data e prioridade embaixo, ✕ na mesma linha; as colunas Atrasadas, Hoje e Próximas têm cor e contador. Em **Repetir** dá para escolher os dias da semana (ex.: seg, qua e sex).
+- **Financeiro:** saldo do mês em destaque, entradas e saídas agrupadas, cabeçalho com a coluna “Pago?” e valores no gráfico.
+- **Início:** “O que você quer guardar?” na barra rápida, “Para hoje” em destaque e “Meta do dia 0/50 XP” no topo.
+- **Música de fundo:** o botão 🔈 do topo liga e desliga uma trilha instrumental. As faixas ficam em `public/musica` e o volume em Configurações → Diversão.
+
 ## Novidades da versão 2.9
 
 - 🎯 **Rotina (hábitos)**: uma tela nova, inspirada no HabitNow. Crie hábitos com ícone, frequência (todo dia, dias da semana ou X vezes por semana), quantidade por dia (8 copos, 30 minutos) e lembrete. Um clique marca como feito; o 🔥 conta os dias seguidos e as bolinhas mostram os últimos 7 dias. Dá para voltar o dia e marcar o que esqueceu.

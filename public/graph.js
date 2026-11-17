@@ -178,7 +178,7 @@
   // painel lateral da tela inicial
   M.graphPanel = (el) => {
     const n = M.db.items.length;
-    el.innerHTML = `<h4>🕸️ Conexões ${M.hint('Cada bolinha é um item da sua Biblioteca. Itens com etiquetas iguais, da mesma categoria ou que citam o título de outro (ou usam [[Título]]) ficam ligados. Passe o mouse para ver as ligações, clique para abrir, arraste e use a rodinha para dar zoom.')}<a id="gFull">tela cheia ⛶</a></h4>
+    el.innerHTML = `<h4>🕸️ Conexões ${M.hint('Cada bolinha é um item da sua Biblioteca. Itens com etiquetas iguais, da mesma categoria ou que citam o título de outro (ou usam [[Título]]) ficam ligados. Passe o mouse para ver as ligações, clique para abrir, arraste e use a rodinha para dar zoom.')}<a id="gFull">tela cheia ⛶</a></h4><p class="pg-dica">Cada bolinha é um item; as linhas mostram o que se relaciona. Clique para abrir.</p>
       ${n ? '<div class="g-box" id="gBox"></div>' : '<div class="empty" style="padding:22px">Guarde alguns itens para ver as conexões.</div>'}${legend()}`;
     if (n) M.graph(el.querySelector('#gBox'));
     el.querySelector('#gFull').onclick = M.graphFull;

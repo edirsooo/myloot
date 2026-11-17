@@ -441,3 +441,89 @@ input[type=text],input[type=search],input[type=date],input[type=number],input[ty
 /* numa .row (que estica tudo por padrão), botão só de ícone e botão com tamanho próprio não esticam */
 .row>.mic-in,.row>.icon-btn{flex:0 0 auto;min-width:0}
 .row>.btn[style*="flex:none"]{min-width:0}
+
+/* ===== v2.10: hierarquia e "onde clicar" (propostas de UX de 17/11/2026) ===== */
+.pg-sub{margin:-4px 0 14px;color:var(--dim);font-size:13.5px}
+.pg-dica{margin:-6px 0 10px;color:var(--faint);font-size:12px;line-height:1.4}
+/* abas com rótulo (Biblioteca: TIPO, Clientes: STATUS, Ferramentas: GRUPO): sublinhado laranja na ativa */
+.hotbar[data-lab]{align-items:stretch;gap:2px;background:var(--panel);border:2px solid var(--edge);border-radius:12px;padding:0 8px;width:fit-content;max-width:100%}
+.hotbar[data-lab]::before{content:attr(data-lab);align-self:center;font:700 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint);padding:0 10px 0 4px;margin-right:4px;border-right:1px solid var(--edge)}
+.hotbar[data-lab] .slot,.hotbar[data-lab] .slot.on{background:none;border:0;border-bottom:3px solid transparent;border-radius:0;box-shadow:none;padding:11px 11px 8px;transform:none}
+.hotbar[data-lab] .slot:hover{color:var(--text);border-bottom-color:var(--edge2);transform:none}
+.hotbar[data-lab] .slot.on{color:var(--text);border-bottom-color:var(--accent)}
+.hotbar[data-lab] .slot.on .n{color:var(--accent2)}
+@media (max-width:700px){.hotbar[data-lab]{flex-wrap:nowrap;overflow-x:auto;width:100%}.hotbar[data-lab] .slot{flex:none}}
+/* barra de filtros com rótulo; a troca de visualização fica na ponta direita */
+.toolbar.barra{background:var(--panel);border:2px solid var(--edge);border-radius:12px;padding:8px 10px}
+.toolbar.barra::before{content:attr(data-lab);font:700 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint);padding-right:2px}
+/* cartões da Biblioteca: coleção em texto simples e "Abrir →" */
+.card .colec{margin-top:8px;font-size:12px;color:var(--dim)}
+.card .abrir{position:absolute;right:14px;bottom:10px;font-weight:700;font-size:12.5px;color:var(--accent);opacity:.7;transition:opacity .12s,transform .12s}
+.card:hover .abrir{opacity:1;transform:translateX(2px)}
+.grid .card:has(>.abrir){padding-bottom:36px}
+/* Início */
+.qc-lab{flex:1 1 100%;font:700 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint);padding:2px 4px 0}
+.panel.principal>h4{font-size:14px;color:var(--text)}
+.hg-lab{display:flex;flex-direction:column;line-height:1.2;text-transform:uppercase}
+.hg-lab small{font:700 10px var(--mono);color:var(--dim);text-transform:none}
+/* tarefas: título em cima, data/prioridade embaixo, ✕ na linha do título */
+.task,.panel .task{flex-wrap:nowrap;align-items:flex-start}
+.task input[type=checkbox]{width:22px;height:22px;margin-top:1px}
+.task .tcorpo{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.task .tcorpo .tx{flex:none}
+.task .tmeta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.task .tmeta .prio{margin-left:0}
+.task .xbtn{flex:none;opacity:.5;padding:0 2px}
+.task:hover .xbtn,.task .xbtn:focus-visible{opacity:1}
+/* cabeçalhos das colunas de tarefas como faixas coloridas */
+.tgroup>h4{align-items:center;padding:9px 12px;border-radius:10px;background:var(--panel);border:2px solid var(--edge);border-left:5px solid var(--hc,var(--edge2));font-size:13px;color:var(--text)!important;margin-bottom:10px}
+.tgroup.late{--hc:var(--red)}.tgroup.today{--hc:var(--accent)}.tgroup.next{--hc:#3b82f6}.tgroup.none{--hc:var(--faint)}.tgroup.feitas{--hc:var(--green)}
+.tgroup>h4 .cnt{margin-left:auto;min-width:28px;text-align:center;padding:2px 8px;border-radius:8px;background:var(--hc);color:#fff;font:800 13px var(--mono)}
+.btn.apagado{opacity:.8;filter:none}
+/* clientes: contatos em botões de ícone iguais e rodapé "Abrir ficha →" */
+.card.cli{display:flex;flex-direction:column}
+.card.cli .cli-bar .cli-a{width:42px;height:36px;justify-content:center;padding:0;font-size:16px}
+.card.cli .cli-bar .cli-a small{display:none}
+.cli-abrir{margin:auto calc(-1 * var(--pad)) calc(-1 * var(--pad));padding:9px;border-top:1px solid var(--edge);text-align:center;font-weight:700;font-size:13px;color:var(--dim)}
+.card.cli .meta+.cli-abrir,.card.cli .cli-bar+.cli-abrir{margin-top:12px}
+.card.cli:hover .cli-abrir{color:var(--accent)}
+.cli-dica{display:flex;gap:10px;align-items:flex-start;align-self:start;padding:14px;border:2px dashed var(--edge2);border-radius:var(--r);color:var(--dim);font-size:13px;line-height:1.45}
+/* financeiro: saldo em destaque, entradas e saídas agrupadas */
+.fin-resumo{display:grid;grid-template-columns:1.1fr 1.4fr 1.4fr 1fr;gap:12px;margin-bottom:18px;max-width:1380px}
+.fin-resumo .stat{display:flex;flex-direction:column;gap:6px}
+.fin-resumo .fr-t{font:700 11.5px var(--mono);text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:6px}
+.fin-resumo b{display:block;font:700 19px var(--mono);color:var(--text)}
+.fin-resumo .fr-saldo{border-color:color-mix(in srgb,var(--accent) 60%,var(--edge))}
+.fin-resumo .fr-saldo b{font-size:30px}
+.fin-resumo small{color:var(--faint);font-size:12px}
+.fr-par{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fr-par>div+div{border-left:1px solid var(--edge);padding-left:10px}
+.fr-par small{display:block;margin-bottom:2px}
+@media (max-width:1100px){.fin-resumo{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.fin-resumo{grid-template-columns:1fr}.fin-resumo .fr-saldo b{font-size:26px}}
+.fin-cab{display:flex;gap:11px;padding:0 10px 6px;margin-bottom:4px;border-bottom:1px solid var(--edge);font:700 10.5px var(--mono);text-transform:uppercase;color:var(--faint)}
+.fin-cab .c1{width:40px;flex:none}.fin-cab .fd{width:42px;flex:none}.fin-cab .fx{flex:1}
+.fin-row>input[type=checkbox]{margin:0 10px}
+@media (max-width:700px){.fin-cab{gap:8px;padding:0 4px 6px}}
+.fin-gw{display:flex;gap:8px}
+.fin-gw .fin-graf{flex:1}
+.fin-eixo{display:flex;flex-direction:column;justify-content:space-between;height:120px;min-width:40px;text-align:right;font:600 10px var(--mono);color:var(--faint)}
+a.btn{text-decoration:none}
+/* botão da música de fundo no topo (aparece também no celular) */
+#musBtn{cursor:pointer;font-size:16px;color:inherit;line-height:1}
+#musBtn.on{border-color:var(--accent)}
+@media (max-width:560px){#musBtn{display:inline-flex}}
+/* Início no celular: nada passa da borda direita; números em 2×2 */
+@media (max-width:700px){
+  .home-wrap,.home,.home>*{min-width:0;max-width:100%}
+  .hero .mini{display:grid;grid-template-columns:1fr 1fr}
+  .qc .seg{display:flex}
+  .rot-hoje,.hab-chips{flex-wrap:wrap}
+}
+.lib-topo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.lib-topo .hotbar{margin-bottom:0}
+.lib-ver{margin-left:auto;display:flex;gap:8px;align-items:center}
+@media (max-width:700px){.lib-ver{margin-left:0;width:100%;overflow-x:auto}}
+
+.rep-dias{margin-top:10px}
+.rep-dias[hidden]{display:none}

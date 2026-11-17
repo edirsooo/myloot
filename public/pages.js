@@ -66,6 +66,7 @@
       <section class="stat"><div class="cfg-h">🎮 Diversão</div>
         <div class="cfg-row"><span class="l">Pontos e níveis ${M.hint('Desligando, somem o XP, a meta, a sequência e o level up. Suas conquistas ficam guardadas.')}</span>${M.sw('cGame', s.gamify)}</div>
         <div class="cfg-row"><span class="l">Sons de jogo ${M.hint('Sons curtinhos feitos no próprio navegador.')}</span>${M.sw('cSnd', s.sounds)}</div>
+        <div class="cfg-row"><span class="l">Volume da música de fundo ${M.hint('A música liga e desliga no botão 🔈 do topo. As faixas ficam na pasta public/musica do MyLoot.')}</span><input type="range" id="cMusV" min="0.05" max="1" step="0.05" value="${s.musicaVol || 0.25}" style="max-width:160px"></div>
         <div class="cfg-row"><span class="l">Confete ${M.hint('Explosão de quadradinhos ao subir de nível ou concluir algo.')}</span>${M.sw('cConf', s.confetti)}</div>
         <div class="cfg-row"><span class="l">Meta do dia (XP) ${M.hint('Quantos pontos você quer fazer por dia.')}</span><input type="number" id="cGoal" min="10" max="500" step="10" value="${s.dailyGoal}" style="width:90px"></div>
       </section>
@@ -98,6 +99,8 @@
     $('#cCompact').onchange = (e) => { set('compact', e.target.checked); SFX.play('click'); };
     $('#cGame').onchange = (e) => { set('gamify', e.target.checked); M.renderHud(); SFX.play('click'); };
     $('#cSnd').onchange = (e) => { set('sounds', e.target.checked); SFX.play('coin'); };
+    $('#cMusV').oninput = (e) => { if (M.musica) M.musica.volume(+e.target.value); };
+    $('#cMusV').onchange = (e) => set('musicaVol', +e.target.value);
     $('#cConf').onchange = (e) => { set('confetti', e.target.checked); FX.burst(null, null, 30); };
     $('#cGoal').onchange = (e) => { set('dailyGoal', Math.max(10, Math.min(500, +e.target.value || 50))); M.renderHud(); };
 

@@ -27,12 +27,13 @@
     const t = M.type(it.type), cat = M.cat(it.cat), p = progress(it);
     const st = M.STATUS.find((s) => s.id === it.status);
     const preview = it.desc || (it.type === 'link' ? it.content : it.content);
-    const meta = `${it.rascunho ? '<span class="tag rasc" title="Tem alterações não salvas. Abra para salvar ou descartar.">📝 rascunho</span>' : ''}${cat ? `<span class="tag">${esc(cat.icon)} ${esc(cat.name)}</span>` : ''}<span class="st ${it.status}">${st.name}</span>${it.tags.slice(0, 3).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}${it.date ? `<span class="mi">${M.ic('data', 14)} ${M.fmtDate(it.date)}</span>` : ''}${it.attachments.length ? `<span class="mi" title="Anexos">${M.ic('clipe', 14)} ${it.attachments.length}</span>` : ''}`;
+    const col = cat ? `<div class="colec">${esc(cat.icon)} ${esc(cat.name)}</div>` : '';
+    const meta = `${it.rascunho ? '<span class="tag rasc" title="Tem alterações não salvas. Abra para salvar ou descartar.">📝 rascunho</span>' : ''}${view === 'list' && cat ? `<span class="tag">${esc(cat.icon)} ${esc(cat.name)}</span>` : ''}${it.status !== 'ver' ? `<span class="st ${it.status}">${st.name}</span>` : ''}${it.tags.slice(0, 2).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}${it.date ? `<span class="mi">${M.ic('data', 14)} ${M.fmtDate(it.date)}</span>` : ''}${it.attachments.length ? `<span class="mi" title="Anexos">${M.ic('clipe', 14)} ${it.attachments.length}</span>` : ''}`;
     const fav = `<button class="favbtn ${it.fav ? 'on' : ''}" data-fav="${it.id}" title="Favorito">⭐</button>`;
     if (view === 'list') {
       return `<div class="card" style="--c:${hex(t.color)}" draggable="true" data-id="${it.id}"><div class="top"><span class="badge">${t.em} ${t.name}</span></div><div class="mid"><h3>${esc(it.title || 'Sem título')}</h3></div><div class="meta">${meta}</div>${fav}</div>`;
     }
-    return `<div class="card" style="--c:${hex(cat ? cat.color : t.color)}" draggable="true" data-id="${it.id}"><div class="top"><span class="badge" style="--c:${t.color}">${t.em} ${t.name}</span>${fav}</div><h3>${esc(it.title || 'Sem título')}</h3>${preview ? `<p>${esc(preview)}</p>` : ''}${p >= 0 ? `<div class="prog"><i style="width:${p}%"></i></div>` : ''}<div class="meta">${meta}</div></div>`;
+    return `<div class="card" style="--c:${hex(cat ? cat.color : t.color)}" draggable="true" data-id="${it.id}"><div class="top"><span class="badge" style="--c:${t.color}">${t.em} ${t.name}</span>${fav}</div><h3>${esc(it.title || 'Sem título')}</h3>${preview ? `<p>${esc(preview)}</p>` : ''}${p >= 0 ? `<div class="prog"><i style="width:${p}%"></i></div>` : ''}${col}<div class="meta">${meta}</div><span class="abrir">Abrir →</span></div>`;
   }
 
   function emptyHTML() {
@@ -75,11 +76,14 @@
     const v = $('#view');
     const count = (id) => M.db.items.filter((i) => i.type === id).length;
     v.innerHTML = `
-      <div class="hotbar" id="hotbar">
+      <p class="pg-sub">Seus materiais guardados: prompts, PDFs, instruções, links e notas. Clique num cartão para abrir.</p>
+      <div class="lib-topo"><div class="hotbar" id="hotbar" data-lab="Tipo">
         <div class="slot ${!u.type ? 'on' : ''}" data-type="">📦 Tudo <span class="n">${M.db.items.length}</span></div>
         ${M.TYPES.map((t) => `<div class="slot ${u.type === t.id ? 'on' : ''}" data-type="${t.id}" style="--c:${t.color}">${t.em} ${t.name} <span class="n">${count(t.id)}</span></div>`).join('')}
       </div>
-      <div class="toolbar">
+        <div class="lib-ver">${s.view === 'board' ? `<select id="fby" title="Colunas do quadro"><option value="status" ${s.boardBy === 'status' ? 'selected' : ''}>Colunas: status</option><option value="cat" ${s.boardBy === 'cat' ? 'selected' : ''}>Colunas: categoria</option><option value="type" ${s.boardBy === 'type' ? 'selected' : ''}>Colunas: tipo</option></select>` : ''}
+        <div class="seg" id="views" title="Jeito de ver">${[['grid', '▦ Grade'], ['list', '☰ Lista'], ['table', '▤ Tabela'], ['board', '▥ Quadro']].map(([k, n]) => `<button data-v="${k}" class="${s.view === k ? 'on' : ''}">${n}</button>`).join('')}</div></div></div>
+      <div class="toolbar barra" data-lab="Filtrar">
         <input class="search" id="fq" type="search" placeholder="Filtrar esta lista…" value="${esc(u.q)}">
         <select id="fcat"><option value="">Todas as categorias</option>${M.db.categories.map((c) => `<option value="${c.id}" ${u.cat === c.id ? 'selected' : ''}>${esc(c.icon)} ${esc(c.name)}</option>`).join('')}</select>
         <select id="fst"><option value="">Qualquer status</option>${M.STATUS.map((x) => `<option value="${x.id}" ${u.status === x.id ? 'selected' : ''}>${x.name}</option>`).join('')}</select>
@@ -88,8 +92,6 @@
         ${M.db.items.some((i) => i.origem) ? M.sw('fref', u.ref, '📥 Recebidos', 'Mostra só o que chegou de outro programa pelas Conexões.') : ''}
         <span class="grow"></span>
         <small id="libcount" style="color:var(--faint);font-family:var(--mono)"></small>
-        ${s.view === 'board' ? `<select id="fby" title="Colunas do quadro"><option value="status" ${s.boardBy === 'status' ? 'selected' : ''}>Colunas: status</option><option value="cat" ${s.boardBy === 'cat' ? 'selected' : ''}>Colunas: categoria</option><option value="type" ${s.boardBy === 'type' ? 'selected' : ''}>Colunas: tipo</option></select>` : ''}
-        <div class="seg" id="views">${[['grid', '▦ Grade'], ['list', '☰ Lista'], ['table', '▤ Tabela'], ['board', '▥ Quadro']].map(([k, n]) => `<button data-v="${k}" class="${s.view === k ? 'on' : ''}">${n}</button>`).join('')}</div>
       </div>
       <div id="libres"></div>`;
     M.renderResults();

@@ -1,10 +1,17 @@
 {
-  "versao": "2.9.2",
+  "versao": "2.10.0",
   "data": "2026-11-17",
   "novidades": [
-    "👀 Telas mais fáceis de ler em monitor grande: Lixeira, Configurações, Tarefas e Biblioteca em colunas, com o botão perto do nome"
+    "👉 Mais fácil saber onde clicar: abas com sublinhado e rótulo (Tipo, Status, Grupo), cartões com “Abrir →” e “Abrir ficha →”",
+    "✅ Tarefas mais limpas: título em cima, data e prioridade embaixo, e as colunas Atrasadas, Hoje e Próximas com cor e contador",
+    "🔁 Repetir nos dias que você escolher (ex.: seg, qua e sex): ao concluir, a próxima já cai no dia certo",
+    "💰 Financeiro com o saldo do mês em destaque, entradas e saídas agrupadas e a coluna “Pago?”",
+    "🔈 Música de fundo: botão no topo para ligar e desligar uma trilha instrumental suave"
   ],
   "historico": {
+    "2.9.1": [
+      "👀 Telas mais fáceis de ler em monitor grande: Lixeira, Configurações, Tarefas e Biblioteca em colunas, com o botão perto do nome"
+    ],
     "2.9.0": [
       "🎯 Rotina: crie hábitos (todo dia, dias da semana ou X vezes por semana), marque o que fez e veja a sequência de dias 🔥",
       "🏆 Metas com progresso: um número com prazo (faturar 10 mil, fechar 5 clientes); vá somando até 100%",

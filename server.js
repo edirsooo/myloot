@@ -35,7 +35,7 @@ const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(3
 function defaults() {
   return {
     version: DB_VERSION,
-    settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, confetti: true, gamify: true, dailyGoal: 50,
+    settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, musica: false, musicaVol: 0.25, confetti: true, gamify: true, dailyGoal: 50,
       view: 'grid', boardBy: 'status', aiModel: 'claude-opus-5-5', drive: { on: false, path: '' } },
     categories: [], items: [], tasks: [], trash: [], clients: [], fin: [], habits: [], goals: [],
     game: { xp: 0, log: {}, streak: { last: '', count: 0 }, achievements: {}, counters: {}, goalDays: 0 },
@@ -782,6 +782,11 @@ async function app(req, res) {
       }
       // ----- atualização pelo GitHub -----
       if (p === '/api/versao') return send(res, 200, UPD.local(ROOT));
+      if (p === '/api/musicas') {
+        let faixas = [];
+        try { faixas = fs.readdirSync(path.join(PUB, 'musica')).filter((f) => /\.(mp3|ogg|m4a|wav)$/i.test(f)).sort(); } catch (_) {}
+        return send(res, 200, { faixas });
+      }
       if (p === '/api/atualizacao') return send(res, 200, await UPD.checar(ROOT, u.searchParams.get('forcar') === '1'));
       if (p === '/api/atualizacao/aplicar' && req.method === 'POST') {
         try { const v = await UPD.aplicar(ROOT); send(res, 200, { ok: true, versao: v }); UPD.reiniciar(ROOT); return; }

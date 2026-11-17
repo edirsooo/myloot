@@ -1,0 +1,4 @@
+Trilhas da música de fundo do MyLoot.
+Coloque aqui arquivos .mp3 (ou .ogg, .m4a, .wav) instrumentais e leves.
+O botão 🔈 do topo toca as faixas em ordem aleatória, uma depois da outra.
+O volume fica em Configurações → Diversão.

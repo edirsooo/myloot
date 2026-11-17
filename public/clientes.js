@@ -42,7 +42,7 @@
     return `<div class="card cli" data-cli="${c.id}" draggable="true" style="--c:${s.color}">
       <div class="top"><span class="av" style="background:${corDe(c.nome)}">${esc(iniciais(c.nome))}</span><div style="min-width:0;flex:1"><h3>${esc(c.nome || 'Sem nome')}</h3>${c.empresa ? `<p style="-webkit-line-clamp:1">${esc(c.empresa)}</p>` : ''}</div><span class="badge">${s.em} ${s.name}</span></div>
       <div class="meta">${c.rascunho ? '<span class="tag rasc" title="Tem alterações não salvas. Abra para salvar ou descartar.">📝 rascunho</span>' : ''}${tA ? `<span class="mi">✅ ${tA} tarefa${tA > 1 ? 's' : ''}</span>` : ''}${nI ? `<span class="mi">📦 ${nI} ite${nI > 1 ? 'ns' : 'm'}</span>` : ''}${c.tags.slice(0, 3).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}</div>
-      ${M.cliLinks(c).length ? `<div class="cli-bar">${botoes(c)}</div>` : ''}</div>`;
+      ${M.cliLinks(c).length ? `<div class="cli-bar">${botoes(c)}</div>` : ''}<div class="cli-abrir">Abrir ficha →</div></div>`;
   }
 
   M.pages.clients = () => {
@@ -52,13 +52,13 @@
       .sort((a, b) => b.updated - a.updated);
     const cnt = (id) => C.filter((c) => c.status === id).length;
     v.innerHTML = `
-      <div class="hotbar" id="cliF"><div class="slot ${!filtro ? 'on' : ''}" data-f="">👥 Todos <span class="n">${C.length}</span></div>${M.CST.map((s) => `<div class="slot ${filtro === s.id ? 'on' : ''}" data-f="${s.id}" style="--c:${s.color}">${s.em} ${s.name} <span class="n">${cnt(s.id)}</span></div>`).join('')}</div>
+      <div class="hotbar" id="cliF" data-lab="Status"><div class="slot ${!filtro ? 'on' : ''}" data-f="">👥 Todos <span class="n">${C.length}</span></div>${M.CST.map((s) => `<div class="slot ${filtro === s.id ? 'on' : ''}" data-f="${s.id}" style="--c:${s.color}">${s.em} ${s.name} <span class="n">${cnt(s.id)}</span></div>`).join('')}</div>
       <div class="toolbar"><button class="btn" id="cliNovo">＋ Novo cliente</button>
         <input class="search" id="cliQ" type="search" placeholder="Buscar cliente…" value="${esc(busca)}">
-        <div class="seg" id="cliV"><button data-v="cards" class="${modo === 'cards' ? 'on' : ''}">▦ Cartões</button><button data-v="funil" class="${modo === 'funil' ? 'on' : ''}">▥ Funil</button></div>${M.hint('Cartões: todos os clientes lado a lado. Funil: uma coluna por status (Prospect, Ativo, Pausado, Encerrado); arraste o cliente de uma coluna para outra.')}</div>
+        <span class="grow"></span><div class="seg" id="cliV"><button data-v="cards" class="${modo === 'cards' ? 'on' : ''}">▦ Cartões</button><button data-v="funil" class="${modo === 'funil' ? 'on' : ''}">▥ Funil</button></div>${M.hint('Cartões: todos os clientes lado a lado. Funil: uma coluna por status (Prospect, Ativo, Pausado, Encerrado); arraste o cliente de uma coluna para outra.')}</div>
       <div id="cliRes">${!C.length ? `<div class="empty"><div class="big">👥</div><h3>Nenhum cliente ainda</h3><p>Guarde contato, status, link do Trello e a pasta de cada cliente,<br>e junte as tarefas e os itens dele num lugar só.</p><button class="btn" data-novo="1" style="margin-top:12px">＋ Cadastrar o primeiro</button></div>`
         : modo === 'funil' ? `<div class="board">${M.CST.map((s) => { const cs = L.filter((c) => c.status === s.id); return `<div class="col" data-col="${s.id}"><h4>${s.em} ${s.name}<span class="n">${cs.length}</span></h4><div class="cards">${cs.map(cardHTML).join('')}</div></div>`; }).join('')}</div>`
-        : L.length ? `<div class="grid">${L.map(cardHTML).join('')}</div>` : '<div class="empty"><div class="big">🔎</div><h3>Ninguém encontrado</h3></div>'}</div>`;
+        : L.length ? `<div class="grid">${L.map(cardHTML).join('')}${L.length < 4 ? '<div class="cli-dica">💡 <span><b>Dica:</b> abra a ficha para ver as tarefas, os materiais e os pagamentos do cliente.</span></div>' : ''}</div>` : '<div class="empty"><div class="big">🔎</div><h3>Ninguém encontrado</h3></div>'}</div>`;
     $('#cliF').onclick = (e) => { const x = e.target.closest('[data-f]'); if (!x) return; filtro = x.dataset.f; SFX.play('click'); M.render(); };
     $('#cliQ').oninput = (e) => { busca = e.target.value; const p = e.target.selectionStart; M.render(); const i = $('#cliQ'); i.focus(); i.setSelectionRange(p, p); };
     $('#cliV').onclick = (e) => { const b = e.target.closest('[data-v]'); if (!b) return; modo = b.dataset.v; SFX.play('click'); M.render(); };

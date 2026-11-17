@@ -27,9 +27,22 @@
   };
 
   // tarefas que repetem: ao concluir, nasce a próxima
-  M.REP = [['', 'Não repete'], ['dia', 'Todo dia'], ['uteis', 'Dias úteis (seg a sex)'], ['semana', 'Toda semana'], ['mes', 'Todo mês']];
-  M.proximaData = (d, rep) => {
+  M.REP = [['', 'Não repete'], ['dia', 'Todo dia'], ['uteis', 'Dias úteis (seg a sex)'], ['dias', 'Dias que eu escolher'], ['semana', 'Toda semana'], ['mes', 'Todo mês']];
+  const DOW = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const dowDe = (k) => new Date(k + 'T12:00:00').getDay();
+  // próximo dia (depois de "base", ou o próprio se "inclusive") que cai num dos dias da semana escolhidos
+  const proxDia = (base, dias, inclusive) => {
+    if (!dias || !dias.length) return M.addDays(base, 7);
+    let n = inclusive ? base : M.addDays(base, 1);
+    for (let k = 0; k < 7 && !dias.includes(dowDe(n)); k++) n = M.addDays(n, 1);
+    return n;
+  };
+  M.repNome = (t) => t.rep === 'dias' ? 'Toda ' + (t.repDias || []).slice().sort().map((i) => DOW[i]).join(', ') : ((M.REP.find((r) => r[0] === t.rep) || [])[1] || '');
+  const diasHTML = (id, sel, hidden) => `<div class="tn-data rep-dias" id="${id}" ${hidden ? 'hidden' : ''} title="Em quais dias da semana a tarefa volta">${DOW.map((n, i) => `<button type="button" class="chip-b ${sel.includes(i) ? 'on' : ''}" data-i="${i}">${n}</button>`).join('')}</div>`;
+  const ligaDias = (box, sel) => { box.onclick = (e) => { const b = e.target.closest('[data-i]'); if (!b) return; const i = +b.dataset.i; const k = sel.indexOf(i); if (k >= 0) sel.splice(k, 1); else sel.push(i); b.classList.toggle('on', sel.includes(i)); SFX.play('click'); }; };
+  M.proximaData = (d, rep, dias) => {
     const base = d || M.today();
+    if (rep === 'dias') return proxDia(base, dias);
     if (rep === 'dia') return M.addDays(base, 1);
     if (rep === 'semana') return M.addDays(base, 7);
     if (rep === 'uteis') { let n = M.addDays(base, 1); while ([0, 6].includes(new Date(n + 'T12:00:00').getDay())) n = M.addDays(n, 1); return n; }
@@ -42,7 +55,7 @@
     t.doneAt = t.done ? Date.now() : null;
     if (t.done && t.rep && !t.repFeita) {
       t.repFeita = true;
-      const nova = Object.assign({}, t, { id: M.uid(), done: false, doneAt: null, xpd: false, repFeita: false, date: M.proximaData(t.date, t.rep), created: Date.now() });
+      const nova = Object.assign({}, t, { id: M.uid(), done: false, doneAt: null, xpd: false, repFeita: false, date: M.proximaData(t.date, t.rep, t.repDias), created: Date.now() });
       M.db.tasks.push(nova);
       setTimeout(() => M.toast('🔁 Próxima: ' + M.fmtDate(nova.date)), 900);
     }
@@ -58,8 +71,8 @@
   function taskHTML(t) {
     const late = !t.done && t.date && t.date < M.today();
     const cli = t.client && M.client ? M.client(t.client) : null;
-    const extra = `${t.hora ? `<span class="tdate" title="Lembrete">⏰ ${esc(t.hora)}</span>` : ''}${t.rep ? `<span class="tdate" title="${esc((M.REP.find((r) => r[0] === t.rep) || [])[1] || '')}">🔁</span>` : ''}${cli ? `<span class="tag" title="Cliente">👤 ${esc(cli.nome)}</span>` : ''}`;
-    return `<div class="task ${t.done ? 'done' : ''}" data-id="${t.id}"><input type="checkbox" ${t.done ? 'checked' : ''}><span class="tx">${esc(t.text)}</span>${extra}${t.date ? `<span class="tdate" data-a="date" style="${late ? 'color:var(--red)' : ''};cursor:pointer" title="Mudar data">📅 ${M.fmtDate(t.date)}</span>` : `<span class="tdate" data-a="date" style="cursor:pointer;opacity:.6" title="Definir data">📅 —</span>`}<span class="prio ${t.prio}" data-a="prio" title="Prioridade ${t.prio === 'media' ? 'média' : t.prio}. Clique para mudar (baixa, média, alta).">${t.prio === 'media' ? 'média' : t.prio}</span><button class="xbtn" data-a="rm" title="Lixeira">✕</button></div>`;
+    const extra = `${t.hora ? `<span class="tdate" title="Lembrete">⏰ ${esc(t.hora)}</span>` : ''}${t.rep ? `<span class="tdate" title="Repete: ${esc(M.repNome(t))}">🔁${t.rep === 'dias' ? ' ' + esc((t.repDias || []).slice().sort().map((i) => DOW[i]).join(' ')) : ''}</span>` : ''}${cli ? `<span class="tag" title="Cliente">👤 ${esc(cli.nome)}</span>` : ''}`;
+    return `<div class="task ${t.done ? 'done' : ''}" data-id="${t.id}"><input type="checkbox" ${t.done ? 'checked' : ''} title="Marcar como feita" aria-label="Marcar como feita"><div class="tcorpo"><span class="tx">${esc(t.text)}</span><span class="tmeta">${extra}${t.date ? `<span class="tdate" data-a="date" style="${late ? 'color:var(--red)' : ''};cursor:pointer" title="Mudar data">📅 ${M.fmtDate(t.date)}</span>` : `<span class="tdate" data-a="date" style="cursor:pointer;opacity:.6" title="Definir data">📅 —</span>`}<span class="prio ${t.prio}" data-a="prio" title="Prioridade ${t.prio === 'media' ? 'média' : t.prio}. Clique para mudar (baixa, média, alta).">${t.prio === 'media' ? 'média' : t.prio}</span></span></div><button class="xbtn" data-a="rm" title="Mandar para a lixeira" aria-label="Mandar para a lixeira">✕</button></div>`;
   }
 
   M.taskHTML = taskHTML;
@@ -83,25 +96,32 @@
           <button class="btn" id="tAdd">＋ Adicionar</button>
         </div>
         <div class="tn-l2">
-          <div class="tn-op"><span class="lbl">📅 Data ${M.hint('Opcional. Clique em Hoje, em Amanhã ou no calendário para escolher outro dia.')}</span>
+          <div class="tn-op"><span class="lbl">📅 Quando ${M.hint('Opcional. Clique em Hoje, em Amanhã ou no calendário para escolher outro dia.')}</span>
             <span class="tn-data" id="tDias"><button type="button" class="chip-b" data-d="0">Hoje</button><button type="button" class="chip-b" data-d="1">Amanhã</button><input type="date" id="tDt" title="Escolher outro dia"></span></div>
           <div class="tn-op"><span class="lbl">⏰ Hora ${M.hint('Opcional. No horário marcado o computador mostra um aviso, mesmo com a aba fechada. Sem data, vale para hoje.')}</span><input type="time" id="tHr" title="Escolher o horário do lembrete"></div>
           <div class="tn-op"><span class="lbl">🚦 Prioridade ${M.hint(PRIO_DICA)}</span><select id="tPr"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Média</option><option value="baixa">🔵 Baixa</option></select></div>
           <div class="tn-op"><span class="lbl">🔁 Repetir ${M.hint('Para o que volta sempre (ex.: postar todo dia, pagar o aluguel todo mês). Quando você conclui, a próxima já nasce na data certa.')}</span><select id="tRp">${M.REP.map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></div>
         </div>
+        ${diasHTML('tRpD', [], true)}
       </div>
       ${!open.length ? '<div class="empty" style="padding:26px 20px"><div class="big">🎉</div><h3>Nenhuma tarefa pendente</h3></div>' : ''}
-      <div class="tcols">${G.map(([k, n, L]) => L.length ? `<div class="tgroup ${k}"><h4>${n} <span>${L.length}</span></h4>${L.map(taskHTML).join('')}</div>` : '').join('')}
+      <div class="tcols">${G.map(([k, n, L]) => L.length ? `<div class="tgroup ${k}"><h4>${n} <span class="cnt">${L.length}</span></h4>${L.map(taskHTML).join('')}</div>` : '').join('')}
       ${done.length ? `<div class="tgroup feitas"><h4>✅ Concluídas recentemente</h4>${done.map(taskHTML).join('')}</div>` : ''}</div>`;
     const add = () => {
       const i = $('#tIn'), hora = $('#tHr').value, rep = $('#tRp').value;
+      if (rep === 'dias' && !novosDias.length) return M.falta($('#tRpD'), '🗓️ Escolha pelo menos um dia da semana');
       const t = M.addTask(i.value, $('#tDt').value, $('#tPr').value);
       if (!t) return M.falta(i, '✍️ Escreva a tarefa primeiro (ou fale no 🎙️)');
       if (hora) t.hora = hora;
       if (rep) t.rep = rep;
+      if (rep === 'dias') { t.repDias = novosDias.slice(); if (!t.date) t.date = proxDia(M.today(), t.repDias, true); }
       if ((hora || rep) && !t.date) t.date = M.today(); // lembrete e repetição precisam de um dia
       M.save(); M.toast('✅ Tarefa criada'); M.render(); $('#tIn').focus();
     };
+    const novosDias = [new Date().getDay()];
+    $$('#tRpD .chip-b').forEach((b) => b.classList.toggle('on', novosDias.includes(+b.dataset.i)));
+    ligaDias($('#tRpD'), novosDias);
+    $('#tRp').onchange = () => { $('#tRpD').hidden = $('#tRp').value !== 'dias'; };
     $('#tAdd').onclick = add;
     $('#tIn').onkeydown = (e) => { if (e.key === 'Enter') add(); };
     // o botão fica apagado enquanto o campo está vazio: deixa claro que primeiro se escreve
@@ -128,12 +148,20 @@
     const m = M.modal(`<div class="modal-h"><h2>Editar tarefa</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div class="com-mic"><input type="text" id="et" value="${esc(t.text)}">${M.micBtn('#et')}</div>
       <div class="row"><div class="fld"><label>Data</label><input type="date" id="ed" value="${t.date}"></div><div class="fld"><label>Lembrete ${M.hint('No horário, aparece um aviso no computador (mesmo com a aba fechada). Precisa ter data.')}</label><input type="time" id="eh" value="${esc(t.hora || '')}"></div></div>
       <div class="row"><div class="fld"><label>Repetir ${M.hint('Quando você conclui, a próxima já nasce na data certa.')}</label><select id="er">${M.REP.map(([k, n]) => `<option value="${k}" ${k === (t.rep || '') ? 'selected' : ''}>${n}</option>`).join('')}</select></div><div class="fld"><label>Prioridade ${M.hint(PRIO_DICA)}</label><select id="ep">${M.PRIOS.map((p) => `<option value="${p}" ${p === t.prio ? 'selected' : ''}>${PRIO_NOME[p]}</option>`).join('')}</select></div></div>
+      ${diasHTML('erD', t.repDias || [], t.rep !== 'dias')}
       ${C.length ? `<div class="fld"><label>Cliente</label><select id="ec"><option value="">— nenhum —</option>${C.map((c) => `<option value="${c.id}" ${c.id === t.client ? 'selected' : ''}>${esc(c.nome || 'Sem nome')}</option>`).join('')}</select></div>` : ''}
       <div class="row" style="justify-content:space-between"><button class="btn danger" id="dl" style="flex:none">🗑️ Lixeira</button><button class="btn" id="ok" style="flex:none">Salvar</button></div></div>`, { small: true });
     $('#x', m).onclick = () => { M.closeModal(); if (depois) depois(); };
     $('#et', m).focus();
+    const eDias = (t.repDias || []).slice();
+    if (!eDias.length) eDias.push(t.date ? dowDe(t.date) : new Date().getDay());
+    $$('#erD .chip-b', m).forEach((b) => b.classList.toggle('on', eDias.includes(+b.dataset.i)));
+    ligaDias($('#erD', m), eDias);
+    $('#er', m).onchange = () => { $('#erD', m).hidden = $('#er', m).value !== 'dias'; };
     const ok = () => {
+      if ($('#er', m).value === 'dias' && !eDias.length) return M.falta($('#erD', m), '🗓️ Escolha pelo menos um dia da semana');
       t.text = $('#et', m).value.trim() || t.text; t.date = $('#ed', m).value; t.prio = $('#ep', m).value; t.hora = $('#eh', m).value; t.rep = $('#er', m).value;
+      if (t.rep === 'dias') { t.repDias = eDias.slice(); if (!t.date) t.date = proxDia(M.today(), t.repDias, true); } else delete t.repDias;
       if (t.rep && !t.date) t.date = M.today();
       if ($('#ec', m)) t.client = $('#ec', m).value;
       M.save(); M.closeModal(); M.render(); if (depois) depois();

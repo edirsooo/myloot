@@ -46,8 +46,9 @@
       <button class="tour-btn" id="tourBtn" title="Rever o tutorial desta tela" aria-label="Rever o tutorial desta tela" hidden><i>?</i><span>Tutorial</span></button>
       <div class="hud-grow"></div>
       <div class="focus" id="focus" title="Timer de foco: clique para começar. Role a bolinha do mouse para mudar o tempo."><span class="dot"></span>⏱ <b id="focusT">25:00</b> <span class="lb">foco</span></div>
+      <button type="button" class="hud-chip hud-mus" id="musBtn" title="Música de fundo desligada. Clique para ligar." aria-label="Música de fundo" aria-pressed="false">🔈</button>
       <div class="hud-chip" id="hudStreak" title="Dias seguidos">🔥 <b>0</b></div>
-      <div class="hud-goal" id="hudGoal"><span>META</span><div class="slots" id="goalSlots"></div></div>
+      <div class="hud-goal" id="hudGoal"><span class="hg-lab">Meta do dia<small id="goalTxt"></small></span><div class="slots" id="goalSlots"></div></div>
       <div class="hud-level" id="hudLevel">
         <div class="lvl-badge" id="lvlBadge">1</div>
         <div class="lvl-info"><b id="lvlName">Novato</b><div class="xpbar" id="xpbar"></div><small id="xpText">0 XP</small></div>
@@ -87,6 +88,7 @@
 <script src="/rotina.js"></script>
 <script src="/conexoes.js"></script>
 <script src="/suporte.js"></script>
+<script src="/musica.js"></script>
 <script src="/tour.js"></script>
 <script src="/main.js"></script>
 </body>

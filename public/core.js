@@ -271,7 +271,8 @@
     const day = (g.log[M.today()] || { xp: 0 }).xp, goal = M.db.settings.dailyGoal || 50;
     const on = Math.min(8, Math.floor((day / goal) * 8));
     M.$('#goalSlots').innerHTML = Array.from({ length: 8 }, (_, i) => `<i class="${i < on ? 'on' : ''}"></i>`).join('');
-    M.$('#hudGoal').title = `Meta de hoje: ${day} / ${goal} XP`;
+    M.$('#hudGoal').title = `Meta de hoje: ${day} / ${goal} XP. Ganhe XP concluindo tarefas, hábitos e guardando itens.`;
+    if (M.$('#goalTxt')) M.$('#goalTxt').textContent = `${Math.min(day, goal)}/${goal} XP`;
     if (M._lastXp != null && xp > M._lastXp) { const b = M.$('#lvlBadge'); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
     M._lastXp = xp;
   };
