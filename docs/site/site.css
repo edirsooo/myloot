@@ -269,6 +269,11 @@ kbd,code{font:700 .82em var(--mono);background:var(--panel2);border:1px solid va
   .so img{height:17px}
   .feito{margin-left:0!important}
 }
+/* celular e toque: mascote não segura o dedo (a rolagem passa por cima) e não há transição de seção */
+@media (max-width:900px),(hover:none) and (pointer:coarse){
+  .pet-hit{touch-action:pan-y;cursor:pointer}
+  .trans{display:none}
+}
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   *,*::before,*::after{animation:none!important;transition:none!important}

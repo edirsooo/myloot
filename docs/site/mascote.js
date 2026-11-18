@@ -6,6 +6,8 @@
   const V = window.Voxel;
   if (!V) return;
   const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // celular e tela de toque: sem física, sem queda e sem arrastar; o mascote já está lá e acompanha a rolagem
+  const CEL = matchMedia('(max-width: 900px), (hover: none) and (pointer: coarse)'), cel = () => CEL.matches;
   const NOMES = { claude: 'Claude', gpt: 'GPT', gemini: 'Gemini', pinguim: 'Pinguim', coruja: 'Coruja', slime: 'Slime' };
   const MENINA = { claude: 1, gpt: 1, gemini: 1 };
   const flex = (txt, k) => String(txt).replace(/\{o\}/g, MENINA[k] ? 'a' : 'o');
@@ -47,6 +49,7 @@
     if (on === this.ativo) return; this.ativo = on;
     if (on) {
       this.lista = null; this.ult = performance.now();
+      if (cel() && !this.visto) { this.visto = true; clearTimeout(this.tEspera); this.pets.forEach((p) => p.chega()); }
       const passo = (now) => { this.raf = requestAnimationFrame(passo); this.quadro(now); };
       this.raf = requestAnimationFrame(passo);
       // o mascote espera a transição da seção (site.js avisa com 'secao:entra') e cai quando ela está acabando
@@ -101,7 +104,7 @@
     const { w } = this.palco.dims(); this.el.hidden = false;
     this.x = lim(w * this.fracao, this.meia() + 4, w - this.meia() - 4);
     const L = this.palco.superficies(), s = this.palco.sec.dataset.chega === 'chao' ? L[L.length - 1] : L.filter((o) => this.x >= o.l && this.x <= o.r).sort((a, b) => a.y - b.y)[0];
-    if (calmo) { this.pousa(s || this.palco.superficies().slice(-1)[0], true); this.aceno = 1.5; return; }
+    if (calmo || cel()) { this.chegando = false; this.pousa(s || this.palco.superficies().slice(-1)[0], true); this.aceno = 1.5; return; }
     this.y = Math.max(this.alt() + 4, (s ? s.y : this.palco.chao()) - 340); this.alvoChega = s; this.vx = this.vy = 0;
     this.modo = 'espera'; this.tm = 0.15 + this.i * 0.22; this.chegando = true;
   };
@@ -221,7 +224,7 @@
   P.eventos = function () {
     const hit = this.hit;
     hit.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || this.seg) return;
+      if (e.button !== 0 || this.seg || cel()) return;
       e.preventDefault(); try { hit.setPointerCapture(e.pointerId); } catch (_) {}
       const p = this.local(e), now = performance.now();
       this.mx = p.x; this.my = p.y; this.mvx = 0; this.hist = [{ x: p.x, y: p.y, t: now }];
@@ -241,7 +244,7 @@
     });
     hit.addEventListener('pointerup', () => this.larga(false));
     hit.addEventListener('pointercancel', () => this.larga(true));
-    hit.addEventListener('click', (e) => { if (e.detail === 0) { this.festa(1.6, true, um(F.festa)); } }); // Enter ou espaço pelo teclado
+    hit.addEventListener('click', (e) => { if (e.detail === 0) { this.festa(1.6, true, um(F.festa)); } else if (cel()) this.carinho(); }); // Enter ou espaço pelo teclado
     hit.addEventListener('keydown', (e) => {
       if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
       e.preventDefault(); if (!this.surf) return;
@@ -281,6 +284,7 @@
   };
   P.passo = function (dt, now) {
     if (this.el.hidden) return;
+    if (cel()) { this.segue(dt, now); return; }
     if (this.seg && !this.seg.ativo && now - this.seg.t0 > 220) this.ativa();
     if (this.seg && this.seg.ativo) this.segura(dt);
     else {
@@ -296,6 +300,21 @@
     this.poe();
     const a = this.anim();
     this.par = !this.par; if (this.par || a === 'pendurado' || a === 'cai' || a === 'festa') this.desenha(a, now / 1000 + this.i * 0.37);
+  };
+
+  // celular: um mascote sozinho fica no canto de baixo da tela enquanto a seção passa (vai junto com a rolagem,
+  // com um leve atraso); a turma toda fica parada no chão. Desenha a cada 3 quadros para não pesar.
+  P.segue = function (dt, now) {
+    const pal = this.palco, { w } = pal.dims(), m = this.meia(), chao = pal.chao(), so = pal.ks.length === 1;
+    let tx = so ? (this.fracao > 0.5 ? w - m - 10 : m + 10) : lim(w * this.fracao, m + 4, w - m - 4), ty = chao;
+    if (so) ty = lim(innerHeight - pal.sec.getBoundingClientRect().top - 14, this.alt() + 70, chao);
+    if (!this.seg0) { this.seg0 = true; this.x = tx; this.y = ty; }
+    this.x = tx; this.y += (ty - this.y) * Math.min(1, dt * 8); this.dir = so ? (this.fracao > 0.5 ? -1 : 1) : this.dir;
+    if (this.festaT > 0) this.festaT -= dt; if (this.aceno > 0) this.aceno -= dt;
+    this.esp += (0 - this.esp) * Math.min(1, dt * 9); this.ang = 0;
+    this.el.style.transform = `translate(${this.x.toFixed(1)}px,${this.y.toFixed(1)}px)`;
+    this.n = ((this.n || 0) + 1) % 3; if (this.n) return;
+    this.desenha(this.festaT > 0 ? 'festa' : this.aceno > 0 ? 'aceno' : 'parado', now / 1000 + this.i * 0.37);
   };
 
   // cursor: para os olhos seguirem

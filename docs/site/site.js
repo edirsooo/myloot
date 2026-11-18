@@ -145,7 +145,9 @@
     };
     tRaf = requestAnimationFrame(passo);
   }
-  const quieto = () => calmo || document.body.classList.contains('pausado');
+  // no celular não tem transição de seção: a página só rola (pedido de 17/11/2026)
+  const celular = matchMedia('(max-width: 900px), (hover: none) and (pointer: coarse)');
+  const quieto = () => calmo || celular.matches || document.body.classList.contains('pausado');
   function cfgDe(sec) {
     if (sec.dataset.parte) return { cor: getComputedStyle(sec).getPropertyValue('--cor').trim(), parte: 'PARTE ' + sec.dataset.parte + ' DE 6', nome: NOMES[sec.id] || '', sub: sec.dataset.sub || '', ks: [sec.dataset.palco] };
     if (sec.id === 'baixar') return { cor: '#ff7e00', parte: 'GRÁTIS · SEM CONTA · CÓDIGO ABERTO', nome: 'Baixar', sub: 'Windows · Mac · Linux', ks: ['claude', 'gpt', 'gemini', 'pinguim', 'coruja', 'slime'] };
