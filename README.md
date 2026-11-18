@@ -6,15 +6,21 @@
 
 Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona no **Windows, Mac e Linux**, e dá para usar **no celular** pela rede de casa.
 
-🌐 **Site:** https://edirsooo.github.io/myloot/
+🌐 **Site:** https://myloot.prestesdesign.com.br
 
-[![Veja o MyLoot funcionando](docs/img/demo.gif)](docs/video/myloot-tutorial.mp4)
+[![Veja o MyLoot 2.15 apresentado pelos mascotes](docs/site/video/apresentacao-2-15.jpg)](docs/site/video/apresentacao-2-15.mp4)
 
-▶️ **[Tutorial completo com som (3 min 28)](docs/video/myloot-tutorial.mp4)** · [apresentação rápida da versão anterior, quando se chamava Mochila (50 s)](docs/video/mochila.mp4)
+▶️ **[Apresentação da versão 2.15, com os mascotes](docs/site/video/apresentacao-2-15.mp4)** · [Como instalar no Windows (55 s)](docs/video/myloot-como-instalar.mp4) · [tutorial das versões anteriores (3 min 28)](docs/video/myloot-tutorial.mp4)
 
 ⭐ Curtiu? Deixe uma estrela no repositório: ajuda outras pessoas a encontrarem o projeto.
 
-![Tela inicial](docs/img/home.png)
+![Tela inicial](docs/site/telas/inicio.webp)
+
+## Novidades da versão 2.17
+
+- 🔵 Gemini: além do Claude Code e do Codex, o MyLoot agora usa o Gemini CLI, que entra com a sua conta Google (a mesma do Antigravity) e tem uso gratuito
+- 🔑 Chaves de API do Gemini e do ChatGPT: para quem não tem nenhuma IA instalada, dá para colar uma chave do Gemini (grátis no Google AI Studio), do ChatGPT ou do Claude em Configurações → IA
+- 🪐 Tem o Antigravity? O MyLoot avisa que o Gemini CLI usa a mesma conta e mostra como instalar
 
 ## Novidades da versão 2.16
 
@@ -138,7 +144,7 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 - **Tarefas e calendário:** escreva "pagar conta amanhã" e a data entra sozinha. Tarefas podem **repetir** (todo dia, dias úteis, semana, mês) e ter **lembrete com horário**, que avisa no computador mesmo com o navegador fechado.
 - **Modo foco:** timer que continua contando com o navegador fechado e avisa na área de trabalho.
 - **Joguinho:** XP, níveis, meta do dia, missões, sequência de dias e conquistas. Tudo pode ser desligado.
-- **IA (opcional): Claude ou Codex.** Peça para melhorar, corrigir ou resumir qualquer texto. O MyLoot acha sozinho o [Claude Code](https://claude.com/claude-code) e o [Codex](https://developers.openai.com/codex) instalados no seu PC e usa a sua própria assinatura, sem chave e sem custo extra. Na primeira vez, ele pergunta quais você quer usar. Sem nenhum dos dois, dá para colar uma chave da API do Claude.
+- **IA (opcional): Claude, Codex ou Gemini.** Peça para melhorar, corrigir ou resumir qualquer texto. O MyLoot acha sozinho o [Claude Code](https://claude.com/claude-code), o [Codex](https://developers.openai.com/codex) e o [Gemini CLI](https://github.com/google-gemini/gemini-cli) instalados no seu PC e usa a sua própria assinatura, sem chave e sem custo extra. Na primeira vez, ele pergunta quais você quer usar. Sem nenhum deles, dá para colar uma chave de API do Claude, do Gemini ou do ChatGPT.
 - **Notion e Trello (opcional):** envie qualquer item para uma página do Notion ou para uma lista do Trello com um clique.
 - **Google Drive (opcional):** copia tudo como arquivos `.md` para a sua pasta do Drive. O que você editar direto no Drive não é apagado: vai para a pasta `_substituidos`.
 - **Sincronizar entre computadores (opcional):** quem usa o MyLoot em dois ou mais PCs liga em Configurações → Google Drive → *Sincronizar entre computadores*. Cada PC grava só o próprio arquivo na pasta `MyLoot-sync` do Drive e lê o dos outros ao abrir, a cada minuto e logo depois de salvar. Mudança no mesmo item: fica a mais nova, campo a campo; apagado vai para a Lixeira dos outros; antes da primeira junção o app guarda uma cópia automática. Precisa do **Google Drive para computador** (ou OneDrive, Dropbox) instalado e aberto em todos os PCs, com a mesma conta, e do relógio dos PCs certo. Configurações, XP e chaves (`data/segredos.json`) não vão para a nuvem.
@@ -147,25 +153,33 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 - **Central de ferramentas:** 42 links de IAs de imagem e vídeo e de programas de código aberto, com busca e botão para guardar na sua Biblioteca.
 - **Já vem com 5 guias em PDF** sobre IA, edição de vídeo e organização.
 
-| Biblioteca | Cartão do item |
+| Biblioteca | Ficha do item |
 |---|---|
-| ![Biblioteca](docs/img/lib.png) | ![Cartão](docs/img/item.png) |
+| ![Biblioteca](docs/site/telas/biblioteca.webp) | ![Ficha do item](docs/site/telas/ficha.webp) |
 
-| Quadro (arrastando os cartões) | Central de ferramentas |
+| Tarefas | Calendário |
 |---|---|
-| ![Quadro](docs/img/quadro.png) | ![Ferramentas](docs/img/ferramentas.png) |
+| ![Tarefas](docs/site/telas/tarefas.webp) | ![Calendário](docs/site/telas/calendario.webp) |
 
-| Leitor em blocos (.md e .txt) | Conquistas |
+| Financeiro | Rotina e metas |
 |---|---|
-| ![Leitor](docs/img/leitor.png) | ![Conquistas](docs/img/ach.png) |
+| ![Financeiro](docs/site/telas/financeiro.webp) | ![Rotina](docs/site/telas/rotina.webp) |
 
-| Mapa de conexões | Calendário |
+| IA (Claude Code ou Codex) | Central de ferramentas |
 |---|---|
-| ![Mapa de conexões](docs/img/grafo.png) | ![Calendário](docs/img/cal.png) |
+| ![IA](docs/site/telas/ia.webp) | ![Ferramentas](docs/site/telas/ferramentas_rec.webp) |
+
+| Mascotes | Conquistas |
+|---|---|
+| ![Mascotes](docs/site/telas/mascote.webp) | ![Conquistas](docs/site/telas/conquistas.webp) |
+
+| Backup | Usar no celular |
+|---|---|
+| ![Backup](docs/site/telas/backup.webp) | ![Celular](docs/site/telas/celular.webp) |
 
 ## Como instalar (Windows)
 
-▶️ **[Veja o vídeo de instalação passo a passo (55 s)](docs/video/myloot-como-instalar.mp4)**
+▶️ **[Veja o vídeo de instalação passo a passo (55 s)](docs/video/myloot-como-instalar.mp4)** (gravado antes da 2.15.1: no fim ele abre no navegador; hoje abre numa janela própria, como explicado abaixo)
 
 1. Instale o **Node.js** (versão LTS): https://nodejs.org — é só avançar até o fim.
 2. Nesta página, clique no botão verde **Code → Download ZIP** e extraia a pasta onde quiser.

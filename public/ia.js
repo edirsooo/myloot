@@ -4,6 +4,13 @@
   M.IAS = [
     { id: 'claude', nome: 'Claude Code', em: '🟠', dica: 'Usa a assinatura do Claude logada neste computador.' },
     { id: 'codex', nome: 'Codex (ChatGPT)', em: '🟢', dica: 'Usa a assinatura do ChatGPT logada neste computador.' },
+    { id: 'gemini', nome: 'Gemini CLI (Google)', em: '🔵', dica: 'Usa a sua conta Google (a mesma do Antigravity), com uso gratuito.' },
+  ];
+  // chaves de API: funcionam sem nada instalado, pela internet, cada uma na conta de quem criou a chave
+  M.IA_CHAVES = [
+    { id: 'api', qual: 'claude', tem: 'temChave', nome: 'Claude (chave da API)', curto: 'Claude', ph: 'sk-ant-…', onde: 'console.anthropic.com → API Keys. Cobra por uso.' },
+    { id: 'api-gemini', qual: 'gemini', tem: 'temGemini', nome: 'Gemini (chave da API)', curto: 'Gemini', ph: 'AIza…', onde: 'aistudio.google.com → Get API key. Tem uso gratuito.' },
+    { id: 'api-openai', qual: 'openai', tem: 'temOpenai', nome: 'ChatGPT (chave da API)', curto: 'ChatGPT', ph: 'sk-…', onde: 'platform.openai.com → API keys. Cobra por uso (a assinatura Plus não vale para a API).' },
   ];
   let st = null;
   M.iaStatus = async (force) => { if (!st || force) st = await M.api('/api/ai/status' + (force ? '?checar=1' : '')); return st; };
@@ -12,7 +19,7 @@
   M.iaDisponiveis = async () => {
     const s = await M.iaStatus();
     const L = M.IAS.filter((i) => s[i.id] && s[i.id].ok && ligada(i.id)).map((i) => ({ id: i.id, nome: i.nome }));
-    if (s.temChave) L.push({ id: 'api', nome: 'Claude (chave da API)' });
+    M.IA_CHAVES.forEach((c) => { if (s[c.tem]) L.push({ id: c.id, nome: c.nome }); });
     return L;
   };
 
@@ -22,6 +29,8 @@
       aviso: 'Tem o aplicativo do ChatGPT (ou do Codex) para computador? Abra o app uma vez, entre na sua conta e clique em “Procurar de novo”: o MyLoot usa o Codex que vem dentro dele. Sem o app, dá para instalar o Codex pelo terminal:' },
     claude: { nome: 'Claude Code', pacote: 'npm install -g @anthropic-ai/claude-code', login: 'claude', conta: 'Claude (Pro ou Max)',
       aviso: 'O aplicativo do Claude para computador não traz o Claude Code. O Claude Code é um programa à parte, que roda no terminal e entra com a mesma conta do Claude:' },
+    gemini: { nome: 'Gemini CLI', pacote: 'npm install -g @google/gemini-cli', login: 'gemini', conta: 'Google (escolha “Login with Google”; tem uso gratuito)',
+      aviso: 'O Antigravity é um editor e não aceita pedidos de outros programas, então o MyLoot não consegue falar com ele. O Gemini CLI é o programa do Google feito para isso e entra com a mesma conta Google do Antigravity:' },
   };
   M.iaComoInstalar = (id) => {
     const g = GUIA[id]; if (!g) return;
@@ -59,13 +68,16 @@
       return `<div class="cfg-row"><span class="l">${i.em} <span style="font-weight:700">${i.nome}</span><br><small style="color:var(--dim)">${ok ? '● encontrado' + (s[i.id].versao ? ' (v' + esc(s[i.id].versao) + ')' : '') + ' · ' + i.dica : '○ não encontrado neste computador' + comoLink(i.id)}</small></span>${ok ? M.sw('ia_' + i.id, ligada(i.id)) : ''}</div>`;
     }).join('');
     const B = (t) => `<span style="font-weight:700">${t}</span>`;
-    const topo = achadas.length === 2 ? `Encontrei o ${B('Claude Code')} e o ${B('Codex')} neste computador. Quer usar os dois?`
+    const lista = achadas.map((i) => B(i.nome));
+    const topo = achadas.length > 1 ? `Encontrei ${lista.slice(0, -1).join(', ')} e ${lista[lista.length - 1]} neste computador. Quer usar?`
       : achadas.length === 1 ? `Encontrei o ${B(achadas[0].nome)} neste computador.`
-      : 'Não encontrei o Claude Code nem o Codex neste computador. Tudo bem: o MyLoot funciona sem IA, e você pode instalar depois ou usar uma chave da API do Claude nas Configurações.';
+      : 'Não encontrei Claude Code, Codex nem Gemini CLI neste computador. Tudo bem: o MyLoot funciona sem IA, e você pode instalar depois ou usar uma chave de API (Claude, Gemini ou ChatGPT) nas Configurações.';
+    const agv = s.antigravity && !(s.gemini && s.gemini.ok) ? `<small style="color:var(--dim)">🪐 Vi o ${B('Antigravity')} aqui. Ele não aceita pedidos de outros programas, mas o Gemini CLI entra com a mesma conta Google e funciona no MyLoot${comoLink('gemini')}.</small>` : '';
     const m = M.modal(`<div class="modal-h"><h2>🤖 Sua IA no MyLoot</h2><button class="icon-btn" id="x">✕</button></div>
       <div class="modal-b"><p style="margin:0">${topo}</p>
       ${achadas.length ? '<p style="margin:0;color:var(--dim)">Ligue as que quiser usar para melhorar, corrigir e resumir textos dentro dos itens. Elas usam a sua própria assinatura, sem chave e sem custo extra.</p>' : ''}
       <div style="border:2px solid var(--edge);border-radius:12px;padding:4px 14px;background:var(--bg2)">${linhas}</div>
+      ${agv}
       <small style="color:var(--dim)">Dá para mudar quando quiser em Configurações → IA.</small>
       <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn" id="ok" style="flex:none">${achadas.length ? 'Salvar' : 'Entendi'}</button></div></div>`, { small: true });
     const fim = () => {
@@ -73,28 +85,39 @@
       achadas.forEach((i) => { const c = $('#ia_' + i.id, m); if (c) t[i.id] = c.checked; });
       M.db.settings.aiTools = t; M.db.settings.aiSetupDone = true; M.save(); M.closeModal();
       const n = achadas.filter((i) => t[i.id] !== false).length;
-      if (n) { SFX.play('coin'); M.toast(`🤖 ${n === 2 ? 'Claude e Codex prontos' : 'IA pronta'}! Use o botão “Pedir à IA” dentro de um item.`); }
+      if (n) { SFX.play('coin'); M.toast(`🤖 ${n > 1 ? n + ' IAs prontas' : 'IA pronta'}! Use o botão “Pedir à IA” dentro de um item.`); }
     };
     $('#ok', m).onclick = fim; $('#x', m).onclick = fim;
     ligaComo(m);
   };
 
   // ----- seção nas Configurações -----
-  M.iaSection = () => `<section class="stat"><div class="cfg-h">🤖 IA (Claude e Codex)</div>
+  M.iaSection = () => `<section class="stat"><div class="cfg-h">🤖 IA (Claude, Codex e Gemini)</div>
     ${M.IAS.map((i) => `<div class="cfg-row"><span class="l">${i.em} ${i.nome} ${M.hint(i.dica + ' Precisa estar instalado e logado.')}<br><small id="iaSt_${i.id}" style="font:700 12px var(--mono);color:var(--faint)">…</small></span>${M.sw('iaOn_' + i.id, ligada(i.id))}</div>`).join('')}
-    <div class="cfg-row"><span class="l">Qual usar ${M.hint('Automático: usa o Claude Code; se não tiver, o Codex; se não tiver nenhum, a chave da API. Dentro do item também dá para escolher na hora.')}</span><select id="aiVia" style="width:auto"><option value="auto">Automático</option><option value="claude">Claude Code</option><option value="codex">Codex</option><option value="api">Chave da API do Claude</option></select></div>
-    <div class="cfg-row"><span class="l">Chave da API do Claude (opcional) ${M.hint('Só para quem não tem Claude Code nem Codex. Crie em console.anthropic.com → API Keys. Fica só neste computador, em data/segredos.json, fora do backup e do Drive.')}</span><span id="aiSt" style="font:700 12px var(--mono)"></span></div>
-    <div class="row" style="align-items:center"><input type="password" id="aiKey" placeholder="Cole aqui a sua chave (sk-ant-…)" autocomplete="off" style="flex:3"><button class="btn" id="aiSave" style="flex:none">Guardar</button><button class="btn ghost" id="aiDel" style="flex:none">Remover</button></div>
-    <div class="cfg-row" style="margin-top:8px"><span class="l">Modelo do Claude ${M.hint('Vale para o Claude Code e para a chave da API. Opus: o mais caprichado. Sonnet: rápido e bom. Haiku: o mais barato. O Codex usa o modelo configurado nele.')}</span><select id="aiModel" style="width:auto"><option value="claude-opus-5-5">Claude Opus 5.5</option><option value="claude-sonnet-5-5">Claude Sonnet 5.5</option><option value="claude-haiku-5-5">Claude Haiku 5.5</option></select></div>
+    <small id="iaAgv" hidden style="color:var(--dim);display:block;margin:2px 0 6px"></small>
+    <div class="cfg-row"><span class="l">Qual usar ${M.hint('Automático: usa o Claude Code; se não tiver, o Codex; depois o Gemini CLI; se não tiver nenhum, a primeira chave de API guardada. Dentro do item também dá para escolher na hora.')}</span><select id="aiVia" style="width:auto"><option value="auto">Automático</option>${M.IAS.map((i) => `<option value="${i.id}">${i.nome}</option>`).join('')}${M.IA_CHAVES.map((c) => `<option value="${c.id}">${c.nome}</option>`).join('')}</select></div>
+    <div class="cfg-row"><span class="l">Chaves de API (opcional) ${M.hint('Para quem não tem nenhuma das IAs acima instalada. As versões de conversa (Claude.ai, ChatGPT, Gemini) não deixam outros programas usar a assinatura; a chave de API deixa. Fica só neste computador, em data/segredos.json, fora do backup e do Drive.')}</span><select id="aiQual" style="width:auto">${M.IA_CHAVES.map((c) => `<option value="${c.qual}">${c.curto}</option>`).join('')}</select></div>
+    <div class="row" style="align-items:center"><input type="password" id="aiKey" autocomplete="off" style="flex:3"><button class="btn" id="aiSave" style="flex:none">Guardar</button><button class="btn ghost" id="aiDel" style="flex:none">Remover</button></div>
+    <small id="aiSt" style="display:block;margin-top:4px;font:700 12px var(--mono)"></small>
+    <div class="cfg-row" style="margin-top:8px"><span class="l">Modelo do Claude ${M.hint('Vale para o Claude Code e para a chave da API do Claude. Opus: o mais caprichado. Sonnet: rápido e bom. Haiku: o mais barato. Codex e Gemini usam o modelo configurado neles.')}</span><select id="aiModel" style="width:auto"><option value="claude-opus-5-5">Claude Opus 5.5</option><option value="claude-sonnet-5-5">Claude Sonnet 5.5</option><option value="claude-haiku-5-5">Claude Haiku 5.5</option></select></div>
     <div class="row" style="margin-top:8px;gap:8px"><button class="btn ghost sm" id="iaRedo" style="flex:none">🔎 Procurar IAs de novo</button></div>
     <small style="color:var(--dim);display:block;margin-top:6px">Use o botão <span style="font-weight:700">🤖 Pedir à IA</span> dentro de qualquer item para melhorar, corrigir, resumir ou reescrever o texto.</small>
   </section>`;
 
   M.iaBind = async (set) => {
     const s = M.db.settings;
-    const aiSt = (on) => { const e = $('#aiSt'); if (!e) return; e.textContent = on ? '● conectada' : '○ sem chave'; e.style.color = on ? 'var(--green)' : 'var(--faint)'; };
+    let ult = null;
+    const chave = () => M.IA_CHAVES.find((c) => c.qual === ($('#aiQual') || {}).value) || M.IA_CHAVES[0];
+    const aiSt = () => {
+      const e = $('#aiSt'); if (!e) return; const c = chave();
+      $('#aiKey').placeholder = `Cole aqui a chave do ${c.curto} (${c.ph})`;
+      e.textContent = M.IA_CHAVES.map((k) => (ult && ult[k.tem] ? '● ' : '○ ') + k.curto).join('   ') + '  ·  crie em ' + c.onde;
+      e.style.color = 'var(--dim)';
+    };
     const pinta = (r) => {
-      aiSt(r.temChave);
+      ult = r; aiSt();
+      const ag = $('#iaAgv');
+      if (ag) { ag.hidden = !(r.antigravity && !(r.gemini && r.gemini.ok)); ag.innerHTML = '🪐 Vi o Antigravity aqui. Ele não aceita pedidos de outros programas, mas o Gemini CLI entra com a mesma conta Google e funciona no MyLoot' + comoLink('gemini') + '.'; ligaComo(ag); }
       M.IAS.forEach((i) => {
         const e = $('#iaSt_' + i.id); if (!e) return; const ok = r[i.id] && r[i.id].ok;
         if (ok) e.textContent = '● encontrado' + (r[i.id].versao ? ' (v' + r[i.id].versao + ')' : '');
@@ -111,7 +134,8 @@
     $('#aiVia').onchange = () => { s.aiVia = $('#aiVia').value; M.save(); M.toast('🤖 Pronto'); };
     $('#aiModel').value = s.aiModel || 'claude-opus-5-5';
     $('#aiModel').onchange = (e) => set('aiModel', e.target.value);
-    const putKey = async (key) => { try { const r = await M.api('/api/ai/key', { method: 'POST', body: JSON.stringify({ key }) }); $('#aiKey').value = ''; aiSt(r.temChave); st = null; SFX.play(r.temChave ? 'coin' : 'click'); M.toast(r.temChave ? '🔑 Chave guardada' : 'Chave removida'); } catch (e) { M.toast('⚠️ ' + e.message); } };
+    $('#aiQual').onchange = aiSt; aiSt();
+    const putKey = async (key) => { const c = chave(); try { const r = await M.api('/api/ai/key', { method: 'POST', body: JSON.stringify({ key, qual: c.qual }) }); $('#aiKey').value = ''; st = null; if (ult) ult[c.tem] = r.temChave; aiSt(); SFX.play(r.temChave ? 'coin' : 'click'); M.toast(r.temChave ? `🔑 Chave do ${c.curto} guardada` : `Chave do ${c.curto} removida`); } catch (e) { M.toast('⚠️ ' + e.message); } };
     $('#aiSave').onclick = () => { const k = $('#aiKey').value.trim(); if (k) putKey(k); else M.falta($('#aiKey'), '🔑 Cole a chave primeiro'); };
     $('#aiDel').onclick = () => putKey('');
     $('#iaRedo').onclick = () => M.iaSetup();

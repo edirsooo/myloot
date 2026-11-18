@@ -410,7 +410,14 @@ function callClaude(key, model, system, user) {
 // O servidor herda o PATH de quando foi aberto: quem instala o Claude Code ou o Codex depois (ou abre o MyLoot por um atalho)
 // pode ficar com um PATH velho. Por isso a busca junta o PATH atual, o PATH gravado no Windows (registro) e as pastas onde
 // esses programas costumam ficar, e guarda o caminho completo do comando para usar na hora de chamar.
-const IA_NOMES = { claude: 'claude', codex: 'codex' };
+const IA_NOMES = { claude: 'claude', codex: 'codex', gemini: 'gemini' };
+const IAS_LOCAIS = ['claude', 'codex', 'gemini'];
+// o Antigravity (editor do Google) não responde pedidos por linha de comando; só detectamos para sugerir o Gemini CLI, que usa a mesma conta Google
+function temAntigravity() {
+  const H = os.homedir(), E = process.env;
+  const L = WIN ? [E.LOCALAPPDATA && path.join(E.LOCALAPPDATA, 'Programs', 'antigravity', 'Antigravity.exe')] : MAC ? ['/Applications/Antigravity.app', path.join(H, 'Applications', 'Antigravity.app')] : [path.join(H, '.local', 'share', 'antigravity'), '/usr/share/antigravity', '/opt/antigravity'];
+  return L.filter(Boolean).some((f) => { try { fs.statSync(f); return true; } catch (_) { return false; } });
+}
 const iaCache = {};
 const iaRodando = {};
 function pathRegistro() {
@@ -529,6 +536,70 @@ function callClaudeCode(model, system, user) {
     });
     ch.stdin.end(user);
   });
+}
+// Gemini CLI: entra com a conta Google (a mesma do Antigravity), com uso gratuito
+function callGeminiCli(system, user) {
+  return new Promise((ok, no) => {
+    const dir = pastaIA('gemini');
+    // o texto vai pela entrada padrão; o -p só fecha o pedido e liga o modo sem conversa
+    const args = ['--output-format', 'json', '-p', '"Responda seguindo as instruções acima."'];
+    const ch = cp.spawn(cmdIA('gemini'), args, { cwd: dir, shell: true, windowsHide: true, env: envIA() });
+    const out = [], err = [];
+    const t = setTimeout(() => { ch.kill(); no(new Error('O Gemini demorou demais. Tente de novo.')); }, 240000);
+    ch.stdout.on('data', (c) => out.push(c));
+    ch.stderr.on('data', (c) => err.push(c));
+    ch.on('error', () => { clearTimeout(t); no(new Error('Não achei o Gemini CLI neste computador.')); });
+    ch.on('close', (code) => {
+      clearTimeout(t);
+      const txt = Buffer.concat(out).toString('utf8').trim();
+      let j = null; try { j = JSON.parse(txt.slice(txt.indexOf('{'))); } catch (_) {}
+      const resp = j ? j.response : (code === 0 ? txt : '');
+      if (resp && String(resp).trim() && !(j && j.error)) return ok({ texto: String(resp).trim(), modelo: 'gemini', via: 'gemini' });
+      const msg = (j && j.error && (j.error.message || JSON.stringify(j.error))) || Buffer.concat(err).toString('utf8').trim() || txt;
+      if (/log ?in|auth|credential|GEMINI_API_KEY/i.test(msg)) return no(new Error('O Gemini CLI não está logado. Abra um terminal, rode "gemini" e entre com a sua conta Google.'));
+      no(new Error('O Gemini respondeu com erro: ' + (msg.split(/\r?\n/).slice(-3).join(' ') || 'código ' + code).slice(0, 300)));
+    });
+    ch.stdin.end(system + '\n\n' + user);
+  });
+}
+
+// ---------- chaves de API de outras IAs (Gemini e ChatGPT): pela internet, cada uma com a sua chave ----------
+function postJSON(hostname, pth, headers, body, nome) {
+  const data = Buffer.from(JSON.stringify(body));
+  return new Promise((ok, no) => {
+    const rq = https.request({ hostname, path: pth, method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json', 'Content-Length': data.length }, headers), timeout: 180000 }, (rs) => {
+      const parts = [];
+      rs.on('data', (c) => parts.push(c));
+      rs.on('end', () => {
+        let j = {}; try { j = JSON.parse(Buffer.concat(parts).toString('utf8')); } catch (_) {}
+        const st = rs.statusCode, em = (j.error && j.error.message) || '';
+        if (st === 400 && /api key/i.test(em) || st === 401 || st === 403) return no(new Error(`A chave do ${nome} não foi aceita. Confira nas Configurações.`));
+        if (st === 429) return no(new Error(`Muitos pedidos ou sem crédito na conta do ${nome}. Tente de novo daqui a pouco.`));
+        if (st >= 500) return no(new Error(`O ${nome} está sobrecarregado agora. Tente de novo em instantes.`));
+        if (st !== 200) return no(new Error(em || 'Erro ' + st + ' na API do ' + nome + '.'));
+        ok(j);
+      });
+    });
+    rq.on('timeout', () => rq.destroy(new Error('Demorou demais. Tente de novo.')));
+    rq.on('error', (e) => no(new Error(e.code === 'ENOTFOUND' ? 'Sem internet.' : e.message)));
+    rq.end(data);
+  });
+}
+async function callGeminiApi(key, system, user) {
+  const j = await postJSON('generativelanguage.googleapis.com', '/v1beta/models/gemini-flash-latest:generateContent', { 'x-goog-api-key': key },
+    { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: 'user', parts: [{ text: user }] }] }, 'Gemini');
+  const c = (j.candidates || [])[0] || {};
+  const text = ((c.content && c.content.parts) || []).map((p) => p.text || '').join('').trim();
+  if (!text) throw new Error(c.finishReason === 'SAFETY' ? 'O Gemini não pôde atender a esse pedido.' : 'A resposta veio vazia.');
+  return { texto: text, modelo: j.modelVersion || 'gemini', cortado: c.finishReason === 'MAX_TOKENS', via: 'api-gemini' };
+}
+async function callOpenAiApi(key, system, user) {
+  const j = await postJSON('api.openai.com', '/v1/chat/completions', { Authorization: 'Bearer ' + key },
+    { model: 'gpt-5-mini', messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }, 'ChatGPT');
+  const c = (j.choices || [])[0] || {};
+  const text = String((c.message && c.message.content) || '').trim();
+  if (!text) throw new Error('A resposta veio vazia.');
+  return { texto: text, modelo: j.model || 'gpt', cortado: c.finish_reason === 'length', via: 'api-openai' };
 }
 
 // ---------- foco (o relógio mora no servidor: continua contando com a aba fechada) ----------
@@ -893,29 +964,37 @@ async function app(req, res) {
       if (p === '/api/notify-test' && req.method === 'POST') { notify('🎁 MyLoot', 'É assim que o aviso do foco aparece.'); return send(res, 200, { ok: true }); }
       if (p === '/api/ai/status') {
         const f = u.searchParams.get('checar') === '1';
-        const [claude, codex] = await Promise.all([iaInfo('claude', f), iaInfo('codex', f)]);
+        const [claude, codex, gemini] = await Promise.all(IAS_LOCAIS.map((n) => iaInfo(n, f)));
         const so = (x) => ({ ok: x.ok, versao: x.versao, motivo: x.motivo });      // o caminho do programa fica só no servidor
-        return send(res, 200, { temChave: !!readSecrets().anthropicKey, modelos: AI_MODELS, code: so(claude), claude: so(claude), codex: so(codex) });
+        const sec = readSecrets();
+        return send(res, 200, { temChave: !!sec.anthropicKey, temGemini: !!sec.geminiKey, temOpenai: !!sec.openaiKey, modelos: AI_MODELS, code: so(claude), claude: so(claude), codex: so(codex), gemini: so(gemini), antigravity: temAntigravity() });
       }
       if (p === '/api/ai/key' && req.method === 'POST') {
-        const { key } = JSON.parse((await readBody(req)).toString('utf8'));
+        const { key, qual } = JSON.parse((await readBody(req)).toString('utf8'));
+        const campo = { gemini: 'geminiKey', openai: 'openaiKey' }[qual] || 'anthropicKey';
         const s = readSecrets();
         const k = String(key || '').trim();
-        if (k) s.anthropicKey = k; else delete s.anthropicKey;
+        if (k) s[campo] = k; else delete s[campo];
         writeSecrets(s);
         return send(res, 200, { temChave: !!k });
       }
       if (p === '/api/ai' && req.method === 'POST') {
-        const key = readSecrets().anthropicKey;
+        const sec = readSecrets(), key = sec.anthropicKey;
         const b = JSON.parse((await readBody(req)).toString('utf8'));
-        // qual IA: a escolhida no pedido, ou a das Configurações; "auto" pega a primeira ligada e instalada
+        // qual IA: a escolhida no pedido, ou a das Configurações; "auto" pega a primeira ligada e instalada, depois as chaves
         const st = readDB().db.settings, ligadas = st.aiTools || {};
         let pref = b.via || st.aiVia || 'auto'; if (pref === 'code') pref = 'claude';
-        const tem = { claude: (await iaInfo('claude')).ok, codex: (await iaInfo('codex')).ok };
+        const tem = {};
+        for (const n of IAS_LOCAIS) tem[n] = (await iaInfo(n)).ok;
         const pode = (n) => ligadas[n] !== false && tem[n];
-        let via = pref === 'api' ? 'api' : pref === 'auto' ? (['claude', 'codex'].find(pode) || 'api') : (pode(pref) ? pref : null);
-        if (!via) return send(res, 400, { erro: (pref === 'codex' ? 'O Codex' : 'O Claude Code') + ' não está instalado ou está desligado nas Configurações.' });
-        if (via === 'api' && !key) return send(res, 400, { erro: 'Nenhuma IA encontrada. Instale o Claude Code ou o Codex, ou coloque uma chave da API do Claude nas Configurações.' });
+        const chaves = { api: key, 'api-gemini': sec.geminiKey, 'api-openai': sec.openaiKey };
+        const NOME = { claude: 'O Claude Code', codex: 'O Codex', gemini: 'O Gemini CLI' };
+        let via;
+        if (pref in chaves) via = pref;
+        else if (pref === 'auto') via = IAS_LOCAIS.find(pode) || Object.keys(chaves).find((c) => chaves[c]) || 'api';
+        else via = pode(pref) ? pref : null;
+        if (!via) return send(res, 400, { erro: (NOME[pref] || 'Essa IA') + ' não está instalado ou está desligado nas Configurações.' });
+        if (via in chaves && !chaves[via]) return send(res, 400, { erro: via === 'api' ? 'Nenhuma IA encontrada. Instale o Claude Code, o Codex ou o Gemini CLI, ou coloque uma chave de API nas Configurações.' : 'Coloque a chave dessa IA nas Configurações primeiro.' });
         const texto = String(b.texto || ''), pedido = String(b.pedido || '').trim();
         const inst = b.acao === 'livre' ? pedido : AI_ACTIONS[b.acao];
         if (!inst) return send(res, 400, { erro: 'Escreva o que você quer que a IA faça.' });
@@ -923,7 +1002,11 @@ async function app(req, res) {
         const model = AI_MODELS.includes(db.settings.aiModel) ? db.settings.aiModel : AI_MODELS[0];
         const system = 'Você é o assistente de escrita de um app pessoal de notas chamado MyLoot. Responda só com o texto final, pronto para colar: sem introdução, sem explicação, sem aspas em volta e sem cercas de código. Use o idioma do texto (por padrão, português do Brasil).';
         const user = texto.trim() ? `Pedido: ${inst}\n\n<texto>\n${texto}\n</texto>` : `Pedido: ${inst}`;
-        try { return send(res, 200, via === 'claude' ? await callClaudeCode(model, system, user) : via === 'codex' ? await callCodex(system, user) : await callClaude(key, model, system, user)); }
+        try {
+          const r = via === 'claude' ? await callClaudeCode(model, system, user) : via === 'codex' ? await callCodex(system, user) : via === 'gemini' ? await callGeminiCli(system, user)
+            : via === 'api-gemini' ? await callGeminiApi(sec.geminiKey, system, user) : via === 'api-openai' ? await callOpenAiApi(sec.openaiKey, system, user) : await callClaude(key, model, system, user);
+          return send(res, 200, r);
+        }
         catch (e) { return send(res, 502, { erro: e.message }); }
       }
       // ----- integrações (Notion e Trello) -----
