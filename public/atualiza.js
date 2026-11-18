@@ -16,7 +16,7 @@
     if (r.erro) { if (manual) M.toast('⚠️ Não consegui olhar o GitHub: ' + r.erro); return; }
     // selo no menu: fica aparecendo enquanto houver versão nova, mesmo para quem clicou em "Depois"
     const selo = $('#btnUpd');
-    if (selo) { selo.hidden = !r.temNova; if (r.temNova) selo.textContent = '🎁 Saiu a versão ' + r.nova; }
+    if (selo) { selo.hidden = !r.temNova; if (r.temNova) { selo.textContent = '⬇️ Atualizar para a ' + r.nova; selo.title = 'Saiu a versão ' + r.nova + ' do MyLoot. Clique para ver o que mudou e atualizar.'; } }
     if (!r.temNova) { if (manual) { SFX.play('coin'); M.toast(`✅ Você já está na versão mais nova (${r.atual}).`); } return; }
     if (!manual && M.db.settings.updPulada === r.nova) return;
     const nums = (x) => String(x || '0').split('.').map((n) => parseInt(n, 10) || 0);
@@ -29,18 +29,17 @@
     const m = M.modal(`<div class="modal-h"><h2>🎁 Saiu o MyLoot ${esc(r.nova)}</h2><button class="icon-btn" id="x">✕</button></div>
       <div class="modal-b"><p style="margin:0;color:var(--dim)">Você está na versão ${esc(r.atual)}. ${titLista}</p>
       ${M.listaNovidades(r.novidades)}
-      ${r.git ? '<p style="margin:0;color:var(--yellow,#ffbe46)">Esta pasta é uma cópia de desenvolvimento (Git). Atualize com <code>git pull</code>.</p>'
-        : '<p style="margin:0;color:var(--dim)">Seus itens, anexos, tarefas e chaves ficam como estão: a atualização só troca os arquivos do app.</p>'}
-      <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn ghost" id="dep" style="flex:none">Depois</button>${r.git ? '' : '<button class="btn" id="ok" style="flex:none">⬇️ Atualizar agora</button>'}</div></div>`, { small: true });
+      <p style="margin:0;color:var(--dim)">Seus itens, anexos, tarefas e chaves ficam como estão: a atualização só troca os arquivos do app${r.git ? ' (nesta pasta, pelo Git)' : ''}.</p>
+      <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn ghost" id="dep" style="flex:none">Depois</button><button class="btn" id="ok" style="flex:none">⬇️ Atualizar agora</button></div></div>`, { small: true });
     const depois = () => { M.db.settings.updPulada = r.nova; M.save(); M.closeModal(); };
     $('#dep', m).onclick = depois; $('#x', m).onclick = depois;
-    if (!r.git) $('#ok', m).onclick = () => aplicar(r.nova);
+    $('#ok', m).onclick = () => aplicar(r.nova);
   };
 
   async function aplicar(nova) {
     const m = M.modal(`<div class="modal-b" style="text-align:center;padding:30px"><div style="font-size:40px">⬇️</div><h2 style="margin:8px 0">Atualizando o MyLoot…</h2><p style="color:var(--dim);margin:0" id="upMsg">Baixando a versão ${esc(nova)} do GitHub. Não feche esta aba.</p></div>`, { small: true });
     try { await M.api('/api/atualizacao/aplicar', { method: 'POST' }); }
-    catch (e) { $('#upMsg', m).textContent = '⚠️ ' + e.message + ' Nada foi trocado.'; return; }
+    catch (e) { $('#upMsg', m).textContent = '⚠️ ' + e.message + ' Nada foi trocado.'; $('#upMsg', m).insertAdjacentHTML('afterend', '<div class="row" style="justify-content:center;margin-top:14px"><button class="btn ghost" id="upX" style="flex:none">Fechar</button></div>'); $('#upX', m).onclick = M.closeModal; return; }
     $('#upMsg', m).textContent = 'Pronto! Reabrindo o app…';
     const ini = Date.now();
     const tenta = async () => {

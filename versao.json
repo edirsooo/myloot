@@ -1,12 +1,16 @@
 {
-  "versao": "2.17.0",
+  "versao": "2.17.1",
   "data": "2026-11-18",
   "novidades": [
+    "⬇️ Atualizar com um clique também para quem instalou pelo Git (ou pediu para a IA instalar): o aviso de versão nova agora traz o botão “Atualizar agora” em vez de pedir git pull",
+    "🔔 O aviso de versão nova no menu ficou laranja e piscando, com o nome “Atualizar para a…”, para não passar despercebido"
+  ],
+  "historico": {
+    "2.17.0": [
     "🔵 Gemini: além do Claude Code e do Codex, o MyLoot agora usa o Gemini CLI, que entra com a sua conta Google (a mesma do Antigravity) e tem uso gratuito",
     "🔑 Chaves de API do Gemini e do ChatGPT: sem nenhuma IA instalada, cole uma chave do Gemini (grátis no Google AI Studio), do ChatGPT ou do Claude em Configurações → IA",
     "🪐 Tem o Antigravity? O MyLoot avisa que o Gemini CLI usa a mesma conta e mostra como instalar"
-  ],
-  "historico": {
+    ],
     "2.16.0": [
     "🔄 Sincronizar entre computadores: usa o MyLoot em mais de um PC? Ligue em Configurações → Google Drive e os dois ficam com os mesmos itens, tarefas, clientes, lançamentos e anexos, pela pasta do Google Drive (ou OneDrive, Dropbox). Se os dois mudarem o mesmo item, fica a mudança mais nova, campo a campo, e o que for apagado vai para a Lixeira do outro",
     "🪪 Cada computador ganha a sua própria identidade na sincronização, mesmo que a pasta de dados tenha sido copiada ou restaurada de outro PC"

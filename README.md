@@ -21,6 +21,7 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 - 🔵 Gemini: além do Claude Code e do Codex, o MyLoot agora usa o Gemini CLI, que entra com a sua conta Google (a mesma do Antigravity) e tem uso gratuito
 - 🔑 Chaves de API do Gemini e do ChatGPT: para quem não tem nenhuma IA instalada, dá para colar uma chave do Gemini (grátis no Google AI Studio), do ChatGPT ou do Claude em Configurações → IA
 - 🪐 Tem o Antigravity? O MyLoot avisa que o Gemini CLI usa a mesma conta e mostra como instalar
+- ⬇️ (2.17.1) Atualizar com um clique também para quem instalou pelo Git ou pediu para a IA instalar; o aviso de versão nova no menu ficou laranja e piscando
 
 ## Novidades da versão 2.16
 
