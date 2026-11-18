@@ -39,13 +39,16 @@
     const sum = late.length || now.length ? `${now.length} tarefa${now.length === 1 ? '' : 's'} para hoje${late.length ? ` · <b style="color:var(--red)">${late.length} atrasada${late.length === 1 ? '' : 's'}</b>` : ''}` : 'Nada marcado para hoje. Dia livre! 🎉';
     const contas = M.finHoje ? M.finHoje() : [];
     const sumFin = contas.length ? ` · <a data-go="fin" style="color:var(--amber);cursor:pointer">💰 ${contas.length} conta${contas.length > 1 ? 's' : ''} para hoje ou atrasada${contas.length > 1 ? 's' : ''}</a>` : '';
+    // lembrete de backup: nunca fez (e já tem bastante coisa) ou o último backup tem mais de 14 dias
+    const bk = s.bkUlt || 0, diasBk = bk ? Math.floor((Date.now() - bk) / 864e5) : -1;
+    const sumBk = !M.remoto && ((!bk && M.db.items.length + M.db.tasks.length > 30) || diasBk > 14) ? ` · <a data-bk style="color:var(--amber);cursor:pointer" title="Abre Configurações → Dados e backup">💾 ${bk ? `último backup há ${diasBk} dias` : 'faça um backup'}</a>` : '';
     const date = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     const modes = [['tarefa', '✅ Tarefa', 'algo para fazer'], ['nota', '📝 Nota', 'uma ideia ou lembrete'], ['prompt', '✨ Prompt', 'um texto para usar na IA'], ['link', '🔗 Link', 'um site para voltar depois']];
     const rot = { tarefa: 'Qual é a tarefa?', nota: 'Escreva a nota', prompt: 'Cole ou escreva o prompt', link: 'Cole o link' };
     const ph = { tarefa: 'Escreva a tarefa e aperte Enter…', nota: 'Anote uma ideia rápida…', prompt: 'Cole um prompt para guardar…', link: 'Cole um link…' };
     v.innerHTML = `<div class="home-wrap"><div class="home-topo">
       <div class="hero"><img class="pix" src="/bau.png" alt="">
-        <div class="grow"><h1>${hi}! 👋</h1><p style="text-transform:capitalize">${date}</p><p>${sum}${sumFin}</p>
+        <div class="grow"><h1>${hi}! 👋</h1><p style="text-transform:capitalize">${date}</p><p>${sum}${sumFin}${sumBk}</p>
           <div class="mini" style="margin-top:12px">${s.gamify ? `<div>Nv ${M.levelOf(g.xp)}<small>${esc(M.levelName(M.levelOf(g.xp)))}</small></div><div>🔥 ${$('#hudStreak b').textContent}<small>dias seguidos</small></div>` : ''}<div>${M.db.items.length}<small>itens no loot</small></div><div>${open.length}<small>tarefas abertas</small></div></div>
         </div>
         ${s.gamify ? `<div class="ring" style="--p:${pct}" title="Meta de hoje: ${dayXp} / ${s.dailyGoal} XP"><span>${pct}%<small>META</small></span></div>` : ''}
@@ -78,7 +81,12 @@
       if (mode === 'tarefa') { M.addTask(val); M.toast('✅ Tarefa criada'); }
       else {
         const title = mode === 'link' ? val.replace(/^https?:\/\/(www\.)?/i, '').split(/[/?#]/)[0] : val.split('\n')[0].slice(0, 60);
-        M.createItem({ type: mode, title, content: mode === 'nota' && val.length <= 60 ? '' : (isUrl && !/^https?:/i.test(val) ? 'https://' + val : val), cat: '' });
+        const novoIt = M.createItem({ type: mode, title, content: mode === 'nota' && val.length <= 60 ? '' : (isUrl && !/^https?:/i.test(val) ? 'https://' + val : val), cat: '' });
+        // link: troca o domínio pelo título real da página quando ele chegar (se não chegar, fica o domínio)
+        if (mode === 'link' && novoIt && novoIt.id) M.api('/api/titulo?url=' + encodeURIComponent(novoIt.content)).then((r) => {
+          const it = M.db.items.find((x) => x.id === novoIt.id);
+          if (it && r && r.titulo && it.title === title) { it.title = r.titulo.slice(0, 140); it.updated = Date.now(); M.save(); if (M.ui.page === 'home' || M.ui.page === 'lib') M.render(); }
+        }).catch(() => {});
         M.toast(`${M.type(mode).em} Guardado no loot`);
       }
       qcTxt = ''; M.render(); $('#qcIn').focus();
@@ -91,6 +99,7 @@
     $('#qcM').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; qcTxt = input.value; qcMode = b.dataset.m; SFX.play('click'); M.render(); const i = $('#qcIn'); i.focus(); try { i.setSelectionRange(i.value.length, i.value.length); } catch (_) {} };
     v.onclick = (e) => {
       const go = e.target.closest('[data-go]'); if (go) return M.go(go.dataset.go);
+      if (e.target.closest('[data-bk]')) { M.ui.cfgSec = '💾 Dados e backup'; return M.go('cfg'); }
       const row = e.target.closest('.rowi'); if (row) return M.openItem(row.dataset.id);
       const hb = e.target.closest('[data-hab]'); if (hb) return M.rotinaMarca(hb.dataset.hab, e);
       const tk = e.target.closest('.task'); if (!tk) return;

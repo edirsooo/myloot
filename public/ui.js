@@ -110,6 +110,27 @@
     else if (e.shiftKey && (a === pri || a === m)) { e.preventDefault(); ult.focus(); }
     else if (!e.shiftKey && a === ult) { e.preventDefault(); pri.focus(); }
   });
+  // teclado e leitor de tela: botão só com símbolo ganha nome; coisas clicáveis que não são botão entram no Tab
+  const NOMES = { '✕': 'Fechar', '×': 'Fechar', '‹': 'Anterior', '›': 'Próximo', '◀': 'Anterior', '▶': 'Próximo', '🗑️': 'Apagar', '✏️': 'Editar', '⋯': 'Mais ações', '↑': 'Subir', '↓': 'Descer', '＋': 'Adicionar', '+': 'Adicionar', '−': 'Diminuir' };
+  const CLICAVEIS = '.slot, .fin-row, .cal .day, .tdate[data-a], .prio[data-a], .tev, th[data-sort], .card.cli, #focus, .rowi, .catrow .ico';
+  M.acessivel = (root) => {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll('button:not([aria-label])').forEach((b) => {
+      const t = b.textContent.trim();
+      if (t.length > 3 && !NOMES[t]) return; // já tem texto que diz o que faz
+      const n = b.getAttribute('title') || NOMES[t]; if (n) b.setAttribute('aria-label', n);
+    });
+    root.querySelectorAll(CLICAVEIS).forEach((e) => {
+      if (/^(BUTTON|A|INPUT|SELECT|TEXTAREA)$/.test(e.tagName) || e.hasAttribute('tabindex')) return;
+      e.tabIndex = 0; if (!e.getAttribute('role')) e.setAttribute('role', 'button');
+      if (!e.getAttribute('aria-label') && e.getAttribute('title')) e.setAttribute('aria-label', e.getAttribute('title'));
+    });
+  };
+  // roda depois de cada redesenho de tela e de janela (uma vez por quadro, por mais que a tela mude)
+  let acPend = 0;
+  const acObs = new MutationObserver(() => { if (acPend) return; acPend = requestAnimationFrame(() => { acPend = 0; ['#view', '#overlay', '#hud', '#side'].forEach((q) => M.acessivel(document.querySelector(q))); }); });
+  addEventListener('DOMContentLoaded', () => ['#view', '#overlay', '#hud', '#side'].forEach((q) => { const e = document.querySelector(q); if (e) acObs.observe(e, { childList: true, subtree: true }); }));
+  if (document.readyState !== 'loading') ['#view', '#overlay', '#hud', '#side'].forEach((q) => { const e = document.querySelector(q); if (e) acObs.observe(e, { childList: true, subtree: true }); });
   // Enter ou Espaço num cartão ou linha que funciona como botão (role="button") faz o mesmo que clicar
   document.addEventListener('keydown', (e) => {
     if ((e.key !== 'Enter' && e.key !== ' ') || e.target !== document.activeElement) return;
@@ -154,15 +175,17 @@
   };
   M.modalOpen = () => $('#overlay').classList.contains('on');
   M.confirm = (msg, okLabel) => new Promise((res) => {
-    const m = M.modal(`<div class="modal-b"><div style="font-size:15px">${esc(msg)}</div><div class="row" style="justify-content:flex-end"><button class="btn ghost" id="cn" style="flex:none">Cancelar</button><button class="btn danger" id="cy" style="flex:none">${esc(okLabel || 'Confirmar')}</button></div></div>`, { small: true });
-    $('#cn', m).onclick = () => { M.closeModal(); res(false); };
-    $('#cy', m).onclick = () => { M.closeModal(); res(true); };
+    // Esc ou clique fora também respondem (antes quem chamou ficava esperando para sempre)
+    let feito = false; const fim = (v) => { if (feito) return; feito = true; res(v); };
+    const m = M.modal(`<div class="modal-b"><div style="font-size:15px">${esc(msg)}</div><div class="row" style="justify-content:flex-end"><button class="btn ghost" id="cn" style="flex:none">Cancelar</button><button class="btn danger" id="cy" style="flex:none">${esc(okLabel || 'Confirmar')}</button></div></div>`, { small: true, onClose: () => fim(false) });
+    $('#cn', m).onclick = () => { fim(false); M.closeModal(); };
+    $('#cy', m).onclick = () => { fim(true); M.closeModal(); };
   });
 
   // pergunta com várias respostas. opcoes = [{ k, t, perigo, fraco }]; devolve o k escolhido, ou null em Cancelar, ✕, Esc ou clique fora
   M.escolha = (msg, opcoes, titulo) => new Promise((res) => {
     let feito = false; const fim = (v) => { if (feito) return; feito = true; res(v); };
-    const m = M.modal(`<div class="modal-h"><h2>${esc(titulo || 'O que você quer fazer?')}</h2><button class="icon-btn" id="x">✕</button></div><div class="modal-b"><div style="font-size:15px">${esc(msg)}</div><div class="escolha">${opcoes.map((o) => `<button type="button" class="btn ${o.perigo ? 'danger' : o.fraco ? 'ghost' : ''}" data-k="${esc(o.k)}">${esc(o.t)}</button>`).join('')}<button type="button" class="btn ghost" data-k="">Cancelar</button></div></div>`, { small: true, onClose: () => fim(null) });
+    const m = M.modal(`<div class="modal-h"><h2>${esc(titulo || 'O que você quer fazer?')}</h2><button class="icon-btn" id="x" aria-label="Fechar">✕</button></div><div class="modal-b"><div style="font-size:15px">${esc(msg)}</div><div class="escolha">${opcoes.map((o) => `<button type="button" class="btn ${o.perigo ? 'danger' : o.fraco ? 'ghost' : ''}" data-k="${esc(o.k)}">${esc(o.t)}</button>`).join('')}<button type="button" class="btn ghost" data-k="">Cancelar</button></div></div>`, { small: true, onClose: () => fim(null) });
     $('#x', m).onclick = M.closeModal;
     m.querySelector('.escolha').onclick = (e) => { const b = e.target.closest('[data-k]'); if (!b) return; fim(b.dataset.k || null); M.closeModal(); };
   });
@@ -194,7 +217,17 @@
     m.style.cssText = 'background:none;border:0;box-shadow:none;width:min(620px,100%)';
     const input = $('#gq', m), res = $('#gres', m);
     let list = [], sel = 0;
-    const hi = (s, q) => { const t = esc(s); if (!q) return t; const i = M.norm(s).indexOf(q); return i < 0 ? t : esc(s.slice(0, i)) + '<mark>' + esc(s.slice(i, i + q.length)) + '</mark>' + esc(s.slice(i + q.length)); };
+    // destaca a primeira palavra buscada que aparecer no texto (M.norm mantém o tamanho, então as posições batem)
+    const hi = (s, q) => {
+      const t = esc(s); if (!q) return t;
+      const n = M.norm(s);
+      for (const w of q.split(' ').filter(Boolean)) {
+        const i = n.indexOf(w); if (i < 0) continue;
+        return esc(s.slice(0, i)) + '<mark>' + esc(s.slice(i, i + w.length)) + '</mark>' + esc(s.slice(i + w.length));
+      }
+      return t;
+    };
+    const vaiCfg = (sec) => { M.ui.cfgSec = sec; M.go('cfg'); };
     const CMDS = [
       ['＋', 'Novo item', 'N', () => { M.ui.page = 'lib'; M.render(); M.newItemDialog(); }],
       ['🏠', 'Ir para Início', 'H', () => M.go('home')],
@@ -205,6 +238,14 @@
       ['👥', 'Ir para Clientes', 'L', () => M.go('clients')],
       ['💰', 'Ir para Financeiro', 'M', () => M.go('fin')],
       ['➕', 'Lançar entrada ou saída', '', () => { M.go('fin'); M.finEditar({ tipo: 'entrada' }); }],
+      ['☑', 'Nova tarefa', '', () => { M.go('tasks'); setTimeout(() => { const e = document.getElementById('tIn'); if (e) e.focus(); }, 60); }],
+      ['🔗', 'Guardar o link copiado', '', async () => {
+        let u = ''; try { u = (await navigator.clipboard.readText()).trim(); } catch (_) {}
+        M.go('home'); setTimeout(() => { const e = document.getElementById('qcIn'); if (e) { e.value = /^https?:\/\//i.test(u) ? u : ''; e.focus(); } }, 60);
+      }],
+      ['💾', 'Fazer backup', '', () => vaiCfg('💾 Dados e backup')],
+      ['📱', 'Usar no celular', '', () => vaiCfg('📱 Usar no celular')],
+      ['🤖', 'Configurar a IA', '', () => vaiCfg('🤖 IA (Claude, Codex e Gemini)')],
       ['🧮', 'Calcular preço (valor da hora)', '', () => M.calcPreco()],
       ['👤', 'Novo cliente', '', () => { M.go('clients'); M.novoCliente(); }],
       ['🧰', 'Ir para Ferramentas', '', () => M.go('tools')],
@@ -214,19 +255,26 @@
       ['🌗', 'Trocar tema claro / escuro', '', () => { const s = M.db.settings; const claro = document.body.classList.contains('light'); s.themeAuto = false; s.theme = claro ? 'dark' : 'light'; M.save(); M.applySettings(); }],
     ];
     function run() {
-      const q = M.norm(input.value.trim());
-      list = CMDS.filter((c) => !q || M.norm(c[1]).includes(q)).map((c) => ({ kind: 'cmd', c, score: q ? 3 : 0 }));
+      // busca por palavras, em qualquer ordem, ignorando acento e pontuação ("dra marina" acha "Dra. Marina")
+      const q = M.norm(input.value).replace(/[^a-z0-9@]+/g, ' ').trim();
+      const W = q ? q.split(' ') : [];
+      const acha = (...partes) => { const h = ' ' + M.norm(partes.join(' ')).replace(/[^a-z0-9@]+/g, ' ') + ' '; return W.every((w) => h.includes(w)); };
+      list = CMDS.filter((c) => !q || acha(c[1])).map((c) => ({ kind: 'cmd', c, score: q ? 3 : 0 }));
       if (q) {
         M.db.items.forEach((it) => {
           let where = '';
-          if (M.norm(it.title).includes(q)) where = 'título';
-          else if (M.norm(it.tags.join(' ')).includes(q)) where = 'etiqueta';
-          else if (M.norm(it.attachments.map((a) => a.name).join(' ')).includes(q)) where = 'anexo';
-          else if (M.norm(it.desc + ' ' + it.content + ' ' + it.checklist.map((c) => c.t).join(' ') + ' ' + it.links.map((l) => l.url + l.label).join(' ')).includes(q)) where = 'texto';
+          if (acha(it.title)) where = 'título';
+          else if (acha(it.title, it.tags.join(' '))) where = 'etiqueta';
+          else if (acha(it.title, it.attachments.map((a) => a.name).join(' '))) where = 'anexo';
+          else if (acha(it.title, it.tags.join(' '), it.desc, it.content, it.checklist.map((c) => c.t).join(' '), it.links.map((l) => l.url + ' ' + (l.label || '')).join(' '))) where = 'texto';
           if (where) list.push({ kind: 'item', it, where, score: where === 'título' ? 0 : 1 });
         });
-        M.db.tasks.forEach((t) => { if (M.norm(t.text).includes(q)) list.push({ kind: 'task', t, where: 'tarefa', score: 2 }); });
-        (M.db.clients || []).forEach((c) => { if (M.norm([c.nome, c.empresa, c.email, c.insta].join(' ')).includes(q)) list.push({ kind: 'cli', c, score: 0.5 }); });
+        M.db.tasks.forEach((t) => { if (acha(t.text)) list.push({ kind: 'task', t, where: 'tarefa', score: 2 }); });
+        (M.db.clients || []).forEach((c) => { if (acha(c.nome, c.empresa, c.email, c.insta, c.whats, (c.tags || []).join(' '))) list.push({ kind: 'cli', c, score: 0.5 }); });
+        (M.db.fin || []).forEach((f) => { const cli = f.client && M.client ? M.client(f.client) : null; if (acha(f.desc, f.cat, f.obs, cli ? cli.nome : '')) list.push({ kind: 'fin', f, score: 2.2 }); });
+        (M.db.habits || []).forEach((h) => { if (acha(h.nome)) list.push({ kind: 'hab', h, score: 2.4 }); });
+        (M.db.goals || []).forEach((g) => { if (acha(g.nome)) list.push({ kind: 'meta', g, score: 2.4 }); });
+        (M.db.tools || []).forEach((t) => { if (acha(t.n, t.p, t.u)) list.push({ kind: 'tool', t, score: 2.6 }); });
         list.sort((a, b) => a.score - b.score);
         list = list.slice(0, 40);
       }
@@ -240,12 +288,22 @@
         ? `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>${M.type(r.it.type).em}</span><span>${hi(r.it.title || 'Sem título', q)}</span><small>${r.where}</small></div>`
         : r.kind === 'cli'
         ? `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>👤</span><span>${hi(r.c.nome || 'Sem nome', q)}${r.c.empresa ? ' · ' + esc(r.c.empresa) : ''}</span><small>cliente</small></div>`
+        : r.kind === 'fin'
+        ? `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>${r.f.tipo === 'saida' ? '🔻' : '💰'}</span><span>${hi(r.f.desc || 'Lançamento', q)} · ${esc(M.reais(r.f.valor))}</span><small>${r.f.pago ? (r.f.tipo === 'saida' ? 'pago' : 'recebido') : 'em aberto'} · ${esc(M.fmtDate ? M.fmtDate(r.f.data) : r.f.data)}</small></div>`
+        : r.kind === 'hab' || r.kind === 'meta'
+        ? `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>${esc((r.h || r.g).em || '🎯')}</span><span>${hi((r.h || r.g).nome || '', q)}</span><small>${r.kind === 'hab' ? 'hábito' : 'meta'}</small></div>`
+        : r.kind === 'tool'
+        ? `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>🧰</span><span>${hi(r.t.n || '', q)}</span><small>ferramenta</small></div>`
         : `<div class="r ${i === sel ? 'on' : ''}" data-i="${i}"><span>${r.t.ev ? '📅' : r.t.done ? '✅' : '☐'}</span><span>${hi(r.t.text, q)}</span><small>${r.t.ev ? 'compromisso' : r.t.done ? 'tarefa concluída' : 'tarefa'}</small></div>`).join('');
     }
     function go(i) {
       const r = list[i]; if (!r) return;
       M.closeModal();
-      if (r.kind === 'cmd') r.c[3](); else if (r.kind === 'item') M.openItem(r.it.id); else if (r.kind === 'cli') { M.go('clients'); M.openClient(r.c.id); } else M.abrirTarefa(r.t.id);
+      if (r.kind === 'cmd') r.c[3](); else if (r.kind === 'item') M.openItem(r.it.id); else if (r.kind === 'cli') { M.go('clients'); M.openClient(r.c.id); }
+      else if (r.kind === 'fin') { M.go('fin'); M.finEditar(r.f); }
+      else if (r.kind === 'hab' || r.kind === 'meta') M.go('rot');
+      else if (r.kind === 'tool') { M.go('tools'); if (r.t.u) setTimeout(() => window.open(r.t.u, '_blank', 'noopener'), 50); }
+      else M.abrirTarefa(r.t.id);
     }
     input.oninput = run;
     input.onkeydown = (e) => {

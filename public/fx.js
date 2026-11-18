@@ -30,14 +30,23 @@
     ctx.fillStyle = shade(c, 0.55); ctx.beginPath(); ctx.moveTo(x + s, y - h); ctx.lineTo(x, y); ctx.lineTo(x, y + s); ctx.lineTo(x + s, y + h); ctx.fill();
     ctx.globalAlpha = 1;
   }
+  let ultimo = 0, sujo = false;
   function frame(t) {
-    bctx.clearRect(0, 0, W, H);
-    for (const q of cubes) {
-      if (!still) { q.y -= q.v; q.x += Math.sin(t / 2500 + q.w) * 0.15; }
-      if (q.y < -q.s * 2) { q.y = H + q.s * 2; q.x = Math.random() * W; }
-      iso(bctx, q.x, q.y, q.s, q.c, q.a);
+    raf = 0;
+    // cubos a ~30 quadros por segundo (o movimento é lento; 60 gastava o dobro de CPU), andando pelo tempo que passou
+    const dt = ultimo ? Math.min(4, (t - ultimo) / 16.7) : 1;
+    const desenhaFundo = !still && t - ultimo >= 30;
+    if (desenhaFundo || !ultimo) {
+      ultimo = t;
+      bctx.clearRect(0, 0, W, H);
+      for (const q of cubes) {
+        if (!still) { q.y -= q.v * dt; q.x += Math.sin(t / 2500 + q.w) * 0.15 * dt; }
+        if (q.y < -q.s * 2) { q.y = H + q.s * 2; q.x = Math.random() * W; }
+        iso(bctx, q.x, q.y, q.s, q.c, q.a);
+      }
     }
-    fctx.clearRect(0, 0, W, H);
+    if (parts.length || sujo) fctx.clearRect(0, 0, W, H);
+    sujo = parts.length > 0;
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i];
       p.vy += 0.28; p.x += p.vx; p.y += p.vy; p.vx *= 0.99; p.life--;
@@ -47,8 +56,10 @@
       if (p.life <= 0 || p.y > H + 20) parts.splice(i, 1);
     }
     fctx.globalAlpha = 1;
-    raf = requestAnimationFrame(frame);
+    // parado (movimento reduzido) e sem confete: não pede o próximo quadro; burst/rain religam
+    if (!still || parts.length || sujo) raf = requestAnimationFrame(frame);
   }
+  const anda = () => { if (!raf) raf = requestAnimationFrame(frame); };
   FX.burst = function (x, y, n, power) {
     if (!FX.confetti) return;
     x = x == null ? W / 2 : x; y = y == null ? H * 0.35 : y; n = n || 60; power = power || 9;
@@ -56,6 +67,7 @@
       const a = Math.random() * Math.PI * 2, v = Math.random() * power;
       parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - power * 0.6, s: 5 + ((Math.random() * 3) | 0) * 2, c: COLORS[(Math.random() * COLORS.length) | 0], life: 70 + Math.random() * 50 });
     }
+    anda();
   };
   FX.rain = function () {
     if (!FX.confetti) return;
@@ -70,7 +82,7 @@
     requestAnimationFrame(() => { e.style.transform = 'translate(-50%,-50px)'; e.style.opacity = '0'; });
     setTimeout(() => e.remove(), 1000);
   };
-  addEventListener('resize', size);
-  size(); raf = requestAnimationFrame(frame);
+  addEventListener('resize', () => { size(); ultimo = 0; anda(); });
+  size(); anda();
   window.FX = FX;
 })();

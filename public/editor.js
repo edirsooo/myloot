@@ -18,14 +18,17 @@
   // devolve { ok: [anexos que entraram], falhas: [{ name, erro }] }, para quem precisa saber se o arquivo chegou (voz);
   // quem não usa o retorno continua igual: o aviso de cada falha e o de sucesso aparecem como antes
   M.attachFiles = async (it, files, after) => {
-    const ok = [], falhas = [];
+    const ok = [], falhas = [], repetidos = [];
     for (const f of files) {
+      // mesmo nome e mesmo tamanho já anexado neste item: não sobe de novo
+      if (it.attachments.some((a) => a.name === f.name && a.size === f.size)) { repetidos.push(f.name); continue; }
       try { const a = await M.upload(f); it.attachments.push(a); ok.push(a); M.award('attach'); } catch (e) { falhas.push({ name: f.name, erro: e.message }); M.toast('⚠️ ' + f.name + ': ' + e.message); }
     }
     const n = ok.length;
     if (n) { it.updated = Date.now(); M.save(); SFX.play('drop'); M.toast(`📎 ${n} arquivo${n > 1 ? 's' : ''} anexado${n > 1 ? 's' : ''}`); }
+    if (repetidos.length) M.toast(`ℹ️ Já estava anexado: ${repetidos.join(', ')}`);
     if (after) after();
-    return { ok, falhas };
+    return { ok, falhas, repetidos };
   };
 
   M.itemFromFiles = async (files) => {
@@ -75,8 +78,9 @@
           <span style="font-size:22px">${t.em}</span>
           <h2>${t.name}</h2>
           <span class="savedot" id="savedot">✔ salvo</span>
+          <button class="icon-btn" id="eClip" title="Anexar arquivo (PDF, imagem, documento)" aria-label="Anexar arquivo">📎</button>
           <button class="icon-btn" id="eFav" title="Favorito" aria-label="Favorito" aria-pressed="${it.fav ? 'true' : 'false'}">${it.fav ? '⭐' : '☆'}</button>
-          ${it._new ? '' : `<button class="icon-btn" id="eArq" title="${it.arq ? 'Desarquivar: volta para a lista do dia a dia' : 'Arquivar: sai da lista do dia a dia, mas continua guardado'}" aria-label="${it.arq ? 'Desarquivar' : 'Arquivar'}">${it.arq ? '📤' : '📦'}</button>`}
+          ${it._new ? '' : `<button class="icon-btn" id="eArq" title="${it.arq ? 'Desarquivar: volta para a lista do dia a dia' : 'Arquivar: sai da lista do dia a dia, mas continua guardado'}" aria-label="${it.arq ? 'Desarquivar' : 'Arquivar'}">${it.arq ? '📤' : '🗃️'}</button>`}
           <button class="icon-btn" id="eDel" title="Mandar para a Lixeira" aria-label="Mandar para a Lixeira">🗑️</button>
           <button class="icon-btn" id="eX" title="Fechar (Esc)" aria-label="Fechar">✕</button>
         </div>
@@ -169,6 +173,7 @@
       if ($('#svNo', m)) $('#svNo', m).onclick = () => { M.db.items = M.db.items.filter((x) => x.id !== it.id); delete it._new; M.save(); M.closeModal(); M.toast('Item descartado'); };
       $('#eDel', m).onclick = () => { M.closeModal(); M.trashItem(it); };
       if ($('#eArq', m)) $('#eArq', m).onclick = () => { $('#eX', m).click(); M.arquivarItem(it); }; // fecha a ficha (guardando rascunho, se houver) e arquiva
+      $('#eClip', m).onclick = () => { const fi = $('#eFile', m); if (fi) fi.click(); };
       $('#eFav', m).onclick = () => { it.fav = !it.fav; touch(); SFX.play(it.fav ? 'star' : 'click'); $('#eFav', m).textContent = it.fav ? '⭐' : '☆'; $('#eFav', m).setAttribute('aria-pressed', it.fav ? 'true' : 'false'); };
       // áudio que não foi transcrito (voz: 'erro'): tenta de novo sem sair da ficha
       const vz = $('#vzDeNovo', m);
@@ -203,7 +208,8 @@
     const lixo = (oque) => `<button type="button" class="xbtn lx" data-a="rm" title="Remover ${oque}" aria-label="Remover ${oque}">🗑️</button>`;
     // depois de subir ou descer, o foco continua na mesma linha (quem usa teclado segue apertando)
     const focaOrd = (box, id, a) => { const r = box.querySelector(`[data-id="${id}"]`), x = r && (r.querySelector(`[data-a="${a}"]:not(:disabled)`) || r.querySelector('.ord:not(:disabled)')); if (x) x.focus(); };
-    const urlDe = (v) => (/^[a-z]+:\/\//i.test(v) ? v : 'https://' + v);
+    // só http(s), mailto e tel viram link; qualquer outro esquema (javascript:, data:…) recebe https:// na frente
+    const urlDe = (v) => (/^(https?:\/\/|mailto:|tel:)/i.test(v) ? v : 'https://' + String(v).replace(/^(javascript|data|vbscript|file|blob):\/*/i, ''));
     const sitio = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (_) { return ''; } };
     const nomeExt = (n) => { const i = String(n || '').lastIndexOf('.'); return i > 0 ? [n.slice(0, i), n.slice(i)] : [String(n || ''), '']; };
 

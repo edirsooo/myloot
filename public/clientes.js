@@ -39,9 +39,12 @@
 
   function cardHTML(c) {
     const s = cst(c.status), tA = M.db.tasks.filter((t) => t.client === c.id && M.tarefaPendente(t)).length, nI = M.db.items.filter((i) => i.client === c.id).length;
+    // quanto falta receber desse cliente (e se tem atrasado): aparece no cartão para cobrar sem abrir a ficha
+    const hoje = M.today(), aReceber = (M.db.fin || []).filter((f) => f.client === c.id && f.tipo === 'entrada' && !f.pago);
+    const somaR = aReceber.reduce((x, f) => x + (Number(f.valor) || 0), 0), atrasado = aReceber.some((f) => f.data < hoje);
     return `<div class="card cli" data-cli="${c.id}" draggable="true" style="--c:${s.color}">
       <div class="top"><span class="av" style="background:${corDe(c.nome)}">${esc(iniciais(c.nome))}</span><div style="min-width:0;flex:1"><h3>${esc(c.nome || 'Sem nome')}</h3>${c.empresa ? `<p style="-webkit-line-clamp:1">${esc(c.empresa)}</p>` : ''}</div><span class="badge">${s.em} ${s.name}</span></div>
-      <div class="meta">${c.rascunho ? '<span class="tag rasc" title="Tem alterações não salvas. Abra para salvar ou descartar.">📝 rascunho</span>' : ''}${tA ? `<span class="mi">✅ ${tA} tarefa${tA > 1 ? 's' : ''}</span>` : ''}${nI ? `<span class="mi">📦 ${nI} ite${nI > 1 ? 'ns' : 'm'}</span>` : ''}${c.tags.slice(0, 3).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}</div>
+      <div class="meta">${c.rascunho ? '<span class="tag rasc" title="Tem alterações não salvas. Abra para salvar ou descartar.">📝 rascunho</span>' : ''}${tA ? `<span class="mi">✅ ${tA} tarefa${tA > 1 ? 's' : ''}</span>` : ''}${nI ? `<span class="mi">📦 ${nI} ite${nI > 1 ? 'ns' : 'm'}</span>` : ''}${somaR ? `<span class="mi ${atrasado ? 'atras' : ''}" title="${atrasado ? 'Tem recebimento atrasado' : 'Recebimentos em aberto'}">💰 ${M.reais ? M.reais(somaR) : somaR} a receber${atrasado ? ' · atrasado' : ''}</span>` : ''}${c.tags.slice(0, 3).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}</div>
       ${M.cliLinks(c).length ? `<div class="cli-bar">${botoes(c)}</div>` : ''}<div class="cli-abrir">Abrir ficha →</div></div>`;
   }
 
@@ -127,7 +130,14 @@
       if (!eraNovo && M.db.clients.includes(c) && M.rasc.guardar(c)) M.toast('📝 Alterações guardadas como rascunho. Abra a ficha de novo para salvar ou descartar.');
       delete c._novo; M.save(); M.render();
     } });
-    const campo = (k, lbl, ph, tipo) => `<div class="fld"><label>${lbl}</label><input type="${tipo || 'text'}" data-k="${k}" value="${esc(c[k])}" placeholder="${ph}"></div>`;
+    const campo = (k, lbl, ph, tipo) => `<div class="fld"><label for="cf_${k}">${lbl}</label><input type="${tipo || 'text'}" id="cf_${k}" data-k="${k}" value="${esc(c[k])}" placeholder="${ph}"></div>`;
+    // redesenha a ficha (atalhos de contato, cabeçalho) sem perder o campo em que a pessoa entrou com Tab ou clique
+    const redesenha = () => setTimeout(() => {
+      const f = document.activeElement, id = f && m.contains(f) && f.id, pos = f && typeof f.selectionStart === 'number' ? f.selectionStart : null;
+      draw();
+      const e = id && m.querySelector('#' + CSS.escape(id));
+      if (e) { e.focus(); if (pos != null) try { e.setSelectionRange(pos, pos); } catch (_) {} }
+    }, 0);
     function draw() {
       const s = cst(c.status);
       const ts = M.db.tasks.filter((t) => t.client === c.id).sort((a, b) => a.done - b.done || (a.date || '9').localeCompare(b.date || '9'));
@@ -164,10 +174,10 @@
       $('#svOk', m).onclick = () => { if (!c.nome.trim()) return M.falta($('#cNome', m), '✍️ Dê um nome ao cliente primeiro'); const novo = novoAberto === c.id; novoAberto = null; delete c._novo; M.rasc.salvar(c); M.save(); M.closeModal(); M.toast(novo ? '✅ Cliente cadastrado' : '✅ Cliente salvo'); };
       if ($('#svRev', m)) $('#svRev', m).onclick = () => { M.rasc.reverter(c); base = M.rasc.foto(c); M.save(); SFX.play('undo'); draw(); M.toast('↩ Alterações descartadas: voltou a versão salva'); };
       if ($('#svNo', m)) $('#svNo', m).onclick = () => { M.db.clients = M.db.clients.filter((x) => x !== c); novoAberto = null; M.save(); M.closeModal(); M.toast('Cadastro descartado'); };
-      $('#cDel', m).onclick = () => { M.closeModal(); if (c.nome.trim()) M.trashClient(c); };
+      $('#cDel', m).onclick = () => { M.closeModal(); if (c.nome.trim() || c.empresa || c.email || c.whats) M.trashClient(c); else { M.db.clients = M.db.clients.filter((x) => x !== c); M.save(); M.toast('Cadastro vazio descartado'); } };
       $('#cNome', m).oninput = (e) => { c.nome = e.target.value; touch(); $('.modal-h h2', m).textContent = c.nome || 'Novo cliente'; };
-      $('#cNome', m).onchange = () => draw();
-      m.querySelectorAll('[data-k]').forEach((el) => { el.oninput = () => { c[el.dataset.k] = el.value; touch(); }; el.onchange = () => { if (el.tagName === 'INPUT') draw(); }; });
+      $('#cNome', m).onchange = redesenha;
+      m.querySelectorAll('[data-k]').forEach((el) => { el.oninput = () => { c[el.dataset.k] = el.value; touch(); }; el.onchange = () => { if (el.tagName === 'INPUT') redesenha(); }; });
       $('#cTags', m).oninput = (e) => { c.tags = [...new Set(e.target.value.split(',').map((x) => x.trim().replace(/^#/, '')).filter(Boolean))]; touch(); };
       $('#cSt', m).onclick = (e) => { const x = e.target.closest('[data-s]'); if (!x) return; c.status = x.dataset.s; touch(); SFX.play('click'); draw(); };
       m.querySelectorAll('.cli-bar [data-pasta]').forEach((b) => { b.onclick = () => M.abrirPastaCliente(c); });

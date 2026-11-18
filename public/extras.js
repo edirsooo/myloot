@@ -35,7 +35,7 @@
   // Do mais completo ao mais leve: backup completo (.zip com os anexos), backup só dos registros (.json ou .myloot com senha),
   // as cópias automáticas que o servidor guarda sozinho e a exportação em Markdown. Restaurar é um botão só: o arquivo escolhido decide o caminho.
   const tam = (n) => (n >= 1073741824 ? (n / 1073741824).toFixed(1).replace('.', ',') + ' GB' : M.size(n));
-  const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+  const plural = (n, um, varios) => { n = Number(n) || 0; return n + ' ' + (n === 1 ? um : varios); }; // número de fora do arquivo nunca vira HTML
   const contagem = (o) => [plural(o.itens, 'item', 'itens'), plural(o.tarefas, 'tarefa', 'tarefas'), plural(o.clientes, 'cliente', 'clientes')].join(' · ');
   const agora = () => ({ itens: M.db.items.length, tarefas: M.db.tasks.length, clientes: M.db.clients.length });
   const dataHora = (ms) => { const d = new Date(ms), p = (n) => String(n).padStart(2, '0'); return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} às ${p(d.getHours())}:${p(d.getMinutes())}`; };
@@ -174,7 +174,11 @@
   M.dadosBind = () => {
     const b = $('#cBakS'); if (!b) return;
     // baixar logo depois de mexer em algo: espera a gravação terminar para o arquivo sair com a última mudança
-    ['#cBakC', '#cBak', '#cExp'].forEach((s) => { const a = $(s); if (a) a.onclick = async (e) => { if (!M.salvando()) return; e.preventDefault(); await M.salvou(); a.click(); }; });
+    ['#cBakC', '#cBak', '#cExp'].forEach((s) => { const a = $(s); if (a) a.onclick = async (e) => {
+      if (M.salvando()) { e.preventDefault(); await M.salvou(); a.click(); return; }
+      // backup feito: guarda a data (o Início lembra depois de 14 dias) e avisa, porque um backup grande demora a começar a baixar
+      if (s !== '#cExp') { M.db.settings.bkUlt = Date.now(); M.save(); M.toast('⏳ Preparando o backup… o download começa em instantes'); }
+    }; });
     M.api('/api/backup/completo?info=1').then((r) => { const el = $('#cBakInfo'); if (el) el.textContent = `Hoje o backup completo leva ${contagem(r)} e ${plural(r.anexos, 'anexo', 'anexos')}: cerca de ${tam(r.bytes)}.`; }).catch(() => {});
     const rs = $('#cRes'), rf = $('#cResF');
     if (rs && rf) { rs.onclick = () => rf.click(); rf.onchange = (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) M.restaurarArquivo(f); }; }

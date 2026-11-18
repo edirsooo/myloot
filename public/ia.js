@@ -128,7 +128,7 @@
         if (c) { c.disabled = !ok; c.checked = ok && ligada(i.id); const sw = c.closest('label'); if (sw) { sw.style.opacity = ok ? '' : '.45'; sw.title = ok ? '' : 'Instale o ' + i.nome + ' para ligar'; } }
       });
     };
-    M.iaStatus(true).then(pinta).catch(() => {});
+    M.iaStatus().then(pinta).catch(() => {}); // a checagem forçada fica no botão "Procurar de novo"
     M.IAS.forEach((i) => { const c = $('#iaOn_' + i.id); if (c) c.onchange = () => { s.aiTools = Object.assign({}, s.aiTools || {}, { [i.id]: c.checked }); M.save(); SFX.play('click'); }; });
     $('#aiVia').value = s.aiVia === 'code' ? 'claude' : (s.aiVia || 'auto');
     $('#aiVia').onchange = () => { s.aiVia = $('#aiVia').value; M.save(); M.toast('🤖 Pronto'); };

@@ -7,7 +7,8 @@
 
   M.cnxBind = async () => {
     const box = $('#cnxBox'); if (!box || M.remoto) return;
-    let r; try { r = await M.api('/api/conexoes'); } catch (e) { box.innerHTML = `<small style="color:var(--dim)">${esc(e.message)}</small>`; return; }
+    let r; try { r = await M.api('/api/conexoes'); } catch (e) { if (box.isConnected) box.innerHTML = `<small style="color:var(--dim)">${esc(e.message)}</small>`; return; }
+    if (!box.isConnected) return; // a pessoa saiu da tela enquanto a lista chegava
     const L = r.conexoes || [];
     const quando = (t) => (t ? new Date(t).toLocaleDateString('pt-BR') : 'nunca');
     box.innerHTML = `${L.length ? L.map((c) => `<div class="cnx" data-id="${c.id}">
@@ -33,8 +34,8 @@
     };
     box.onchange = async (e) => {
       const linha = e.target.closest('.cnx'); if (!linha || e.target.type !== 'checkbox') return;
-      await M.api('/api/conexoes/mudar', { method: 'POST', body: JSON.stringify({ id: linha.dataset.id, on: e.target.checked }) });
-      SFX.play('click');
+      try { await M.api('/api/conexoes/mudar', { method: 'POST', body: JSON.stringify({ id: linha.dataset.id, on: e.target.checked }) }); SFX.play('click'); }
+      catch (err) { e.target.checked = !e.target.checked; M.toast('⚠️ ' + err.message); }
     };
   };
 

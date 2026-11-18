@@ -68,18 +68,27 @@ function copiar(de, para) {
 }
 
 // pasta clonada com Git (é o que as IAs fazem ao instalar): atualiza com "git pull", sem misturar com o ZIP
-function git(ROOT, args) { return cp.execFileSync('git', args, { cwd: ROOT, windowsHide: true, timeout: 120000, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); }
-function aplicarGit(ROOT) {
+// sem travar o servidor (execFile assíncrono) e sem nunca pedir senha no terminal escondido
+function git(ROOT, args) {
+  return new Promise((ok, no) => cp.execFile('git', args, { cwd: ROOT, windowsHide: true, timeout: 120000, encoding: 'utf8', env: Object.assign({}, process.env, { GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C' }) },
+    (e, out, err) => (e ? no(Object.assign(e, { stderr: err })) : ok(String(out || '')))));
+}
+const ultimaLinha = (e) => String((e && (e.stderr || e.message)) || '').trim().split('\n').pop().slice(0, 140);
+async function aplicarGit(ROOT) {
   const PEDIR = ' Peça para a sua IA: "Atualize o MyLoot nesta pasta com git pull, sem mexer na pasta data".';
-  try { git(ROOT, ['--version']); } catch (_) { return false; } // sem o programa git: cai no ZIP
-  if (git(ROOT, ['status', '--porcelain', '--untracked-files=no']).trim()) throw new Error('Há arquivos do app alterados nesta pasta, então não atualizei para não apagar nada.' + PEDIR);
-  try { git(ROOT, ['pull', '--ff-only', 'origin', 'main']); }
-  catch (e) { throw new Error('O "git pull" não conseguiu atualizar (' + String(e.stderr || e.message).trim().split('\n').pop().slice(0, 140) + ').' + PEDIR); }
-  return true;
+  // pasta do Git sem o programa git: o ZIP sujaria a pasta e o próximo git pull recusaria para sempre
+  try { await git(ROOT, ['--version']); } catch (_) { throw new Error('Esta pasta foi instalada com o Git, mas o programa git não foi encontrado.' + PEDIR); }
+  let ramo = '', sujo = '';
+  try { ramo = (await git(ROOT, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim(); sujo = (await git(ROOT, ['status', '--porcelain', '--untracked-files=no'])).trim(); }
+  catch (e) { throw new Error('O Git não conseguiu ler esta pasta (' + ultimaLinha(e) + ').' + PEDIR); }
+  if (ramo !== 'main') throw new Error('Esta pasta está no ramo "' + ramo + '", não no "main", então não atualizei.' + PEDIR);
+  if (sujo) throw new Error('Há arquivos do app alterados nesta pasta, então não atualizei para não apagar nada.' + PEDIR);
+  try { await git(ROOT, ['pull', '--ff-only', 'origin', 'main']); }
+  catch (e) { throw new Error('O "git pull" não conseguiu atualizar (' + ultimaLinha(e) + ').' + PEDIR); }
 }
 
 async function aplicar(ROOT) {
-  if (fs.existsSync(path.join(ROOT, '.git')) && aplicarGit(ROOT)) { cache = null; return local(ROOT).versao; }
+  if (fs.existsSync(path.join(ROOT, '.git'))) { await aplicarGit(ROOT); cache = null; return local(ROOT).versao; }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'myloot-atualizacao-'));
   const zip = path.join(tmp, 'myloot.zip');
   await baixar(URL_ZIP, zip);

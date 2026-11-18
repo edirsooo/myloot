@@ -1008,3 +1008,32 @@ body.light .qc-copy h2 b{text-shadow:0 3px 0 #cfc6ee}
 .qc-copy p{margin:12px 0 0;max-width:none;font-size:clamp(13.5px,4.2cqw,16px);line-height:1.45}
 @supports not (font-size:1cqw){.qc-l1{font-size:26px}.qc-l1 .qc-3d{--s:26px}.qc-copy h2 b{font-size:clamp(46px,4.6vw,72px)}}
 @media (max-width:900px){.qc-copy h2 b{font-size:clamp(44px,19cqw,88px)}.qc-l1{font-size:clamp(18px,6.6cqw,28px)}}
+/* Biblioteca grande: botão para desenhar mais cartões */
+.lib-mais{display:flex;justify-content:center;margin:18px 0 6px}
+
+/* ===== auditoria de 18/11/2026 ===== */
+/* texto fraco mais legível nos textos pequenos (datas, dias do calendário, lixeirinha) */
+:root{--faint:#8c94bf}
+/* celular: a barra "Salvar e fechar" encosta no fim da tela (o respiro de 4vh da janela fazia ela flutuar com o conteúdo aparecendo embaixo) */
+@media (max-width:700px){
+  #overlay{padding-bottom:0}
+  /* menu "Mais": o ＋ já está na barra de baixo; sem ele, Lixeira e Configurações não ficam atrás dos botões fixos */
+  .side-foot #btnNew{display:none}
+}
+/* toque: alvos de pelo menos 40 px nos controles pequenos */
+@media (pointer:coarse){
+  #fF button,#views button,.seg button{min-height:var(--ctl-sm)}
+  .tour-btn,#musBtn{min-height:var(--ctl-sm);min-width:var(--ctl-sm)}
+  .mic-in{min-width:var(--ctl-sm);min-height:var(--ctl-sm)}
+  .sw{min-height:var(--ctl-sm)}
+}
+/* "Todas para hoje" no cabeçalho das atrasadas */
+.tgroup h4 .tg-hoje{margin-left:auto;font-size:12px}
+.tgroup h4{display:flex;align-items:center;gap:8px}
+/* Calendário: contas em aberto do dia */
+.chip.fin{cursor:pointer;background:color-mix(in srgb,var(--amber,#ffbe46) 16%,transparent);border-left-color:var(--amber,#ffbe46)}
+.chip.fin.saida{background:color-mix(in srgb,var(--red,#ff486e) 14%,transparent);border-left-color:var(--red,#ff486e)}
+/* cartão do cliente: nome em até 2 linhas (o selo de status espremia o nome) e valor a receber */
+.card.cli h3{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.card.cli .top .badge{flex:none;white-space:nowrap}
+.card.cli .mi.atras{color:var(--red,#ff486e);font-weight:700}

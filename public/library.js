@@ -2,7 +2,8 @@
 (function () {
   const { esc, $, $$ } = M;
 
-  const hex = (c) => c || '#8b5cf6';
+  const hex = (c) => (/^#[0-9a-f]{3,8}$/i.test(c || '') ? c : '#8b5cf6');
+  const POR_VEZ = 200; // cartões desenhados de cada vez (com milhares de itens a tela travava)
   const sel = new Set(); // itens marcados no modo "Selecionar vários"
   const progress = (it) => it.checklist.length ? Math.round((it.checklist.filter((c) => c.done).length / it.checklist.length) * 100) : -1;
 
@@ -27,7 +28,7 @@
 
   function cardHTML(it, view) {
     const t = M.type(it.type), cat = M.cat(it.cat), p = progress(it);
-    const st = M.STATUS.find((s) => s.id === it.status);
+    const st = M.STATUS.find((s) => s.id === it.status) || M.STATUS[0];
     const preview = it.desc || (it.type === 'link' ? it.content : it.content);
     const col = cat ? `<div class="colec">${esc(cat.icon)} ${esc(cat.name)}</div>` : '';
     const meta = `${it.rascunho ? '<span class="tag rasc" title="Tem alterações não salvas. Abra para salvar ou descartar.">📝 rascunho</span>' : ''}${view === 'list' && cat ? `<span class="tag">${esc(cat.icon)} ${esc(cat.name)}</span>` : ''}${it.status !== 'ver' ? `<span class="st ${it.status}">${st.name}</span>` : ''}${it.tags.slice(0, 2).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}${it.date ? `<span class="mi">${M.ic('data', 14)} ${M.fmtDate(it.date)}</span>` : ''}${it.attachments.length ? `<span class="mi" title="Anexos">${M.ic('clipe', 14)} ${it.attachments.length}</span>` : ''}`;
@@ -53,7 +54,7 @@
     const cols = [['title', 'Título'], ['type', 'Tipo'], ['cat', 'Categoria'], ['status', 'Status'], ['tags', 'Etiquetas'], ['date', 'Data'], ['updated', 'Alterado']];
     const s = M.ui.sort;
     return `<table class="tbl"><thead><tr>${cols.map(([k, n]) => `<th data-sort="${k}">${n} ${s.k === k ? (s.d > 0 ? '▲' : '▼') : ''}</th>`).join('')}</tr></thead><tbody>${L.map((it) => {
-      const t = M.type(it.type), c = M.cat(it.cat), st = M.STATUS.find((x) => x.id === it.status);
+      const t = M.type(it.type), c = M.cat(it.cat), st = M.STATUS.find((x) => x.id === it.status) || M.STATUS[0];
       return `<tr data-id="${it.id}" tabindex="0" role="button" class="${sel.has(it.id) ? 'sel' : ''}"><td>${M.ui.selModo ? `<span class="selbox ${sel.has(it.id) ? 'on' : ''}" aria-hidden="true">${sel.has(it.id) ? '✔' : ''}</span> ` : ''}${it.fav ? '⭐ ' : ''}<b>${esc(it.title || 'Sem título')}</b></td><td><span class="badge" style="--c:${t.color}">${t.em} ${t.name}</span></td><td>${c ? esc(c.icon + ' ' + c.name) : '<span class="tdate">—</span>'}</td><td><span class="st ${it.status}">${st.name}</span></td><td>${it.tags.map((x) => `<span class="tag">#${esc(x)}</span>`).join(' ')}</td><td class="tdate">${M.fmtDate(it.date)}</td><td class="tdate">${new Date(it.updated).toLocaleDateString('pt-BR')}</td></tr>`;
     }).join('')}</tbody></table>`;
   }
@@ -77,7 +78,9 @@
     $('#libcount').textContent = L.length + ' de ' + M.db.items.filter((i) => !!i.arq === !!M.ui.arq).length;
     pintaSel();
     if (!L.length && v !== 'board') { box.innerHTML = emptyHTML(); return; }
-    box.innerHTML = v === 'table' ? tableHTML(L) : v === 'board' ? boardHTML(L) : `<div class="${v === 'list' ? 'list' : 'grid'}">${L.map((it) => cardHTML(it, v)).join('')}</div>`;
+    const max = M.ui.libMax || POR_VEZ, V = L.length > max ? L.slice(0, max) : L;
+    const mais = L.length > max ? `<div class="lib-mais"><button class="btn ghost" data-libmais>Mostrar mais ${Math.min(POR_VEZ, L.length - max)} (de ${L.length - max} que faltam)</button></div>` : '';
+    box.innerHTML = (v === 'table' ? tableHTML(V) : v === 'board' ? boardHTML(V) : `<div class="${v === 'list' ? 'list' : 'grid'}">${V.map((it) => cardHTML(it, v)).join('')}</div>`) + mais;
   };
 
   M.pages = M.pages || {};
@@ -112,9 +115,10 @@
       <div id="libres"></div>`;
     M.renderResults();
 
-    $('#hotbar').onclick = (e) => { const x = e.target.closest('.slot'); if (!x) return; u.type = x.dataset.type; SFX.play('click'); M.render(); };
-    const rr = () => M.renderResults();
-    $('#fq').oninput = (e) => { u.q = e.target.value; rr(); };
+    $('#hotbar').onclick = (e) => { const x = e.target.closest('.slot'); if (!x) return; u.type = x.dataset.type; u.libMax = 0; SFX.play('click'); M.render(); };
+    const rr = () => { u.libMax = 0; M.renderResults(); };
+    let tq = 0; // filtro por texto espera uma pausa curta na digitação
+    $('#fq').oninput = (e) => { u.q = e.target.value; clearTimeout(tq); tq = setTimeout(rr, M.db.items.length > 300 ? 180 : 0); };
     $('#fcat').onchange = (e) => { u.cat = e.target.value; rr(); };
     $('#fst').onchange = (e) => { u.status = e.target.value; rr(); };
     $('#ftag').onchange = (e) => { u.tag = e.target.value; rr(); };
@@ -132,6 +136,7 @@
     res.onclick = (e) => {
       if (e.target.closest('[data-limpa]')) { Object.assign(u, { q: '', type: '', cat: '', status: '', tag: '', fav: false, ref: false, arq: false }); return M.render(); }
       if (e.target.closest('[data-novo]')) return M.novoComModelo();
+      if (e.target.closest('[data-libmais]')) { u.libMax = (u.libMax || POR_VEZ) + POR_VEZ; return M.renderResults(); }
       const fav = e.target.closest('[data-fav]');
       if (fav) { e.stopPropagation(); M.toggleFav(fav.dataset.fav); return; }
       const mais = e.target.closest('[data-mais]');

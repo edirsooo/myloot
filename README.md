@@ -16,6 +16,16 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/site/telas/inicio.webp)
 
+## Novidades da versão 2.18
+
+- 🔎 Busca (Ctrl+K) por palavras, em qualquer ordem e sem ligar para pontuação: "dra marina" acha "Dra. Marina". Também acha lançamentos, hábitos, metas e ferramentas, e tem os comandos Nova tarefa, Fazer backup, Usar no celular e Guardar o link copiado
+- 🗓️ Data e hora do jeito que você fala: "Ligar para o contador amanhã às 9h", "reunião sexta 14:30", "pagar aluguel dia 10", "entregar 20/11"
+- 🔗 Link guardado pelo Início ganha o título real da página
+- 🔥 Tarefas atrasadas com o botão "Todas para hoje"; repetida concluída com atraso gera a próxima a partir de hoje
+- 💰 Calendário com as contas a pagar e a receber; cartão do cliente com o valor a receber; "Adicionar recebimento" já vem como recebido
+- 📎 Anexar pelo topo da ficha, com aviso de arquivo repetido; lembrete de backup no Início
+- 🛡️ Mais proteção dos dados (sincronização, arquivo danificado, anexos) e mais rapidez com milhares de itens
+
 ## Novidades da versão 2.17
 
 - 🔵 Gemini: além do Claude Code e do Codex, o MyLoot agora usa o Gemini CLI, que entra com a sua conta Google (a mesma do Antigravity) e tem uso gratuito
@@ -166,7 +176,7 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 |---|---|
 | ![Financeiro](docs/site/telas/financeiro.webp) | ![Rotina](docs/site/telas/rotina.webp) |
 
-| IA (Claude Code ou Codex) | Central de ferramentas |
+| IA (Claude, Codex ou Gemini) | Central de ferramentas |
 |---|---|
 | ![IA](docs/site/telas/ia.webp) | ![Ferramentas](docs/site/telas/ferramentas_rec.webp) |
 
@@ -233,7 +243,7 @@ O computador precisa estar ligado com o MyLoot aberto. No Windows, se aparecer o
 | `Ctrl+K` ou `/` | Buscar em tudo ou dar um comando |
 | `N` | Novo item |
 | `V` | Criar por voz |
-| `H` `B` `T` `C` `L` `M` | Início, Biblioteca, Tarefas, Calendário, Clientes, Financeiro |
+| `H` `B` `T` `R` `C` `L` `M` | Início, Biblioteca, Tarefas, Rotina, Calendário, Clientes, Financeiro |
 | `F` | Começar ou parar o foco |
 | Clique direito no cartão (no celular: segurar o dedo) | Abrir, copiar, favoritar, enviar ao Notion/Trello, mover, duplicar, lixeira |
 
@@ -247,19 +257,19 @@ Tudo fica na pasta `data/`, dentro da pasta do app:
 - `data/anexos/` — os arquivos que você anexou
 - `data/backups/` — uma cópia automática por dia (guarda as 20 mais novas), restauráveis em Configurações → Dados e backup
 
-A chave da API do Claude e as do Notion e do Trello ficam em `data/segredos.json`, fora do backup e do GitHub.
+As chaves de API da IA (Claude, Gemini, ChatGPT) e as do Notion e do Trello ficam em `data/segredos.json`, fora do backup e do GitHub.
 
-Nada sai do seu computador, a não ser que você ligue o Drive (cópia ou sincronização entre computadores), use o Claude ou envie um item para o Notion/Trello.
+Nada sai do seu computador, a não ser que você ligue o Drive (cópia ou sincronização entre computadores), use a IA ou envie um item para o Notion/Trello.
 
 ## Como atualizar
 
-A partir da versão 2.2, **o próprio MyLoot avisa** quando sai versão nova: é só clicar em **Atualizar agora**. Ele baixa do GitHub, troca só os arquivos do app e reabre sozinho, sem mexer nos seus itens. Dá para procurar na hora em **Configurações → Versão**.
+A partir da versão 2.2, **o próprio MyLoot avisa** quando sai versão nova: é só clicar em **Atualizar agora**. Ele baixa do GitHub, troca só os arquivos do app e reabre sozinho, sem mexer nos seus itens. Dá para procurar na hora em **Configurações → Versão**. Quem instalou com `git clone` (ou pediu para uma IA instalar) usa o mesmo botão desde a 2.17.1: nesse caso o app roda o `git pull` sozinho.
 
 Se você tem uma versão mais antiga (ou ainda a Mochila), baixe o ZIP novo uma última vez e copie por cima, **menos a pasta `data/`**. Seus dados são migrados sozinhos ao abrir.
 
 ## Por dentro
 
-- Servidor: Node.js puro (`server.js`, `integracoes.js`, `celular.js`, `exportar.js`), sem dependências. Só em `127.0.0.1:4321`, a não ser que você ligue "Usar no celular".
+- Servidor: Node.js puro (`server.js`, `atualizar.js`, `celular.js`, `conexoes.js`, `exportar.js`, `integracoes.js`, `nuvem.js`), sem dependências. Só em `127.0.0.1:4321`, a não ser que você ligue "Usar no celular".
 - Interface: HTML, CSS e JavaScript puros em `public/`.
 - Conteúdo inicial: arquivos em `exemplos/` (cada `.json` é um pacote que entra uma vez só).
 

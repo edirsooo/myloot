@@ -4,8 +4,13 @@
   const { esc } = M;
 
   // ----- monta nós e ligações a partir da biblioteca -----
+  // guardado: a Início redesenha a cada tarefa marcada, e com milhares de itens recalcular levava segundos
+  let memo = null;
   M.graphData = () => {
     const items = M.db.items;
+    let soma = items.length; for (const it of items) soma += (it.updated || 0) % 1e9;
+    const assin = soma + '|' + (M.db.categories || []).length;
+    if (memo && memo.assin === assin && memo.items === items) return memo.r;
     const nodes = items.map((it) => ({ id: it.id, it, deg: 0 }));
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const edges = new Map(); // "a|b" -> {a,b,why:Set}
@@ -30,15 +35,20 @@
     });
     // menções: [[Título]] ou o título de outro item escrito no texto
     const titled = items.filter((it) => (it.title || '').trim().length >= 5).map((it) => ({ id: it.id, t: it.title.trim().toLowerCase() }));
+    const porTitulo = new Map(titled.map((o) => [o.t, o]));
+    // título escrito no texto: comparação de todos com todos só até 400 títulos; acima disso vale só o [[Título]]
+    const procurarTitulos = titled.length <= 400;
     items.forEach((it) => {
       const txt = ((it.content || '') + ' ' + (it.desc || '')).toLowerCase();
       if (!txt.trim()) return;
-      (txt.match(/\[\[([^\]]+)\]\]/g) || []).forEach((m) => { const t = m.slice(2, -2).trim(); const o = titled.find((x) => x.t === t); if (o) link(it.id, o.id, 'menção'); });
-      titled.forEach((o) => { if (o.id !== it.id && txt.includes(o.t)) link(it.id, o.id, 'menção'); });
+      (txt.match(/\[\[([^\]]+)\]\]/g) || []).forEach((m) => { const o = porTitulo.get(m.slice(2, -2).trim()); if (o) link(it.id, o.id, 'menção'); });
+      if (procurarTitulos) titled.forEach((o) => { if (o.id !== it.id && txt.includes(o.t)) link(it.id, o.id, 'menção'); });
     });
     const E = [...edges.values()];
     E.forEach((e) => { e.a.deg++; e.b.deg++; });
-    return { nodes, edges: E };
+    const r = { nodes, edges: E };
+    memo = { assin, items, r };
+    return r;
   };
 
   // ----- desenho com física simples (sem bibliotecas) -----

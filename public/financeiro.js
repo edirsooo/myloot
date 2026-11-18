@@ -277,7 +277,11 @@
   };
   // liga os cliques dessa parte da ficha; o clientes.js chama a cada vez que redesenha a ficha
   M.finClienteLiga = (m, c, redesenha) => {
-    if ($('#cFin', m)) $('#cFin', m).onclick = () => M.finEditar({ tipo: 'entrada', client: c.id, desc: 'Pagamento ' + (c.nome || ''), cat: 'Serviço / cliente' });
+    // recebimento pela ficha: já como recebido hoje e com descrição e valor da última entrada desse cliente
+    if ($('#cFin', m)) $('#cFin', m).onclick = () => {
+      const ult = (M.db.fin || []).filter((f) => f.client === c.id && f.tipo === 'entrada').sort((x, y) => (y.data || '').localeCompare(x.data || ''))[0];
+      M.finEditar({ tipo: 'entrada', client: c.id, desc: ult ? ult.desc : 'Pagamento ' + (c.nome || ''), cat: ult ? ult.cat : 'Serviço / cliente', valor: ult ? ult.valor : 0, forma: ult ? ult.forma : '', pago: true, pagoEm: M.today(), data: M.today() });
+    };
     if ($('#cFinTodos', m)) $('#cFinTodos', m).onclick = () => M.finVerCliente(c.id);
     $$('[data-fin]', m).forEach((row) => {
       row.onclick = (e) => {

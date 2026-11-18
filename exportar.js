@@ -281,16 +281,16 @@ function aplicarAnexos(res, guarda) {
 }
 
 // ---------- Markdown de tudo ----------
-function markdown(db, h) { // h = { itemToMd, TYPE_DIR, slug, safeName, ANX, anexos }
+function markdown(db, h) { // h = { itemToMd, TYPE_DIR, slug, safeName, idSeg, ANX, anexos }
   const out = [];
   const md = (nome, txt) => out.push({ nome, dados: Buffer.from(txt, 'utf8') });
   for (const it of db.items) {
     const dir = h.TYPE_DIR[it.type] || 'Outros';
-    md(`${dir}/${h.slug(it.title)}-${it.id}.md`, h.itemToMd(it, db));
+    md(`${dir}/${h.slug(it.title)}-${h.idSeg(it.id)}.md`, h.itemToMd(it, db));
     if (!h.anexos) continue;
     for (const a of it.attachments) {
       const src = path.join(h.ANX, path.basename(a.file || ''));
-      try { out.push({ nome: `${dir}/anexos/${it.id}/${h.safeName(a.name)}`, dados: fs.readFileSync(src) }); } catch (_) {}
+      try { out.push({ nome: `${dir}/anexos/${h.idSeg(it.id)}/${h.safeName(a.name)}`, dados: fs.readFileSync(src) }); } catch (_) {}
     }
   }
   const nomeCli = (id) => ((db.clients || []).find((c) => c.id === id) || {}).nome || '';
@@ -300,10 +300,10 @@ function markdown(db, h) { // h = { itemToMd, TYPE_DIR, slug, safeName, ANX, ane
     L.push(`id: ${c.id}`, '---', '', `# ${c.nome || 'Cliente'}`, '');
     if (c.notas) L.push(c.notas, '');
     const its = db.items.filter((i) => i.client === c.id);
-    if (its.length) { L.push('## Itens'); its.forEach((i) => L.push(`- [[${h.slug(i.title)}-${i.id}|${i.title || 'Sem título'}]]`)); L.push(''); }
+    if (its.length) { L.push('## Itens'); its.forEach((i) => L.push(`- [[${h.slug(i.title)}-${h.idSeg(i.id)}|${i.title || 'Sem título'}]]`)); L.push(''); }
     const ts = db.tasks.filter((t) => t.client === c.id);
     if (ts.length) { L.push('## Tarefas'); ts.forEach((t) => L.push(`- [${t.done ? 'x' : ' '}] ${t.text}${t.date ? ' 📅 ' + t.date : ''}`)); L.push(''); }
-    md(`Clientes/${h.slug(c.nome)}-${c.id}.md`, L.join('\n'));
+    md(`Clientes/${h.slug(c.nome)}-${h.idSeg(c.id)}.md`, L.join('\n'));
   }
   const T = ['# Tarefas', ''];
   for (const t of [...db.tasks].sort((a, b) => (a.date || '9').localeCompare(b.date || '9'))) {

@@ -57,7 +57,17 @@ module.exports = function (DATA, ctx) {
       for (const f of new Set([...Object.keys(o), ...Object.keys(r.v)])) if (J(o[f]) !== J(r.v[f])) r.t[f] = agora;
       r.v = o;
     }
-    for (const [id, r] of Object.entries(reg)) if (!visto.has(id) && vivo(r)) r.del = agora; // sumiu daqui: foi apagado aqui
+    const sumiram = Object.entries(reg).filter(([id, r]) => !visto.has(id) && vivo(r));
+    if (!primeira) {
+      // apagar de verdade passa pela Lixeira (a ficha some da lista e aparece no trash); sumir sem Lixeira é sinal de banco estragado
+      const naLixeira = new Set((db.trash || []).map((t) => t && t.data && t.data.id));
+      const vivosAntes = Object.entries(reg).filter(([id, r]) => !id.startsWith('trash:') && vivo(r)).length;
+      const semLixeira = sumiram.filter(([id]) => !id.startsWith('trash:') && !naLixeira.has(id.slice(id.indexOf(':') + 1))).length;
+      if (semLixeira > 20 && semLixeira > vivosAntes * 0.3) {
+        throw new Error(`${semLixeira} registros sumiram deste computador de uma vez, sem passar pela Lixeira. A sincronização parou para não apagar nos outros computadores. Se foi de propósito (restaurou uma cópia antiga), desligue e ligue a sincronização: ela junta de novo sem apagar nada.`);
+      }
+    }
+    for (const [, r] of sumiram) r.del = agora; // sumiu daqui: foi apagado aqui
   }
 
   // 2) junta o registro de outro computador: campo a campo, a marca mais nova vence
@@ -156,8 +166,11 @@ module.exports = function (DATA, ctx) {
       if (mudou) ctx.writeDB(ctx.migrate(db), true);
       const ax = anexos(db, path.join(b, 'anexos'));
       const agora = Date.now();
-      gravar(path.join(dirA, c.id + '.json'), { app: 'myloot', formato: 1, id: c.id, nome: c.nome, quando: agora, reg });
-      gravar(ESTADO, { pasta: b, reg });
+      const hash = crypto.createHash('sha1').update(J(reg)).digest('hex'), meu = path.join(dirA, c.id + '.json');
+      if (primeira || mudou || hash !== (est && est.hash) || !fs.existsSync(meu)) {
+        gravar(meu, { app: 'myloot', formato: 1, id: c.id, nome: c.nome, quando: agora, reg });
+        gravar(ESTADO, { pasta: b, reg, hash });
+      }
       const resumo = { mudou, outros, anexos: ax, registros: Object.keys(reg).length };
       Object.assign(c, { ultima: agora, erro: '', resumo }); salvarCfg(c);
       return resumo;
@@ -172,6 +185,7 @@ module.exports = function (DATA, ctx) {
       const c = cfg(); if (!c.on || !c.pasta) return;
       const est = ler(ESTADO, null); if (!est || est.pasta !== base(c)) return; // primeira vez: quem marca é a sincronização
       carimbar(db, est.reg || (est.reg = {}), false);
+      est.hash = ''; // mudou aqui: a próxima rodada publica
       gravar(ESTADO, est);
     } catch (_) {}
   }
@@ -192,7 +206,11 @@ module.exports = function (DATA, ctx) {
     const c = cfg();
     if ('pasta' in b) c.pasta = String(b.pasta || '').trim();
     if ('nome' in b) c.nome = String(b.nome || '').trim().slice(0, 40) || os.hostname();
-    if ('on' in b) c.on = !!b.on;
+    if ('on' in b) {
+      if (b.on && !c.on) { try { fs.renameSync(ESTADO, ESTADO.replace(/\.json$/, '') + '-antes-de-religar-' + Date.now() + '.json'); } catch (_) {} }
+      c.on = !!b.on;
+      if (c.on) c.erro = '';
+    }
     salvarCfg(c);
     return status();
   }

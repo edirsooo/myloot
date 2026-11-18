@@ -10,22 +10,50 @@
   const TIPOS = [['t', '✅ Tarefa'], ['e', '📅 Compromisso']];
   const tipoHTML = (id) => `<div class="seg tipo-seg" id="${id}">${TIPOS.map(([k, n]) => `<button type="button" data-k="${k}">${n}</button>`).join('')}</div>`;
 
-  // "hoje" ou "amanhã" no fim do texto define a data sozinho
+  // data e hora escritas em qualquer parte da frase: "Ligar para o contador amanhã às 9h", "reunião sexta 14:30",
+  // "pagar aluguel dia 10", "entregar 20/11". O que foi entendido sai do título.
+  const DSEM = { domingo: 0, segunda: 1, terca: 2, quarta: 3, quinta: 4, sexta: 5, sabado: 6 };
   M.parseTask = (raw) => {
-    let text = raw.trim(), date = '';
-    const m = /\s+(hoje|amanh[ãa]|depois de amanh[ãa])$/i.exec(' ' + text);
-    if (m) {
-      const w = M.norm(m[1]);
-      date = w === 'hoje' ? M.today() : w === 'amanha' ? M.addDays(M.today(), 1) : M.addDays(M.today(), 2);
-      text = text.slice(0, text.length - m[1].length).trim();
+    let text = ' ' + String(raw || '').trim() + ' ', date = '', hora = '';
+    const tira = (m) => { text = text.slice(0, m.index) + ' ' + text.slice(m.index + m[0].length); };
+    const hoje = M.today(), [hy, hm, hd] = hoje.split('-').map(Number);
+    let m;
+    // dia: depois de amanhã, amanhã, hoje, dia da semana, 20/11, "dia 10"
+    if ((m = /\s(depois de amanh[ãa]|amanh[ãa]|hoje)(?=[\s,.!?])/i.exec(text))) {
+      const w = M.norm(m[1]); date = w === 'hoje' ? hoje : w === 'amanha' ? M.addDays(hoje, 1) : M.addDays(hoje, 2); tira(m);
+    } else if ((m = /\s(?:(?:na|nesta|nessa|pr[óo]xima)\s+)?(segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado|domingo)(?:-feira)?(?=[\s,.!?])/i.exec(text))) {
+      const alvo = DSEM[M.norm(m[1])], hojeD = new Date(hy, hm - 1, hd).getDay();
+      date = M.addDays(hoje, ((alvo - hojeD + 7) % 7) || 7); tira(m);
+    } else if ((m = /\s(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?(?=[\s,.!?])/.exec(text))) {
+      const d = +m[1], mes = +m[2]; let y = m[3] ? +m[3] : hy; if (y < 100) y += 2000;
+      if (d >= 1 && d <= 31 && mes >= 1 && mes <= 12) {
+        let ds = `${y}-${String(mes).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        if (!m[3] && ds < hoje) ds = `${y + 1}-${ds.slice(5)}`;
+        date = ds; tira(m);
+      }
+    } else if ((m = /\s(?:no\s+)?dia\s+(\d{1,2})(?=[\s,.!?])/i.exec(text))) {
+      const d = +m[1];
+      if (d >= 1 && d <= 31) {
+        let y = hy, mes = hm; if (d < hd) { mes++; if (mes > 12) { mes = 1; y++; } }
+        const fim = new Date(y, mes, 0).getDate();
+        date = `${y}-${String(mes).padStart(2, '0')}-${String(Math.min(d, fim)).padStart(2, '0')}`; tira(m);
+      }
     }
-    return { text, date };
+    // hora: 9h, 9h30, 14:30, "às 9", "7 horas"
+    if ((m = /\s(?:(?:[àáa]s?|ao)\s+)?(\d{1,2})(?:(?:h|:)(\d{2})|h(?:oras?|rs?)?|\s+horas?)(?=[\s,.!?])/i.exec(text)) || (m = /\s(?:[àáa]s)\s+(\d{1,2})(?=[\s,.!?])/i.exec(text))) {
+      const h = +m[1], mi = m[2] ? +m[2] : 0;
+      if (h <= 23 && mi <= 59) { hora = `${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}`; tira(m); }
+    }
+    text = text.replace(/\s+/g, ' ').replace(/\s+([,.!?])/g, '$1').replace(/[\s,]+(às|as|de|no|na|para|pra)\s*$/i, '').trim();
+    if (!text) text = String(raw || '').trim(); // a frase era só a data ("amanhã"): fica como título
+    return { text, date, hora };
   };
 
   M.addTask = (raw, date, prio) => {
     const p = M.parseTask(raw);
     if (!p.text) return null;
     const t = { id: M.uid(), text: p.text, date: p.date || date || '', prio: prio || 'media', done: false, created: Date.now() };
+    if (p.hora) { t.hora = p.hora; if (!t.date) t.date = M.today(); } // lembrete precisa de um dia
     M.db.tasks.push(t); M.save(); SFX.play('pop');
     return t;
   };
@@ -90,10 +118,19 @@
     if (t.ev) return; // compromisso não se conclui
     t.done = !t.done;
     t.doneAt = t.done ? Date.now() : null;
+    // reabriu pela caixinha: a próxima que tinha nascido (e ainda não foi mexida) sai, para não ficar duplicada
+    if (!t.done && t.repFeita) {
+      const prox = t.repProx && M.db.tasks.find((x) => x.id === t.repProx && !x.done);
+      if (prox) M.db.tasks = M.db.tasks.filter((x) => x !== prox);
+      t.repFeita = false; delete t.repProx;
+    }
     if (t.done && t.rep && !t.repFeita) {
       t.repFeita = true;
       if (t.rep === 'mes' && !t.repDia && t.date) t.repDia = diaDe(t.date); // tarefa antiga: passa a guardar o dia a partir de agora
-      const nova = Object.assign({}, t, { id: M.uid(), done: false, doneAt: null, xpd: false, repFeita: false, date: proxDe(t), created: Date.now() });
+      // concluída atrasada: a próxima vai para a primeira data da repetição a partir de hoje (antes nascia já atrasada)
+      const nova = Object.assign({}, t, { id: M.uid(), done: false, doneAt: null, xpd: false, repFeita: false, date: proxPulo(t), created: Date.now() });
+      delete nova.repProx;
+      t.repProx = nova.id;
       M.db.tasks.push(nova);
       setTimeout(() => M.toast('🔁 Próxima: ' + M.fmtDate(nova.date)), 900);
     }
@@ -173,7 +210,7 @@
         ${diasHTML('tRpD', [], true)}
       </div>
       ${!open.length ? '<div class="empty" style="padding:26px 20px"><div class="big">🎉</div><h3>Nenhuma tarefa pendente</h3></div>' : ''}
-      <div class="tcols">${G.map(([k, n, L]) => L.length ? `<div class="tgroup ${k}"><h4>${n} <span class="cnt">${L.length}</span></h4>${L.map(taskHTML).join('')}</div>` : '').join('')}
+      <div class="tcols">${G.map(([k, n, L]) => L.length ? `<div class="tgroup ${k}"><h4>${n} <span class="cnt">${L.length}</span>${k === 'late' && L.length > 1 ? '<button type="button" class="btn ghost sm tg-hoje" data-todas-hoje title="Muda a data de todas as atrasadas para hoje, de uma vez (dá para desfazer)">→ Todas para hoje</button>' : ''}</h4>${L.map(taskHTML).join('')}</div>` : '').join('')}
       ${feitas.length ? `<div class="tgroup feitas"><h4>✅ Concluídas <span class="cnt">${feitas.length}</span></h4>${done.map(taskHTML).join('')}
         ${feitas.length > FEITAS_1 ? `<div class="tmais"><small>Mostrando ${done.length} de ${feitas.length}</small>${resto > 0 ? `<button type="button" class="btn ghost sm" id="tMais" title="Traz as ${Math.min(FEITAS_MAIS, resto)} concluídas seguintes">⬇ Mostrar mais</button>` : ''}${nF > FEITAS_1 ? `<button type="button" class="btn ghost sm" id="tMenos" title="Volta a mostrar só as ${FEITAS_1} mais recentes">⬆ Mostrar menos</button>` : ''}</div>` : ''}</div>` : ''}</div>`;
     const ehEv = () => u.novoTipo === 'e';
@@ -218,6 +255,12 @@
     if ($('#tMenos')) $('#tMenos').onclick = () => { u.tasksFeitas = 0; SFX.play('click'); M.render(); };
     $('#tIn').focus();
     v.onclick = (e) => {
+      if (e.target.closest('[data-todas-hoje]')) { // remarcar as atrasadas numa gravação só (um Desfazer volta todas)
+        const hoje = M.today(), L = M.db.tasks.filter((t) => M.tarefaPendente(t) && t.date && t.date < hoje);
+        L.forEach((t) => { t.date = hoje; fixaRepDia(t); });
+        M.save(); SFX.play('click'); M.render(); M.toast(`📅 ${L.length} tarefa${L.length > 1 ? 's' : ''} para hoje`);
+        return;
+      }
       const row = e.target.closest('.task'); if (!row) return;
       const t = M.db.tasks.find((x) => x.id === row.dataset.id); if (!t) return;
       const a = e.target.dataset.a;
@@ -333,7 +376,9 @@
         const k = M.ymd(d);
         // o que tem hora vem primeiro, na ordem do relógio
         const ts = M.db.tasks.filter((t) => t.date === k).sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99')), its = M.db.items.filter((i) => i.date === k);
-        return `<div class="day ${d.getMonth() !== Mo ? 'out' : ''} ${k === today ? 'today' : ''} ${d.getDay() % 6 === 0 ? 'we' : ''}" data-d="${k}"><span class="dn">${d.getDate()}</span>${rotDia(k, today)}${ts.map(chipHTML).join('')}${its.map((i) => `<div class="chip it" style="--c:${M.type(i.type).color}" data-i="${i.id}" title="${esc(i.title)}">${M.type(i.type).em} ${esc(i.title || 'Sem título')}</div>`).join('')}</div>`;
+        // contas em aberto do dia (a pagar e a receber): abrem o lançamento
+        const fs = (M.db.fin || []).filter((f) => !f.pago && f.data === k);
+        return `<div class="day ${d.getMonth() !== Mo ? 'out' : ''} ${k === today ? 'today' : ''} ${d.getDay() % 6 === 0 ? 'we' : ''}" data-d="${k}"><span class="dn">${d.getDate()}</span>${rotDia(k, today)}${ts.map(chipHTML).join('')}${fs.map((f) => `<div class="chip fin ${f.tipo}" data-f="${f.id}" title="${f.tipo === 'saida' ? 'A pagar' : 'A receber'}: ${esc(f.desc || 'lançamento')} · ${M.reais ? M.reais(f.valor) : f.valor}">${f.tipo === 'saida' ? '🔻' : '💰'} ${esc(f.desc || (f.tipo === 'saida' ? 'Conta' : 'Receber'))}</div>`).join('')}${its.map((i) => `<div class="chip it" style="--c:${M.type(i.type).color}" data-i="${i.id}" title="${esc(i.title)}">${M.type(i.type).em} ${esc(i.title || 'Sem título')}</div>`).join('')}</div>`;
       }).join('')}</div>`;
     const go = (n) => { const d = new Date(Y, Mo + n, 1); u.calMonth = [d.getFullYear(), d.getMonth()]; M.render(); };
     $('#cp').onclick = () => go(-1); $('#cn').onclick = () => go(1);
@@ -342,6 +387,7 @@
     v.onclick = (e) => {
       const chip = e.target.closest('.chip');
       if (chip && chip.dataset.i) return M.openItem(chip.dataset.i);
+      if (chip && chip.dataset.f) { const f = (M.db.fin || []).find((x) => x.id === chip.dataset.f); if (f && M.finEditar) return M.finEditar(f); }
       if (chip && chip.dataset.t) { const t = M.db.tasks.find((x) => x.id === chip.dataset.t); return editTask(t); }
       const day = e.target.closest('.day'); if (day) quickAdd(day.dataset.d);
     };

@@ -7,6 +7,7 @@ const cp = require('child_process');
 const os = require('os');
 const crypto = require('crypto');
 const stream = require('stream');
+const zlib = require('zlib');
 const WIN = process.platform === 'win32', MAC = process.platform === 'darwin';
 
 const PORT = Number(process.env.MYLOOT_PORT || process.env.MOCHILA_PORT) || 4321;
@@ -21,6 +22,8 @@ const DB_VERSION = 3;
 
 for (const d of [DATA, BAK, ANX]) fs.mkdirSync(d, { recursive: true });
 
+// anexos que podem abrir dentro do app (o resto sempre baixa como arquivo)
+const ANEXO_NA_TELA = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.pdf', '.txt', '.md', '.mp3', '.wav', '.ogg', '.opus', '.m4a', '.mp4', '.webm']);
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
@@ -30,7 +33,9 @@ const MIME = {
 };
 
 // ---------- dados ----------
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => { const d = new Date(), p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }; // dia local
+// id de item usado em nome de pasta/arquivo (Drive, exportar): só letras, números, _ e -; nunca sai da pasta
+const idSeg = (id) => String(id == null ? '' : id).replace(/[^\w-]/g, '_').slice(0, 80) || 'item';
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 
 function defaults() {
@@ -61,6 +66,21 @@ function seed() {
   return d;
 }
 
+// ids e valores que a tela põe dentro de atributos HTML: só caracteres seguros (dado vindo de backup, nuvem ou outro programa
+// não consegue injetar código). A mesma troca vale para o id e para quem aponta para ele, então as ligações continuam.
+const SEGURO = /^[\w.:-]{1,100}$/;
+const sid = (v) => (v == null || v === '' ? v : SEGURO.test(String(v)) ? v : String(v).replace(/[^\w.:-]/g, '_').slice(0, 100));
+const COR = /^#[0-9a-f]{3,8}$/i;
+const umDe = (v, L, pad) => (L.includes(v) ? v : pad);
+const TIPOS = ['estudo', 'prompt', 'instrucao', 'comando', 'link', 'nota'], ST_ITEM = ['ver', 'and', 'ok'], ST_CLI = ['prospect', 'ativo', 'pausado', 'encerrado'], PRIOS = ['baixa', 'media', 'alta'];
+function limparIds(out) {
+  for (const k of ['categories', 'items', 'tasks', 'clients', 'fin', 'habits', 'goals', 'tools']) for (const o of out[k]) { if (o.id != null) o.id = sid(o.id); }
+  for (const c of out.categories) { if (c.color != null && !COR.test(String(c.color))) c.color = '#8b5cf6'; }
+  for (const t of out.trash) { if (t.data && typeof t.data === 'object' && t.data.id != null) t.data.id = sid(t.data.id); if (t.kind != null) t.kind = sid(t.kind); }
+  for (const k of ['items', 'tasks', 'fin']) for (const o of out[k]) { if (o.client) o.client = sid(o.client); if (o.serie) o.serie = sid(o.serie); }
+  for (const it of out.items) { if (it.cat) it.cat = sid(it.cat); }
+}
+
 // migra qualquer formato antigo para o atual, sem perder nada
 function migrate(raw) {
   const d = defaults();
@@ -70,7 +90,7 @@ function migrate(raw) {
   out.settings.drive = Object.assign({}, d.settings.drive, (raw.settings || {}).drive || {});
   out.game = Object.assign({}, d.game, raw.game || {});
   out.game.streak = Object.assign({}, d.game.streak, out.game.streak || {});
-  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin', 'habits', 'goals', 'tools']) if (!Array.isArray(out[k])) out[k] = [];
+  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin', 'habits', 'goals', 'tools']) out[k] = Array.isArray(out[k]) ? out[k].filter((o) => o && typeof o === 'object' && !Array.isArray(o)) : [];
   out.fin.forEach((f) => {
     f.id = f.id || uid(); f.tipo = f.tipo === 'saida' ? 'saida' : 'entrada'; f.valor = Math.round((Number(f.valor) || 0) * 100) / 100;
     f.data = /^\d{4}-\d\d-\d\d$/.test(f.data || '') ? f.data : today(); f.pago = !!f.pago;
@@ -80,6 +100,7 @@ function migrate(raw) {
     c.id = c.id || uid(); c.nome = c.nome || ''; c.status = c.status || 'ativo';
     for (const k of ['empresa', 'email', 'whats', 'insta', 'site', 'trello', 'pasta', 'notas']) c[k] = c[k] || '';
     c.tags = Array.isArray(c.tags) ? c.tags : []; c.created = c.created || Date.now(); c.updated = c.updated || c.created;
+    c.status = umDe(c.status, ST_CLI, 'ativo');
   });
   out.items.forEach((it) => {
     it.id = it.id || uid();
@@ -91,7 +112,8 @@ function migrate(raw) {
     it.links = Array.isArray(it.links) ? it.links : [];
     it.attachments = Array.isArray(it.attachments) ? it.attachments : [];
     it.tags = Array.isArray(it.tags) ? it.tags : [];
-    it.status = it.status || 'ver';
+    it.status = umDe(it.status || 'ver', ST_ITEM, 'ver');
+    it.type = umDe(it.type, TIPOS, 'nota');
     it.cat = it.cat || '';
     it.date = it.date || '';
     it.fav = !!it.fav;
@@ -99,7 +121,8 @@ function migrate(raw) {
     it.created = it.created || Date.now();
     it.updated = it.updated || it.created;
   });
-  out.tasks.forEach((t) => { t.id = t.id || uid(); t.text = t.text || ''; t.date = t.date || ''; t.prio = t.prio || 'media'; t.done = !!t.done; t.created = t.created || Date.now(); t.client = t.client || ''; t.rep = t.rep || ''; t.hora = t.hora || ''; });
+  out.tasks.forEach((t) => { t.id = t.id || uid(); t.text = t.text || ''; t.date = t.date || ''; t.prio = t.prio || 'media'; t.done = !!t.done; t.created = t.created || Date.now(); t.client = t.client || ''; t.rep = t.rep || ''; t.hora = t.hora || ''; t.prio = umDe(t.prio, PRIOS, 'media'); });
+  limparIds(out);
   out.version = DB_VERSION;
   return out;
 }
@@ -110,11 +133,21 @@ function readDB() {
     return { db: migrate(raw), fresh: false };
   } catch (e) {
     if (e.code === 'ENOENT') return { db: seed(), fresh: true };
-    // arquivo corrompido: guarda cópia e tenta o último backup
+    // arquivo corrompido: guarda cópia, volta para a cópia automática mais nova e grava ela no lugar
+    // (uma vez só; antes cada leitura fazia outra cópia do arquivo estragado). A nuvem fica parada até a pessoa conferir.
     try { fs.copyFileSync(DB, path.join(DATA, 'db.corrompido-' + Date.now() + '.json')); } catch (_) {}
-    const baks = fs.readdirSync(BAK).filter((f) => f.endsWith('.json')).sort().reverse();
-    for (const b of baks) {
-      try { return { db: migrate(JSON.parse(fs.readFileSync(path.join(BAK, b), 'utf8'))), fresh: false }; } catch (_) {}
+    const baks = fs.readdirSync(BAK).filter((f) => RE_COPIA.test(f)).map((f) => ({ f, t: fs.statSync(path.join(BAK, f)).mtimeMs })).sort((a, b) => b.t - a.t);
+    for (const { f: b } of baks) {
+      try {
+        const raw = JSON.parse(fs.readFileSync(path.join(BAK, b), 'utf8'));
+        if (!raw || !Array.isArray(raw.items)) continue;
+        const db = migrate(raw);
+        gravarArquivo(DB, JSON.stringify(db, null, 1));
+        REV++;
+        RECUPERADO = { de: b, em: Date.now() };
+        logErro('db.json ilegível: recuperado da cópia ' + b + ' (' + e.message + ')');
+        return { db, fresh: false };
+      } catch (_) {}
     }
     return { db: defaults(), fresh: true };
   }
@@ -122,12 +155,19 @@ function readDB() {
 
 // REV muda a cada gravação: o PC e o celular comparam para não salvar um por cima do outro
 let REV = Date.now();
+let RECUPERADO = null; // { de, em } quando o db.json estava ilegível e voltou de uma cópia
+const ERROS = path.join(DATA, 'erros.log');
+function logErro(msg) { try { fs.appendFileSync(ERROS, new Date().toISOString() + ' ' + String(msg).slice(0, 2000) + '\n'); } catch (_) {} }
+// grava em .tmp, força o disco (queda de energia não deixa arquivo vazio) e só então troca
+function gravarArquivo(f, txt) {
+  const tmp = f + '.tmp', fd = fs.openSync(tmp, 'w');
+  try { fs.writeSync(fd, txt); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+  fs.renameSync(tmp, f);
+}
 function writeDB(db, daNuvem) {
-  const tmp = DB + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(db, null, 1));
-  fs.renameSync(tmp, DB);
+  dailyBackup(); // a cópia do dia guarda o banco de ANTES da primeira gravação do dia
+  gravarArquivo(DB, JSON.stringify(db, null, 1));
   REV++;
-  dailyBackup();
   if (!daNuvem) { NUVEM.marcar(db); NUVEM.agendar(); } // mandou para a nuvem alguns segundos depois de salvar
 }
 
@@ -148,9 +188,22 @@ function dailyBackup() {
 }
 
 // ---------- utilitários http ----------
+// compressão só para quem vem pela rede (celular): no próprio PC comprimir custa mais do que economiza
+const TEXTO = /^(text\/|application\/json|application\/javascript|image\/svg)/;
+function comprimir(req, tipo, n) {
+  if (!req || n < 2048 || !TEXTO.test(tipo || '')) return false;
+  const ip = String(req.socket && req.socket.remoteAddress || '');
+  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') return false;
+  return /\bgzip\b/.test(req.headers['accept-encoding'] || '');
+}
 function send(res, code, body, type, extra) {
-  const buf = Buffer.isBuffer(body) ? body : Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
-  res.writeHead(code, Object.assign({ 'Content-Type': type || 'application/json; charset=utf-8', 'Content-Length': buf.length, 'Cache-Control': 'no-store' }, extra || {}));
+  let buf = Buffer.isBuffer(body) ? body : Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
+  const h = Object.assign({ 'Content-Type': type || 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }, extra || {});
+  if (!h['Content-Encoding'] && !h['Content-Disposition'] && comprimir(res.req, h['Content-Type'], buf.length)) {
+    buf = zlib.gzipSync(buf, { level: 5 }); h['Content-Encoding'] = 'gzip'; h.Vary = 'Accept-Encoding';
+  }
+  h['Content-Length'] = buf.length;
+  res.writeHead(code, h);
   res.end(buf);
 }
 const readBody = (req, max = 50e6) => new Promise((ok, no) => {
@@ -166,18 +219,30 @@ function serveFile(req, res, file, extraHeaders) {
     if (err || !st.isFile()) return send(res, 404, { erro: 'não achei' });
     const ext = path.extname(file).toLowerCase();
     const type = MIME[ext] || 'application/octet-stream';
-    const h = Object.assign({ 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-store' }, extraHeaders || {});
+    // no-cache + ETag: o navegador guarda e só pergunta se mudou (304); atualização do app continua aparecendo na hora
+    const etag = 'W/"' + st.size.toString(36) + '-' + Math.floor(st.mtimeMs).toString(36) + '"';
+    const h = Object.assign({ 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-cache', ETag: etag }, extraHeaders || {});
+    if (req.headers['if-none-match'] === etag && !req.headers.range) { res.writeHead(304, { ETag: etag, 'Cache-Control': 'no-cache' }); return res.end(); }
     const range = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
     if (range) {
       let s = range[1] ? parseInt(range[1], 10) : 0;
       let e = range[2] ? parseInt(range[2], 10) : st.size - 1;
       if (s >= st.size) { res.writeHead(416, { 'Content-Range': 'bytes */' + st.size }); return res.end(); }
       e = Math.min(e, st.size - 1);
+      if (e < s) { res.writeHead(416, { 'Content-Range': 'bytes */' + st.size }); return res.end(); }
       res.writeHead(206, Object.assign(h, { 'Content-Range': `bytes ${s}-${e}/${st.size}`, 'Content-Length': e - s + 1 }));
-      return fs.createReadStream(file, { start: s, end: e }).pipe(res);
+      return fs.createReadStream(file, { start: s, end: e }).on('error', () => res.destroy()).pipe(res);
+    }
+    if (st.size < 4e6 && comprimir(req, type, st.size)) {
+      return fs.readFile(file, (e2, b) => {
+        if (e2) return send(res, 500, { erro: 'não consegui ler' });
+        const z = zlib.gzipSync(b, { level: 6 });
+        res.writeHead(200, Object.assign(h, { 'Content-Encoding': 'gzip', Vary: 'Accept-Encoding', 'Content-Length': z.length }));
+        res.end(z);
+      });
     }
     res.writeHead(200, Object.assign(h, { 'Content-Length': st.size }));
-    fs.createReadStream(file).pipe(res);
+    fs.createReadStream(file).on('error', () => res.destroy()).pipe(res);
   });
 }
 
@@ -207,9 +272,10 @@ function findDrive() {
 // abre um arquivo/pasta no programa padrão do sistema (Windows, Mac ou Linux); "mostrar" seleciona na pasta
 function abrirNoSistema(alvo, mostrar) {
   const solto = { detached: true, stdio: 'ignore' };
-  if (WIN) return cp.spawn('explorer.exe', mostrar ? ['/select,' + alvo] : [alvo], solto).unref();
-  if (MAC) return cp.spawn('open', mostrar ? ['-R', alvo] : [alvo], solto).unref();
-  return cp.spawn('xdg-open', [mostrar ? path.dirname(alvo) : alvo], solto).unref();
+  const ch = WIN ? cp.spawn('explorer.exe', mostrar ? ['/select,' + alvo] : [alvo], solto)
+    : MAC ? cp.spawn('open', mostrar ? ['-R', alvo] : [alvo], solto)
+      : cp.spawn('xdg-open', [mostrar ? path.dirname(alvo) : alvo], solto);
+  ch.on('error', () => {}); ch.unref();
 }
 
 const TYPE_DIR = { estudo: 'Estudo-PDF', prompt: 'Prompts', instrucao: 'Instrucoes', comando: 'Comandos', link: 'Links', nota: 'Notas' };
@@ -234,7 +300,7 @@ function itemToMd(it, db) {
   if (it.content) L.push(it.type === 'link' || it.type === 'nota' ? it.content : '```\n' + it.content + '\n```', '');
   if (it.checklist.length) { L.push('## Checklist'); it.checklist.forEach((c) => L.push(`- [${c.done ? 'x' : ' '}] ${c.t}`)); L.push(''); }
   if (it.links.length) { L.push('## Links'); it.links.forEach((l) => L.push(`- [${l.label || l.url}](${l.url})`)); L.push(''); }
-  if (it.attachments.length) { L.push('## Anexos'); it.attachments.forEach((a) => L.push(`- [${a.name}](anexos/${it.id}/${encodeURIComponent(safeName(a.name))})`)); L.push(''); }
+  if (it.attachments.length) { L.push('## Anexos'); it.attachments.forEach((a) => L.push(`- [${a.name}](anexos/${idSeg(it.id)}/${encodeURIComponent(safeName(a.name))})`)); L.push(''); }
   return L.join('\n');
 }
 
@@ -249,7 +315,7 @@ function hashArquivo(f) { // aos pedaços, para não carregar um anexo grande in
   try { let n; while ((n = fs.readSync(fd, b, 0, b.length, null)) > 0) h.update(b.subarray(0, n)); } finally { fs.closeSync(fd); }
   return h.digest('hex');
 }
-const hojeLocal = () => { const d = new Date(), p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+const hojeLocal = today;
 
 function driveSync(db) {
   const cfg = db.settings.drive || {};
@@ -278,7 +344,8 @@ function driveSync(db) {
   for (const it of db.items) {
     const dir = path.join(base, TYPE_DIR[it.type] || 'Outros');
     fs.mkdirSync(dir, { recursive: true });
-    const file = path.join(dir, `${slug(it.title)}-${it.id}.md`);
+    const file = path.join(dir, `${slug(it.title)}-${idSeg(it.id)}.md`);
+    if (!inside(base, file)) continue;
     const md = itemToMd(it, db), r = rel(file), marca = marcaTxt(md);
     let atual = null, ilegivel = false;
     if (fs.existsSync(file)) { try { atual = fs.readFileSync(file, 'utf8'); } catch (_) { ilegivel = true; erros++; } }
@@ -288,9 +355,10 @@ function driveSync(db) {
     for (const a of it.attachments) {
       const src = path.join(ANX, path.basename(a.file || ''));
       if (!fs.existsSync(src)) continue;
-      const adir = path.join(dir, 'anexos', it.id);
+      const adir = path.join(dir, 'anexos', idSeg(it.id));
       fs.mkdirSync(adir, { recursive: true });
       const dst = path.join(adir, safeName(a.name)), ra = rel(dst);
+      if (!inside(base, dst)) continue;
       if (ra in depois) continue; // dois anexos com o mesmo nome no mesmo item: vale o primeiro (senão um ficaria trocando o outro a cada cópia)
       try {
         const s1 = fs.statSync(src);
@@ -358,8 +426,11 @@ const REDE = require('./celular')(DATA);
 const CNX = require('./conexoes')(DATA);
 const SECRETS = path.join(DATA, 'segredos.json');
 const AI_MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'];
-const readSecrets = () => { try { return JSON.parse(fs.readFileSync(SECRETS, 'utf8')); } catch (_) { return {}; } };
-function writeSecrets(s) { const tmp = SECRETS + '.tmp'; fs.writeFileSync(tmp, JSON.stringify(s)); fs.renameSync(tmp, SECRETS); }
+const readSecrets = (paraGravar) => {
+  try { return JSON.parse(fs.readFileSync(SECRETS, 'utf8')) || {}; }
+  catch (e) { if (paraGravar && e.code !== 'ENOENT') throw new Error('O arquivo de chaves (data/segredos.json) está danificado; nada foi gravado para não perder as outras chaves.'); return {}; }
+};
+function writeSecrets(s) { gravarArquivo(SECRETS, JSON.stringify(s)); }
 
 const AI_ACTIONS = {
   melhorar: 'Melhore o texto: mais claro, direto e bem escrito, mantendo o sentido, o idioma e o tamanho aproximado.',
@@ -490,16 +561,20 @@ function iaInfo(nome, force) {
   return iaRodando[nome];
 }
 const cmdIA = (nome) => aspas((iaCache[nome] && iaCache[nome].cmd) || acharComando(IA_NOMES[nome]) || IA_NOMES[nome]);
-const pastaIA = (n) => { const d = path.join(require('os').tmpdir(), 'myloot-' + n); fs.mkdirSync(d, { recursive: true }); return d; };
+const pastaIA = (n) => { const d = path.join(os.tmpdir(), 'myloot-' + n); fs.mkdirSync(d, { recursive: true }); return d; };
+// shell: true no Windows: ch.kill() mataria só o cmd.exe e a IA ficaria rodando
+function matar(ch) { try { if (WIN && ch.pid) cp.spawn('taskkill', ['/PID', String(ch.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' }).on('error', () => {}); else ch.kill(); } catch (_) {} }
+function entrada(ch, txt) { ch.stdin.on('error', () => {}); ch.stdin.end(txt); } // a IA pode sair antes de ler tudo
 function callCodex(system, user) {
   return new Promise((ok, no) => {
     // pasta vazia, só leitura, sem histórico: o Codex só escreve a resposta
-    const dir = pastaIA('codex'), saida = path.join(dir, 'resposta.txt');
+    // uma pasta por pedido: dois pedidos ao mesmo tempo não trocam as respostas
+    const dir = fs.mkdtempSync(path.join(pastaIA('codex'), 'p-')), saida = path.join(dir, 'resposta.txt');
     try { fs.writeFileSync(saida, ''); } catch (_) {}
     const args = ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--ephemeral', '--color', 'never', '-C', '"' + dir + '"', '-o', '"' + saida + '"', '-'];
     const ch = cp.spawn(cmdIA('codex'), args, { cwd: dir, shell: true, windowsHide: true, env: envIA() });
     const err = [];
-    const t = setTimeout(() => { ch.kill(); no(new Error('O Codex demorou demais. Tente de novo.')); }, 240000);
+    const t = setTimeout(() => { matar(ch); no(new Error('O Codex demorou demais. Tente de novo.')); }, 240000);
     ch.stdout.on('data', (c) => err.push(c));
     ch.stderr.on('data', (c) => err.push(c));
     ch.on('error', () => { clearTimeout(t); no(new Error('Não achei o Codex neste computador.')); });
@@ -511,7 +586,7 @@ function callCodex(system, user) {
       if (/log ?in|auth|unauthorized/i.test(msg)) return no(new Error('O Codex não está logado. Abra um terminal, rode "codex" e faça o login.'));
       no(new Error('O Codex respondeu com erro: ' + (msg.split(/\r?\n/).slice(-3).join(' ') || 'código ' + code).slice(0, 300)));
     });
-    ch.stdin.end(system + '\n\n' + user);
+    entrada(ch, system + '\n\n' + user);
   });
 }
 function callClaudeCode(model, system, user) {
@@ -521,7 +596,7 @@ function callClaudeCode(model, system, user) {
     const args = ['-p', '--output-format', 'json', '--model', model, '--system-prompt', JSON.stringify(system), '--tools', '""', '--no-session-persistence', '--strict-mcp-config'];
     const ch = cp.spawn(cmdIA('claude'), args, { cwd: dir, shell: true, windowsHide: true, env: envIA() });
     const out = [], err = [];
-    const t = setTimeout(() => { ch.kill(); no(new Error('O Claude Code demorou demais. Tente de novo.')); }, 240000);
+    const t = setTimeout(() => { matar(ch); no(new Error('O Claude Code demorou demais. Tente de novo.')); }, 240000);
     ch.stdout.on('data', (c) => out.push(c));
     ch.stderr.on('data', (c) => err.push(c));
     ch.on('error', () => { clearTimeout(t); no(new Error('Não achei o Claude Code neste computador.')); });
@@ -534,7 +609,7 @@ function callClaudeCode(model, system, user) {
       if (/log ?in|auth|login/i.test(msg)) return no(new Error('O Claude Code não está logado. Abra um terminal, rode "claude" e faça o login.'));
       no(new Error('O Claude Code respondeu com erro: ' + (msg || 'código ' + code).slice(0, 300)));
     });
-    ch.stdin.end(user);
+    entrada(ch, user);
   });
 }
 // Gemini CLI: entra com a conta Google (a mesma do Antigravity), com uso gratuito
@@ -545,7 +620,7 @@ function callGeminiCli(system, user) {
     const args = ['--output-format', 'json', '-p', '"Responda seguindo as instruções acima."'];
     const ch = cp.spawn(cmdIA('gemini'), args, { cwd: dir, shell: true, windowsHide: true, env: envIA() });
     const out = [], err = [];
-    const t = setTimeout(() => { ch.kill(); no(new Error('O Gemini demorou demais. Tente de novo.')); }, 240000);
+    const t = setTimeout(() => { matar(ch); no(new Error('O Gemini demorou demais. Tente de novo.')); }, 240000);
     ch.stdout.on('data', (c) => out.push(c));
     ch.stderr.on('data', (c) => err.push(c));
     ch.on('error', () => { clearTimeout(t); no(new Error('Não achei o Gemini CLI neste computador.')); });
@@ -559,7 +634,7 @@ function callGeminiCli(system, user) {
       if (/log ?in|auth|credential|GEMINI_API_KEY/i.test(msg)) return no(new Error('O Gemini CLI não está logado. Abra um terminal, rode "gemini" e entre com a sua conta Google.'));
       no(new Error('O Gemini respondeu com erro: ' + (msg.split(/\r?\n/).slice(-3).join(' ') || 'código ' + code).slice(0, 300)));
     });
-    ch.stdin.end(system + '\n\n' + user);
+    entrada(ch, system + '\n\n' + user);
   });
 }
 
@@ -602,6 +677,39 @@ async function callOpenAiApi(key, system, user) {
   return { texto: text, modelo: j.model || 'gpt', cortado: c.finish_reason === 'length', via: 'api-openai' };
 }
 
+// ---------- título de um link (a captura rápida guardava só o domínio) ----------
+// Só endereços públicos (nada de 127.0.0.1, rede de casa ou roteador), lê no máximo 96 KB e desiste em 5 s.
+const dns = require('dns');
+const ipPrivado = (ip) => /^(127\.|10\.|192\.168\.|169\.254\.|0\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)/.test(ip) || /^(::1|::|f[cd]|fe80|::ffff:(127|10|192\.168)\.)/i.test(ip);
+const entidades = (t) => t.replace(/&(#x?[0-9a-f]+|amp|lt|gt|quot|apos|nbsp);/gi, (m, c) => {
+  const k = c.toLowerCase(); if (k === 'amp') return '&'; if (k === 'lt') return '<'; if (k === 'gt') return '>'; if (k === 'quot') return '"'; if (k === 'apos') return "'"; if (k === 'nbsp') return ' ';
+  const n = k[1] === 'x' ? parseInt(k.slice(2), 16) : parseInt(k.slice(1), 10); return n > 0 && n < 0x110000 ? String.fromCodePoint(n) : m;
+});
+function tituloDe(url, voltas = 0) {
+  return new Promise((ok) => {
+    let u; try { u = new URL(url); } catch (_) { return ok(''); }
+    if (!/^https?:$/.test(u.protocol) || voltas > 4) return ok('');
+    dns.lookup(u.hostname, { all: true }, (e, ends) => {
+      if (e || !ends.length || ends.some((x) => ipPrivado(x.address))) return ok('');
+      const mod = u.protocol === 'https:' ? https : http;
+      const rq = mod.get(u, { headers: { 'User-Agent': 'Mozilla/5.0 (MyLoot; título do link)', Accept: 'text/html', 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.5' }, timeout: 5000 }, (rs) => {
+        if ([301, 302, 303, 307, 308].includes(rs.statusCode) && rs.headers.location) { rs.resume(); return ok(tituloDe(new URL(rs.headers.location, u).href, voltas + 1)); }
+        if (rs.statusCode !== 200 || !/html/i.test(rs.headers['content-type'] || '')) { rs.resume(); return ok(''); }
+        const parts = []; let n = 0;
+        const fim = () => {
+          const h = Buffer.concat(parts).toString('utf8');
+          const og = /<meta[^>]+property=["']og:title["'][^>]*content=["']([^"']+)["']/i.exec(h) || /<meta[^>]+content=["']([^"']+)["'][^>]*property=["']og:title["']/i.exec(h);
+          const ti = /<title[^>]*>([\s\S]{1,400}?)<\/title>/i.exec(h);
+          ok(entidades(((og && og[1]) || (ti && ti[1]) || '').replace(/\s+/g, ' ').trim()).slice(0, 200));
+        };
+        rs.on('data', (c) => { parts.push(c); n += c.length; if (n > 96 * 1024) { rs.destroy(); fim(); } });
+        rs.on('end', fim); rs.on('error', () => ok(''));
+      });
+      rq.on('timeout', () => rq.destroy()); rq.on('error', () => ok(''));
+    });
+  });
+}
+
 // ---------- foco (o relógio mora no servidor: continua contando com a aba fechada) ----------
 const FOCO = path.join(DATA, 'foco.json');
 let foco = { end: 0, min: 25, pendentes: 0 };
@@ -621,10 +729,9 @@ function notify(title, text) {
     try { const ch = cp.spawn('notify-send', ['-i', path.join(PUB, 'icon.png'), String(title), String(text)], { detached: true, stdio: 'ignore' }); ch.on('error', () => {}); ch.unref(); } catch (_) {}
     return;
   }
-  const q = (s) => String(s).replace(/'/g, "''");
-  const ico = path.join(ROOT, 'MyLoot.ico');
+  // o título e o texto vão por variável de ambiente: nada do que a pessoa escreveu entra no código do PowerShell
   const ps = `
-$t='${q(title)}'; $m='${q(text)}'
+$t=$env:MYLOOT_AVISO_T; $m=$env:MYLOOT_AVISO_M
 try {
   [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] | Out-Null
   [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType=WindowsRuntime] | Out-Null
@@ -635,12 +742,15 @@ try {
 } catch {
   Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing
   $i = New-Object System.Windows.Forms.NotifyIcon
-  try { $i.Icon = New-Object System.Drawing.Icon('${q(ico)}') } catch { $i.Icon = [System.Drawing.SystemIcons]::Information }
+  try { $i.Icon = New-Object System.Drawing.Icon($env:MYLOOT_AVISO_ICO) } catch { $i.Icon = [System.Drawing.SystemIcons]::Information }
   $i.Visible = $true; $i.ShowBalloonTip(8000, $t, $m, 'Info'); Start-Sleep 9; $i.Dispose()
 }`;
   try {
     const b64 = Buffer.from(ps, 'utf16le').toString('base64');
-    cp.spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-EncodedCommand', b64], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+    const env = Object.assign({}, process.env, { MYLOOT_AVISO_T: String(title), MYLOOT_AVISO_M: String(text), MYLOOT_AVISO_ICO: path.join(ROOT, 'MyLoot.ico') });
+    // sem detached: com ele o PowerShell saía sem mostrar nada
+    const ch = cp.spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-EncodedCommand', b64], { stdio: 'ignore', windowsHide: true, env });
+    ch.on('error', () => {}); ch.unref();
   } catch (_) {}
 }
 
@@ -698,8 +808,9 @@ function lembretes() {
   }
   if (mudou) { avisados = avisados.slice(-500); try { fs.writeFileSync(AVISOS, JSON.stringify(avisados)); } catch (_) {} }
 }
-setInterval(lembretes, 30000);
-setTimeout(lembretes, 5000);
+const lembretesSeguro = () => { try { lembretes(); } catch (e) { logErro('lembretes: ' + (e.stack || e.message)); } };
+setInterval(lembretesSeguro, 30000);
+setTimeout(lembretesSeguro, 5000);
 
 // ---------- pacotes de conteúdo (pasta exemplos/): entram uma vez só, sem duplicar ----------
 // pacote já instalado: se um arquivo dele mudou (ex.: PDF refeito), troca a cópia do anexo pela nova.
@@ -757,7 +868,8 @@ function applyPacks(db) {
 
 // ---------- rotas ----------
 // o que só o próprio computador pode fazer (o celular usa e mexe nos dados, mas não desliga, não troca chaves nem abre coisas no PC)
-const SO_PC = ['/api/shutdown', '/api/open', '/api/reveal', '/api/abrir-pasta', '/api/atualizacao/aplicar', '/api/rede', '/api/rede/trocar', '/api/ai/key', '/api/int/salvar', '/api/restore', '/api/restore/completo', '/api/backups', '/api/backups/restaurar', '/api/drive/sync', '/api/nuvem', '/api/nuvem/sync', '/api/notify-test', '/api/conexoes', '/api/conexoes/mudar', '/api/conexoes/apagar'];
+const EXECUTAVEL = /\.(bat|cmd|com|exe|msi|msp|scr|pif|lnk|url|hta|js|jse|vbs|vbe|wsf|wsh|ps1|psm1|reg|cpl|jar|appref-ms|sh|command|app|desktop|run|bin)$/i;
+const SO_PC = ['/api/shutdown', '/api/open', '/api/reveal', '/api/abrir-pasta', '/api/atualizacao/aplicar', '/api/rede', '/api/rede/trocar', '/api/ai/key', '/api/int/salvar', '/api/restore', '/api/restore/completo', '/api/backups', '/api/backups/restaurar', '/api/drive/sync', '/api/nuvem', '/api/nuvem/sync', '/api/notify-test', '/api/conexoes', '/api/conexoes/mudar', '/api/conexoes/apagar', '/api/int/notion/paginas', '/api/int/trello/listas', '/api/drive/find'];
 
 async function app(req, res) {
   try {
@@ -805,6 +917,8 @@ async function app(req, res) {
       } catch (e) { return send(res, 400, { erro: e.message }, null, cors); }
     }
 
+    const sfs = req.headers['sec-fetch-site'];
+    if ((p.startsWith('/api/') || p.startsWith('/anexos/')) && (sfs === 'cross-site' || sfs === 'same-site')) return send(res, 403, { erro: 'origem' });
     if (p.startsWith('/api/')) {
       if (req.method !== 'GET' && req.headers['x-myloot'] !== '1' && req.headers['x-mochila'] !== '1') return send(res, 403, { erro: 'cabeçalho' });
       if (!pc && SO_PC.includes(p)) return send(res, 403, { erro: 'Isso só dá para fazer no computador onde o MyLoot está instalado.' });
@@ -826,7 +940,7 @@ async function app(req, res) {
       // ----- exportar, backup com senha, pasta do cliente -----
       if (p === '/api/exportar-md') {
         const { db } = readDB();
-        const buf = EXP.markdown(db, { itemToMd, TYPE_DIR, slug, safeName, ANX, anexos: u.searchParams.get('anexos') !== '0' });
+        const buf = EXP.markdown(db, { itemToMd, TYPE_DIR, slug, safeName, idSeg, ANX, anexos: u.searchParams.get('anexos') !== '0' });
         res.writeHead(200, { 'Content-Type': 'application/zip', 'Content-Length': buf.length, 'Content-Disposition': `attachment; filename="myloot-markdown-${today()}.zip"`, 'Cache-Control': 'no-store' });
         return res.end(buf);
       }
@@ -849,30 +963,36 @@ async function app(req, res) {
         return send(res, 200, db, null, { 'X-Rev': String(REV) });
       }
       if (p === '/api/rev') return send(res, 200, { rev: String(REV) });
+      if (p === '/api/recuperado') { const r = RECUPERADO; if (req.method === 'POST') RECUPERADO = null; return send(res, 200, { recuperado: r }); }
       if (p === '/api/db' && req.method === 'PUT') {
         // quem salva manda a REV que leu; se outro aparelho salvou no meio, devolve 409 e o app junta as mudanças
         const rv = req.headers['x-rev'];
         if (rv && String(rv) !== String(REV)) return send(res, 409, { erro: 'conflito', rev: String(REV) });
         const body = JSON.parse((await readBody(req)).toString('utf8'));
-        writeDB(migrate(body));
+        if (!body || typeof body !== 'object' || !Array.isArray(body.items) || !Array.isArray(body.tasks)) return send(res, 400, { erro: 'Dados incompletos: nada foi gravado.' });
+        if (rv && String(rv) !== String(REV)) return send(res, 409, { erro: 'conflito', rev: String(REV) }); // outro salvou enquanto este chegava
+        const novo = migrate(body);
+        if (!pc) { const atual = readDB().db; novo.settings.drive = atual.settings.drive; } // a pasta do Drive só se escolhe no PC
+        writeDB(novo);
         return send(res, 200, { ok: true, rev: String(REV) });
       }
       if (p === '/api/attach' && req.method === 'POST') {
         const name = safeName(u.searchParams.get('name'));
         const file = uid() + '-' + name;
         const dst = path.join(ANX, file);
-        await new Promise((ok, no) => {
-          const ws = fs.createWriteStream(dst);
-          req.pipe(ws); ws.on('finish', ok); ws.on('error', no); req.on('error', no);
-        });
+        const parte = dst + '.part';
+        try { await stream.promises.pipeline(req, fs.createWriteStream(parte)); }
+        catch (e) { try { fs.unlinkSync(parte); } catch (_) {} return send(res, 400, { erro: 'O envio do arquivo foi interrompido. Tente de novo.' }); }
+        fs.renameSync(parte, dst);
         return send(res, 200, { file, name, size: fs.statSync(dst).size, mime: req.headers['content-type'] || '' });
       }
       if ((p === '/api/open' || p === '/api/reveal') && req.method === 'POST') {
         const { file } = JSON.parse((await readBody(req)).toString('utf8'));
         const full = path.join(ANX, path.basename(String(file || '')));
         if (!inside(ANX, full) || !fs.existsSync(full)) return send(res, 404, { erro: 'arquivo não achado' });
-        abrirNoSistema(full, p === '/api/reveal');
-        return send(res, 200, { ok: true });
+        const exec = EXECUTAVEL.test(full);
+        abrirNoSistema(full, p === '/api/reveal' || exec);
+        return send(res, 200, { ok: true, naPasta: exec && p === '/api/open' });
       }
       if (p === '/api/backup') {
         const { db } = readDB();
@@ -972,7 +1092,7 @@ async function app(req, res) {
       if (p === '/api/ai/key' && req.method === 'POST') {
         const { key, qual } = JSON.parse((await readBody(req)).toString('utf8'));
         const campo = { gemini: 'geminiKey', openai: 'openaiKey' }[qual] || 'anthropicKey';
-        const s = readSecrets();
+        const s = readSecrets(true);
         const k = String(key || '').trim();
         if (k) s[campo] = k; else delete s[campo];
         writeSecrets(s);
@@ -1024,6 +1144,7 @@ async function app(req, res) {
             return send(res, 200, { listas: await INT.trelloListas(b.key || o.key || '', b.token || o.token || '') });
           }
           if (p === '/api/int/salvar') {
+            Object.assign(x, readSecrets(true));
             for (const k of ['notion', 'trello']) {
               if (!(k in b)) continue;
               if (b[k] === null) { delete x[k]; continue; }
@@ -1053,6 +1174,7 @@ async function app(req, res) {
         } catch (e) { return send(res, 502, { erro: e.message }); }
       }
       // ----- atualização pelo GitHub -----
+      if (p === '/api/titulo') return send(res, 200, { titulo: await tituloDe(String(u.searchParams.get('url') || '')) });
       if (p === '/api/versao') return send(res, 200, UPD.local(ROOT));
       if (p === '/api/musicas') {
         let faixas = [];
@@ -1074,20 +1196,24 @@ async function app(req, res) {
 
     if (p.startsWith('/anexos/')) {
       const full = path.join(ANX, path.basename(p));
-      const down = u.searchParams.get('baixar') ? { 'Content-Disposition': 'attachment' } : {};
-      return serveFile(req, res, full, down);
+      const h = { 'X-Content-Type-Options': 'nosniff' }; // html, svg e afins nunca abrem como página: sempre baixam
+      const ext = path.extname(full).toLowerCase();
+      if (u.searchParams.get('baixar') || !ANEXO_NA_TELA.has(ext)) Object.assign(h, { 'Content-Disposition': 'attachment', 'Content-Type': 'application/octet-stream' });
+      return serveFile(req, res, full, h);
     }
 
     let rel = p === '/' ? '/index.html' : p;
     const full = path.join(PUB, rel);
     if (!inside(PUB, full)) return send(res, 403, { erro: 'caminho' });
-    return serveFile(req, res, full);
+    return serveFile(req, res, full, { 'X-Frame-Options': 'SAMEORIGIN', 'X-Content-Type-Options': 'nosniff' });
   } catch (e) {
     send(res, 500, { erro: String(e.message || e) });
   }
 }
 
 // escuta só no próprio PC ou, com "Usar no celular" ligado, na rede de casa (troca sem reiniciar)
+process.on('uncaughtException', (e) => { logErro('uncaughtException: ' + (e && e.stack || e)); });
+process.on('unhandledRejection', (e) => { logErro('unhandledRejection: ' + (e && e.stack || e)); });
 let server = null, primeira = true;
 function ouvir() {
   const host = REDE.host();

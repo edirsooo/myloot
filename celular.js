@@ -24,7 +24,10 @@ module.exports = function (DATA) {
     return L.sort((a, b) => casa(a) - casa(b));
   }
 
-  const loopback = (req) => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
+  // "o próprio PC" = conexão local, endereço local e sem proxy na frente (com "tailscale serve" todo visitante chegaria como 127.0.0.1)
+  const loopback = (req) => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)
+    && !req.headers['x-forwarded-for'] && !req.headers.forwarded
+    && /^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/i.test(String(req.headers.host || '127.0.0.1'));
   function hostOk(host) {
     if (host === '127.0.0.1' || host === 'localhost') return true;
     if (!cfg.on) return false;
@@ -34,13 +37,18 @@ module.exports = function (DATA) {
   const cookie = (req) => ((req.headers.cookie || '').match(/(?:^|;\s*)myloot=([a-f0-9]{32})/) || [])[1] || '';
   const autorizado = (req) => loopback(req) || (cfg.on && !!cfg.token && igual(cookie(req), cfg.token));
 
-  // tentativas erradas do código: 8 erros seguidos travam esse aparelho por 15 minutos
+  // tentativas erradas do código: 8 erros seguidos travam esse aparelho por 15 minutos;
+  // 40 erros somando todos os aparelhos travam a entrada por código para todos por 15 minutos (QR Code continua valendo)
   const erros = new Map();
+  const geral = { n: 0, desde: 0, ate: 0 };
   function tentar(req, pin) {
-    const ip = req.socket.remoteAddress, e = erros.get(ip) || { n: 0, ate: 0 };
-    if (e.ate > Date.now()) return 'travado';
+    const agora = Date.now(), ip = req.socket.remoteAddress, e = erros.get(ip) || { n: 0, ate: 0 };
+    if (e.ate > agora || geral.ate > agora) return 'travado';
     if (cfg.on && cfg.pin && igual(String(pin || '').replace(/\D/g, ''), cfg.pin)) { erros.delete(ip); return 'ok'; }
-    e.n++; if (e.n >= 8) { e.n = 0; e.ate = Date.now() + 15 * 60e3; }
+    e.n++; if (e.n >= 8) { e.n = 0; e.ate = agora + 15 * 60e3; }
+    if (agora - geral.desde > 15 * 60e3) { geral.n = 0; geral.desde = agora; }
+    if (++geral.n >= 40) { geral.n = 0; geral.ate = agora + 15 * 60e3; }
+    if (erros.size > 1000) erros.clear();
     erros.set(ip, e); return 'errado';
   }
   const setCookie = () => `myloot=${cfg.token}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax`;

@@ -118,13 +118,29 @@
     if (hash.startsWith('item=')) M.openItem(hash.slice(5));
     M.focusPaint();
     await M.recuperarNaoSalvo(); // mudanças que não chegaram a ser salvas da última vez
+    // o arquivo do banco estava estragado (queda de energia, disco) e o servidor voltou para a cópia automática mais nova
+    if (!M.remoto) M.api('/api/recuperado').then((r) => {
+      if (!r || !r.recuperado) return;
+      const mostrar = () => (M.modalOpen() ? setTimeout(mostrar, 2000) : M.escolha(`O arquivo dos seus dados estava danificado e o MyLoot voltou para a cópia automática "${r.recuperado.de}". Confira se falta algo recente. As cópias ficam em Configurações → Dados e backup, e a sincronização entre computadores fica parada até você religar.`, [{ k: 'ok', t: 'Entendi' }], '🛟 Dados recuperados'));
+      mostrar();
+      M.api('/api/recuperado', { method: 'POST' }).catch(() => {});
+    }).catch(() => {});
     // ordem da abertura: 1) novidades da versão, 2) pop-up das IAs, 3) tutorial (só com tudo fechado)
     M.inicioPronto = false;
     const liberaTutorial = () => { M.inicioPronto = true; M.tourTalvez(M.ui.page); };
     if (!M.remoto) {
       const temNovidade = await M.mostrarNovidades();
       // com novidade na tela, o pop-up das IAs abre quando ela fechar (onClose em atualiza.js)
-      if (!temNovidade && !M.db.settings.aiSetupDone) setTimeout(() => { if (!M.modalOpen()) M.iaSetup(); }, 1200);
+      // espera a abertura dos mascotes e qualquer janela fecharem (antes tentava uma vez só e, com a abertura na frente, desistia)
+      if (!temNovidade && !M.db.settings.aiSetupDone) {
+        const ini = Date.now();
+        const tenta = () => {
+          if (M.db.settings.aiSetupDone || Date.now() - ini > 120000) return;
+          if (M.modalOpen() || document.querySelector('.pet-ola')) return setTimeout(tenta, 800);
+          M.iaSetup();
+        };
+        setTimeout(tenta, 1200);
+      }
       setTimeout(() => M.checarAtualizacao(false), 5000);
       setTimeout(() => M.vozFila(), 6000); // áudios que chegaram do celular com o PC fechado
     }

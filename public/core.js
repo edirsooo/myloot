@@ -43,7 +43,9 @@
   // ----- API -----
   const H = { 'X-MyLoot': '1' };
   M.api = async (path, opt) => {
-    const r = await fetch(path, Object.assign({ headers: H }, opt));
+    let r;
+    try { r = await fetch(path, Object.assign({ headers: H }, opt)); }
+    catch (_) { throw new Error(M.remoto ? 'Sem conexão com o computador. Confira se o MyLoot está aberto lá e se o celular está na mesma rede.' : 'O MyLoot não respondeu. Confira se ele continua aberto (baú perto do relógio).'); }
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.erro || 'erro ' + r.status);
     return j;
@@ -86,7 +88,8 @@
       const bv = b[k], lv = l[k], sv = s[k];
       if (!(k in s)) continue;
       if (J(lv) === J(sv)) continue;
-      if (J(lv) === J(bv)) { l[k] = sv; continue; }
+      // só o outro aparelho mudou: listas são trocadas objeto a objeto (a ficha aberta continua apontando para o objeto certo)
+      if (J(lv) === J(bv)) { l[k] = (ehLista(k, lv) || ehLista(k, sv)) ? juntarLista(k, bv, lv, sv) : sv; continue; }
       if (J(sv) === J(bv)) continue;
       if (ehLista(k, lv) || ehLista(k, sv)) l[k] = juntarLista(k, bv, lv, sv);
       else if (lv && sv && typeof lv === 'object' && typeof sv === 'object' && !Array.isArray(lv)) {
@@ -109,11 +112,12 @@
   M.sincronizar = () => sincronizando || (sincronizando = (async () => {
     try {
       const r = await lerServidor();
-      const antes = J(M.db);
+      const antes = J(M.db), doServidor = J(r.db);
       if (base) juntar(base, M.db, r.db); else Object.assign(M.db, r.db);
-      base = JSON.parse(J(r.db)); M.rev = r.rev;
-      if (J(M.db) !== J(r.db)) M.save(true); // ainda tem mudança daqui para mandar
-      return J(M.db) !== antes;
+      base = JSON.parse(doServidor); M.rev = r.rev;
+      const agora = J(M.db);
+      if (agora !== doServidor) M.save(true); // ainda tem mudança daqui para mandar
+      return agora !== antes;
     } finally { sincronizando = null; }
   })());
   let enviando = false;
@@ -158,9 +162,17 @@
     M.estadoSalvar = erro ? 'erro' : 'ok';
     const b = M.$('#saveState'); if (!b) return;
     b.hidden = !erro;
-    if (erro) b.innerHTML = `<span>⚠️ As últimas mudanças ainda não foram salvas${quando ? `. Nova tentativa em ${quando} s` : ''}.</span><button type="button" class="btn sm" id="saveAgora">Tentar agora</button>`;
+    if (erro) b.innerHTML = `<span>⚠️ As últimas mudanças ainda não foram salvas${quando ? `. Nova tentativa em ${quando} s` : ''}.${semCopia ? ' Os dados são grandes demais para guardar uma cópia neste navegador: não feche o MyLoot até salvar.' : ''}</span><button type="button" class="btn sm" id="saveAgora">Tentar agora</button>`;
   }
-  const guardaLocal = () => { try { localStorage.setItem(PEND, J({ at: Date.now(), base, db: M.db })); } catch (_) { try { localStorage.removeItem(PEND); } catch (__) {} } };
+  // cópia neste navegador: com a base (junta melhor) ou, se não couber, só o banco; se nem assim couber, a faixa avisa
+  let semCopia = false;
+  const guardaLocal = () => {
+    semCopia = false;
+    try { localStorage.setItem(PEND, J({ at: Date.now(), base, db: M.db })); return; } catch (_) {}
+    try { localStorage.removeItem(PEND); localStorage.setItem(PEND, J({ at: Date.now(), db: M.db })); return; } catch (_) {}
+    try { localStorage.removeItem(PEND); } catch (_) {}
+    semCopia = true;
+  };
   M.save = (quick) => {
     clearTimeout(saveT); clearTimeout(retryT); retryT = 0;
     saveT = setTimeout(async () => {
@@ -191,12 +203,13 @@
   // ao abrir: se da última vez ficou mudança sem salvar guardada neste navegador, oferece juntar com o que está no servidor
   M.recuperarNaoSalvo = async () => {
     let p = null; try { p = JSON.parse(localStorage.getItem(PEND) || 'null'); } catch (_) {}
-    if (!p || !p.db || !p.base) return false;
+    if (!p || !p.db) return false;
     const larga = () => { try { localStorage.removeItem(PEND); } catch (_) {} };
     if (J(p.db) === J(M.db)) { larga(); return false; }
     const quando = new Date(p.at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
     const r = await M.escolha(`Da última vez (${quando}) algumas mudanças não chegaram a ser salvas. Elas ficaram guardadas neste navegador.`, [{ k: 'sim', t: '↩ Recuperar essas mudanças' }, { k: 'nao', t: 'Descartar', fraco: true }], 'Mudanças não salvas');
-    if (r === 'sim') { const meu = p.db; juntar(p.base, meu, M.db); troca(M.db, meu); larga(); M.save(true); M.render(); M.toast('✅ Mudanças recuperadas'); return true; }
+    // sem a base (cópia guardada só com o banco): junta pela união, valendo o daqui em cada ficha e sem perder o que veio de outro aparelho
+    if (r === 'sim') { const meu = p.db; juntar(p.base || {}, meu, M.db); troca(M.db, meu); larga(); M.save(true); M.render(); M.toast('✅ Mudanças recuperadas'); return true; }
     if (r === 'nao') larga();
     return false;
   };
