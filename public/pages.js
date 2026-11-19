@@ -72,7 +72,7 @@
         <div class="cfg-row"><span class="l">Meta do dia (XP) ${M.hint('Quantos pontos você quer fazer por dia.')}</span><input type="number" id="cGoal" min="10" max="500" step="10" value="${s.dailyGoal}" style="width:90px"></div>
       </section>
       <section class="stat"><div class="cfg-h">🏷️ Categorias</div><div id="cCats"></div><button class="btn ghost sm" id="cCatAdd" style="margin-top:6px">＋ Nova categoria</button></section>
-      <section class="stat"><div class="cfg-h">🧩 Personalizar</div><p class="opc-dica">Deixe o MyLoot do seu jeito: crie, renomeie, mude a cor, a ordem ou apague. Tudo tem Desfazer.</p><div class="cfg-pers">${['itemStatus', 'taskPrios', 'finCats', 'finFormas', 'toolGroups'].map((k) => `<button class="btn ghost sm" data-opc="${k}">${M.OPC_DEF[k].em} ${M.OPC_DEF[k].t}</button>`).join('')}<button class="btn ghost sm" id="cOrgHome">🏠 Organizar o Início</button><button class="btn ghost sm" data-go-col="1">▥ Colunas do funil</button></div></section>
+      <section class="stat"><div class="cfg-h">🧩 Personalizar</div><p class="opc-dica">Deixe o MyLoot do seu jeito: crie, renomeie, mude a cor, a ordem ou apague. Tudo tem Desfazer.</p><div class="cfg-pers">${['itemTypes', 'itemStatus', 'taskPrios', 'taskLists', 'finCats', 'finFormas', 'cliCampos', 'toolGroups'].map((k) => `<button class="btn ghost sm" data-opc="${k}">${M.OPC_DEF[k].em} ${M.OPC_DEF[k].t}</button>`).join('')}<button class="btn ghost sm" id="cOrgHome">🏠 Organizar o Início</button><button class="btn ghost sm" id="cMenu">🧭 Menu e barra do celular</button><button class="btn ghost sm" data-go-col="1">▥ Colunas do funil</button></div></section>
       ${M.celSection()}
       ${M.tourSection()}
       <div class="so-pc" style="display:contents">${M.intSection()}</div>
@@ -122,7 +122,7 @@
 
     // menu das seções, no jeito do Canva e da Hostinger: grupos à esquerda (em cima no celular) e uma seção por vez à direita
     const GRUPOS = [['Geral', /Aparência|Diversão|Categorias|Personalizar|Tutorial|Atalhos/], ['Conectar', /celular|IA \(|Notion|Conexões|Drive/], ['Sistema', /backup|Versão|Ajuda|Servidor/]];
-    const DESC = { 'Aparência': 'Tema, tamanho das letras e modo compacto.', 'Diversão': 'Pontos, níveis, sons, confete, mascote e a meta do dia.', 'Categorias': 'Crie, renomeie e pinte as categorias da Biblioteca.', 'Personalizar': 'Status, prioridades, categorias do Financeiro, formas de pagamento, grupos e o Início.',
+    const DESC = { 'Aparência': 'Tema, tamanho das letras e modo compacto.', 'Diversão': 'Pontos, níveis, sons, confete, mascote e a meta do dia.', 'Categorias': 'Crie, renomeie e pinte as categorias da Biblioteca.', 'Personalizar': 'Tipos, status, prioridades, listas, categorias, formas de pagamento, campos do cliente, menu e o Início.',
       'Tutorial': 'Reveja a explicação de cada tela.', 'Atalhos do teclado': 'Teclas para ir mais rápido.', 'Usar no celular': 'Abra o MyLoot no celular pela rede Wi-Fi de casa.',
       'IA (Claude e Codex)': 'Escolha a IA que melhora, corrige e resume seus textos.', 'Notion e Trello': 'Mande itens para o Notion e para o Trello com um clique.',
       'Conexões': 'Deixe outros programas do computador mandarem itens ao MyLoot.', 'Google Drive': 'Copie tudo para o Drive e sincronize entre computadores.',
@@ -166,6 +166,7 @@
       }
     };
     $('#cOrgHome').onclick = () => M.organizarInicio();
+    $('#cMenu').onclick = () => M.menuEditar();
     $('[data-go-col]').onclick = () => M.go('clients');
     $('#cCatAdd').onclick = () => { M.db.categories.push({ id: M.uid(), name: 'Nova categoria', icon: '📁', color: '#8b5cf6' }); M.save(); SFX.play('pop'); drawCats(); const r = $$('.catrow .nm'); r[r.length - 1].select(); };
 

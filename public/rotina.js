@@ -218,7 +218,8 @@
   function arquivarMeta(g, liga) { arquiva(g, liga); M.save(); SFX.play('click'); M.render(); M.toast(avisoArq(g)); }
 
   // ----- janelas: hábito e meta -----
-  const escolheEmoji = (L, atual) => `<div class="em-grade" id="emG" role="group" aria-labelledby="emL">${L.map((e) => `<button type="button" class="${e === atual ? 'on' : ''}" data-e="${e}" aria-pressed="${e === atual}">${e}</button>`).join('')}</div>`;
+  // grade de sugestões + campo para qualquer emoji (Win + . abre o seletor do Windows)
+  const escolheEmoji = (L, atual) => `<div class="em-grade" id="emG" role="group" aria-labelledby="emL">${L.map((e) => `<button type="button" class="${e === atual ? 'on' : ''}" data-e="${esc(e)}" aria-pressed="${e === atual}">${esc(e)}</button>`).join('')}</div><input type="text" id="emOutro" class="em-outro" maxlength="8" placeholder="Outro emoji: cole aqui (no Windows, Win + .)" aria-label="Outro emoji">`;
   // marca o botão escolhido de um grupo (para os olhos e para o leitor de tela)
   const acende = (m, S, b) => $$(S, m).forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
   function editarHabito(h, pre) {
@@ -233,12 +234,13 @@
         <div class="row" id="hVz" style="margin-top:8px;align-items:center;gap:8px" ${o.freq === 'vezes' ? '' : 'hidden'}><input type="number" id="hVezes" min="1" max="7" value="${o.vezes}" style="width:80px;flex:none" aria-label="Quantas vezes por semana"><span>vezes por semana</span></div></div>
       <div class="row">
         <div class="fld"><label for="hAlvo">Quanto por dia? ${M.hint('Para hábitos de “fiz ou não fiz”, deixe 1 vez. Para contar (8 copos de água, 30 minutos de leitura), coloque o número e a unidade: aparecem os botões − e ＋ para ir somando.')}</label>
-          <div class="row" style="gap:8px"><input type="number" id="hAlvo" min="1" max="999" value="${alvo(o)}" style="flex:1"><select id="hUn" style="flex:1" aria-label="Unidade">${(UN_HAB.includes(o.un) ? UN_HAB : [o.un, ...UN_HAB]).map((u) => `<option ${u === o.un ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select></div></div>
+          <div class="row" style="gap:8px"><input type="number" id="hAlvo" min="1" max="999" value="${alvo(o)}" style="flex:1"><input type="text" id="hUn" list="hUnL" maxlength="20" style="flex:1" aria-label="Unidade (escolha ou escreva a sua)" value="${esc(o.un || 'vez')}"><datalist id="hUnL">${UN_HAB.map((u) => `<option value="${esc(u)}">`).join('')}</datalist></div></div>
         <div class="fld"><label for="hHora">Lembrete ${M.hint('Opcional. No horário, o computador mostra um aviso se o hábito do dia ainda não foi marcado.')}</label><input type="time" id="hHora" value="${esc(o.hora || '')}"></div>
       </div>
       <div class="jan-pe">${novo ? '' : `<button class="btn danger" id="hDel" title="Vai para a Lixeira. Dá para restaurar.">🗑️ Apagar</button><button class="btn ghost" id="hPausa" title="${o.pausa ? 'O hábito volta a valer a partir de hoje' : 'O hábito sai dos seus dias sem perder a sequência. Dá para retomar quando quiser.'}">${o.pausa ? '▶ Retomar' : '⏸ Pausar'}</button>`}<span class="grow"></span><button class="btn" id="hOk">${novo ? '＋ Adicionar hábito' : '✔ Salvar'}</button></div></div>`, { small: true });
     $('#x', m).onclick = M.closeModal;
     $('#emG', m).onclick = (e) => { const b = e.target.closest('[data-e]'); if (!b) return; o.em = b.dataset.e; acende(m, '#emG button', b); SFX.play('click'); };
+    $('#emOutro', m).oninput = (e) => { const v = e.target.value.trim().replace(/[<>"'&]/g, '').slice(0, 8); if (!v) return; o.em = v; acende(m, '#emG button', null); };
     $('#hFreq', m).onclick = (e) => { const b = e.target.closest('[data-f]'); if (!b) return; o.freq = b.dataset.f; acende(m, '#hFreq button', b); $('#hDias', m).hidden = o.freq !== 'semana'; $('#hVz', m).hidden = o.freq !== 'vezes'; SFX.play('click'); };
     $('#hDias', m).onclick = (e) => { const b = e.target.closest('[data-i]'); if (!b) return; const i = +b.dataset.i; o.dias = o.dias.includes(i) ? o.dias.filter((x) => x !== i) : [...o.dias, i]; b.classList.toggle('on', o.dias.includes(i)); b.setAttribute('aria-pressed', o.dias.includes(i)); SFX.play('click'); };
     const ok = (pausa) => {
@@ -246,7 +248,7 @@
       if (!o.nome) return M.falta($('#hNome', m), '✍️ Dê um nome ao hábito');
       if (o.freq === 'semana' && !o.dias.length) return M.toast('Escolha pelo menos um dia da semana.');
       o.vezes = Math.max(1, Math.min(7, +$('#hVezes', m).value || 1));
-      o.alvo = Math.max(1, Math.min(999, Math.round(+$('#hAlvo', m).value || 1))); o.un = $('#hUn', m).value; o.hora = $('#hHora', m).value;
+      o.alvo = Math.max(1, Math.min(999, Math.round(+$('#hAlvo', m).value || 1))); o.un = $('#hUn', m).value.trim().replace(/[<>]/g, '').slice(0, 20) || 'vez'; o.hora = $('#hHora', m).value;
       if (novo) H().push(Object.assign({ id: M.uid(), criado: M.today(), log: {} }, o)); else Object.assign(h, o, { log: h.log || {} });
       if (pausa === true) pausar(h, !h.pausa); // Pausar e Retomar também guardam o que estava escrito na janela
       M.save(); SFX.play('pop'); M.closeModal(); M.render();
@@ -278,6 +280,7 @@
       <div class="jan-pe">${novo ? '' : `<button class="btn danger" id="gDel" title="Vai para a Lixeira. Dá para restaurar.">🗑️ Apagar</button><button class="btn ghost" id="gArqB" title="${o.arq ? 'Volta para a lista das suas metas' : 'Tira da lista e guarda em Arquivadas. Dá para desarquivar depois.'}">${o.arq ? '📤 Desarquivar' : '📦 Arquivar'}</button>`}<span class="grow"></span><button class="btn" id="gOk">${novo ? '＋ Adicionar meta' : '✔ Salvar'}</button></div></div>`, { small: true });
     $('#x', m).onclick = M.closeModal;
     $('#emG', m).onclick = (e) => { const b = e.target.closest('[data-e]'); if (!b) return; o.em = b.dataset.e; acende(m, '#emG button', b); SFX.play('click'); };
+    $('#emOutro', m).oninput = (e) => { const v = e.target.value.trim().replace(/[<>"'&]/g, '').slice(0, 8); if (!v) return; o.em = v; acende(m, '#emG button', null); };
     const ok = (arq) => {
       o.nome = $('#gNome', m).value.trim();
       if (!o.nome) return M.falta($('#gNome', m), '✍️ Escreva o que você quer alcançar');

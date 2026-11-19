@@ -17,7 +17,9 @@
       ['fs-casa', 'saida', 'Casa e contas', '🏠'], ['fs-alim', 'saida', 'Alimentação', '🍽️'], ['fs-transp', 'saida', 'Transporte', '🚗'], ['fs-outros', 'saida', 'Outros', '➖'],
     ].map(([id, tipo, name, em]) => ({ id, tipo, name, em, color: tipo === 'entrada' ? '#3cffaa' : '#ff7e00' }))),
     finFormas: fc([['fp-pix', 'PIX', '⚡'], ['fp-cartao', 'Cartão', '💳'], ['fp-boleto', 'Boleto', '🧾'], ['fp-transf', 'Transferência', '🏦'], ['fp-dinheiro', 'Dinheiro', '💵']].map(([id, name, em]) => ({ id, name, em, color: '#9aa3c9' }))),
-    toolGroups: [],
+    toolGroups: [], taskLists: [], cliCampos: [],
+    itemTypes: fc([['estudo', 'Estudo / PDF', '📚', '#3ad7ff'], ['prompt', 'Prompt', '✨', '#a78bfa'], ['instrucao', 'Instrução', '📜', '#ffbe46'],
+      ['comando', 'Comando', '⌨️', '#3cffaa'], ['link', 'Link', '🔗', '#ff7ac6'], ['nota', 'Nota', '📝', '#ff9d4a']].map(([id, name, em, color]) => ({ id, name, em, color, oculto: false }))),
   };
 
   // como cada lista se liga ao resto: o que usa a opção, como trocar por outra e o texto das janelas
@@ -36,12 +38,27 @@
       destinos: (o) => (M.toolGruposTodos ? M.toolGruposTodos() : []).filter((g) => g.id !== o.id).map((g) => ({ k: g.id, t: new DOMParser().parseFromString(`${g.em} ${g.nome}`, 'text/html').body.textContent })) }, // nome já vem escapado de ferramentas.js
   };
 
+  DEF.itemTypes = { t: 'Tipos de item', um: 'tipo', em: '🧱', min: 6, fixos: true, limpa: true, dica: 'Os 6 tipos da Biblioteca. Mude o nome, o emoji, a cor e a ordem, ou esconda os que não usa (os itens continuam lá). O jeito de cada um funcionar não muda: Link abre o site, Prompt tem o botão de copiar.',
+    usa: (o) => M.db.items.filter((i) => i.type === o.id), troca: () => {}, onde: 'itens' };
+  DEF.taskLists = { t: 'Listas de tarefas', um: 'lista', em: '🗂️', min: 0, dica: 'Separe as tarefas por projeto ou área (ex.: Casa, Trabalho, Cliente X). A tela de Tarefas filtra por lista e pode agrupar por lista.',
+    usa: (o) => M.db.tasks.filter((t) => t.lista === o.id), troca: (L, p) => L.forEach((t) => { t.lista = p === '_sem' ? '' : p; }), onde: 'tarefas',
+    destinos: (o) => M.opc('taskLists').filter((x) => x.id !== o.id).map((x) => ({ k: x.id, t: `${x.em} ${x.name}` })).concat({ k: '_sem', t: '📥 Sem lista' }) };
+  const CAMPO_TIPOS = [['texto', '🔤 Texto'], ['numero', '🔢 Número'], ['data', '📅 Data'], ['link', '🔗 Link']];
+  M.CLI_FIXOS = [['empresa', 'Empresa / marca'], ['whats', 'WhatsApp'], ['email', 'E-mail'], ['insta', 'Instagram'], ['site', 'Site'], ['trello', 'Quadro do Trello'], ['pasta', 'Pasta do cliente']];
+  DEF.cliCampos = { t: 'Campos da ficha do cliente', um: 'campo', em: '🪪', min: 0, tipoCampo: CAMPO_TIPOS, dica: 'Campos seus na ficha do cliente (ex.: CNPJ, Aniversário, Valor do contrato, Link do contrato). E esconda os campos que vêm prontos e você não usa.',
+    usa: (o) => (M.db.clients || []).filter((c) => c.extra && c.extra[o.id]), troca: () => {}, onde: 'clientes com valor',
+    rodape: () => { const oc = M.db.settings.cliOcultos || []; return `<h4 class="opc-h">Campos que já vêm na ficha</h4><div class="w-chk" id="opcFixos">${M.CLI_FIXOS.map(([k, n]) => `<label><input type="checkbox" data-fixo="${k}" ${oc.includes(k) ? '' : 'checked'}> ${n}</label>`).join('')}</div>`; },
+    liga: (m) => { const b = m.querySelector('#opcFixos'); if (b) b.onchange = () => { M.db.settings.cliOcultos = [...b.querySelectorAll('[data-fixo]')].filter((x) => !x.checked).map((x) => x.dataset.fixo); M.save(); }; } };
   M.opc = (k) => {
     if (!M.db) return PADRAO[k].slice();
     if (!Array.isArray(M.db[k]) || (!M.db[k].length && PADRAO[k].length)) M.db[k] = PADRAO[k].map((o) => Object.assign({}, o));
     return M.db[k].slice().sort((a, b) => (a.ord || 0) - (b.ord || 0));
   };
   const stDe = (id) => { const L = M.opc('itemStatus'); return (L.find((s) => s.id === id) || L[0]).id; };
+  // tipos de item: M.TYPES são os visíveis (na ordem da pessoa); M.TYPES_TODOS inclui os escondidos; M.type(id) acha em todos
+  Object.defineProperty(M, 'TYPES_TODOS', { get: () => { const L = M.opc('itemTypes'); PADRAO.itemTypes.forEach((p) => { if (!L.some((x) => x.id === p.id)) L.push(Object.assign({}, p)); }); return L; }, configurable: true });
+  Object.defineProperty(M, 'TYPES', { get: () => M.TYPES_TODOS.filter((t) => !t.oculto), configurable: true });
+  M.type = (id) => { const L = M.TYPES_TODOS; return L.find((t) => t.id === id) || L.find((t) => t.id === 'nota') || L[0]; };
   Object.defineProperty(M, 'STATUS', { get: () => M.opc('itemStatus'), configurable: true });
   M.statusDe = (id) => { const L = M.opc('itemStatus'); return L.find((s) => s.id === id) || L[0]; };
   // prioridades: M.PRIOS são os ids em ordem (a primeira é a mais importante); M.prio(id) devolve a opção (ou a do meio)
@@ -58,18 +75,20 @@
   M.opcGerenciar = (k, depois) => {
     const d = DEF[k], todas = M.opc(k);
     const grupos = d.tipo ? [['entrada', '⬇️ Entradas'], ['saida', '⬆️ Saídas']] : [['', '']];
-    const linha = (o, L) => { const i = L.indexOf(o), n = d.usa(o).length; return `<div class="opc-row" data-o="${esc(o.id)}" style="--c:${esc(o.color)}"><span class="opc-cor"></span><span class="opc-nm">${esc(o.em)} ${esc(o.name)}</span>${n ? `<small>${n} ${d.onde}</small>` : ''}
+    const linha = (o, L) => { const i = L.indexOf(o), n = d.usa(o).length; return `<div class="opc-row" data-o="${esc(o.id)}" style="--c:${esc(o.color)}"><span class="opc-cor"></span><span class="opc-nm">${esc(o.em)} ${esc(o.name)}</span>${d.tipoCampo ? `<small>${esc((d.tipoCampo.find((x) => x[0] === o.tipo) || d.tipoCampo[0])[1])}</small>` : ''}${n ? `<small>${n} ${d.onde}</small>` : ''}
       <button type="button" class="icon-btn sm" data-a="up" ${i ? '' : 'disabled'} title="Subir" aria-label="Subir ${esc(o.name)}">↑</button><button type="button" class="icon-btn sm" data-a="down" ${i < L.length - 1 ? '' : 'disabled'} title="Descer" aria-label="Descer ${esc(o.name)}">↓</button>
-      <button type="button" class="icon-btn sm" data-a="ed" title="Editar" aria-label="Editar ${esc(o.name)}">✏️</button><button type="button" class="icon-btn sm" data-a="del" title="Apagar" aria-label="Apagar ${esc(o.name)}">🗑️</button></div>`; };
+      <button type="button" class="icon-btn sm" data-a="ed" title="Editar" aria-label="Editar ${esc(o.name)}">✏️</button>${d.fixos ? `<button type="button" class="icon-btn sm" data-a="ver" title="${o.oculto ? 'Mostrar' : 'Esconder'}" aria-label="${o.oculto ? 'Mostrar' : 'Esconder'} ${esc(o.name)}">${o.oculto ? '👁' : '🙈'}</button>` : `<button type="button" class="icon-btn sm" data-a="del" title="Apagar" aria-label="Apagar ${esc(o.name)}">🗑️</button>`}</div>`; };
     const m = M.modal(`<div class="modal-h"><h2>${d.em} ${esc(d.t)}</h2><button class="icon-btn" id="x" aria-label="Fechar">✕</button></div>
       <div class="modal-b"><p class="opc-dica">${esc(d.dica)}</p>
         ${grupos.map(([tp, nm]) => { const L = todas.filter((o) => !d.tipo || (o.tipo === 'saida') === (tp === 'saida')); return `${nm ? `<h4 class="opc-h">${nm}</h4>` : ''}<div class="opc-lista">${L.map((o) => linha(o, L)).join('') || '<small style="color:var(--faint)">Nenhum ainda.</small>'}</div>
-          <button type="button" class="btn ghost sm opc-novo" data-novo="${tp}">＋ ${d.tipo ? 'Nova categoria de ' + (tp === 'saida' ? 'saída' : 'entrada') : 'Adicionar ' + d.um}</button>`; }).join('')}
+          ${d.fixos ? '' : `<button type="button" class="btn ghost sm opc-novo" data-novo="${tp}">＋ ${d.tipo ? 'Nova categoria de ' + (tp === 'saida' ? 'saída' : 'entrada') : 'Adicionar ' + d.um}</button>`}`; }).join('')}
+        ${d.rodape ? d.rodape() : ''}
         <div class="row" style="justify-content:space-between;margin-top:6px">${PADRAO[k].length ? '<button type="button" class="btn ghost sm" id="opcPad" style="flex:none">↺ Voltar ao padrão</button>' : '<span></span>'}<button class="btn" id="opcOk" style="flex:none">✔ Pronto</button></div>
       </div>`, { small: true });
     const volta = () => { M.render(); M.opcGerenciar(k, depois); };
     const fecha = () => { M.closeModal(); M.render(); if (depois) depois(); };
     $('#x', m).onclick = fecha; $('#opcOk', m).onclick = fecha;
+    if (d.liga) d.liga(m);
     if ($('#opcPad', m)) $('#opcPad', m).onclick = async () => {
       if (!(await M.confirm(`Voltar ${d.t.toLowerCase()} ao padrão do MyLoot? As que você criou somem da lista (o que usava uma delas passa para a primeira). Dá para desfazer.`, '↺ Voltar ao padrão'))) return volta();
       M.db[k] = PADRAO[k].map((o) => Object.assign({}, o, { updated: Date.now() }));
@@ -82,6 +101,7 @@
       const L = M.opc(k).filter((x) => !d.tipo || (x.tipo === 'saida') === (o.tipo === 'saida'));
       if (b.dataset.a === 'ed') return M.opcEditar(k, o, { depois: volta });
       if (b.dataset.a === 'del') return M.opcApagar(k, o, volta);
+      if (b.dataset.a === 'ver') { if (!o.oculto && M.opc(k).filter((x) => !x.oculto).length < 2) { M.toast('⚠️ Deixe pelo menos um visível'); return volta(); } o.oculto = !o.oculto; o.updated = Date.now(); M.save(); SFX.play('click'); return volta(); }
       const i = L.indexOf(o), j = i + (b.dataset.a === 'up' ? -1 : 1); if (j < 0 || j >= L.length) return;
       // a troca de lugar vale na lista inteira (nas categorias, entradas e saídas dividem a mesma ordem)
       const T = M.opc(k), a = T.indexOf(L[i]), c = T.indexOf(L[j]); [T[a], T[c]] = [T[c], T[a]]; reordena(T);
@@ -93,12 +113,13 @@
   M.opcEditar = (k, o, op) => {
     op = op || {};
     const d = DEF[k], nova = !o, L = M.opc(k);
-    const s = o || { em: '📌', name: '', color: CORES[L.length % CORES.length], tipo: op.tipo || 'entrada' };
+    const s = o || { em: '📌', name: '', color: CORES[L.length % CORES.length], tipo: d.tipoCampo ? 'texto' : op.tipo || 'entrada' };
     const m = M.modal(`<div class="modal-h"><h2>${nova ? '＋ ' + (d.tipo ? 'Nova categoria' : 'Adicionar ' + d.um) : '✏️ Editar ' + d.um}</h2><button class="icon-btn" id="x" aria-label="Fechar">✕</button></div>
       <div class="modal-b">
         <div class="row"><div class="fld" style="flex:none;width:84px"><label for="opEm">Emoji</label><input id="opEm" type="text" maxlength="8" value="${esc(s.em || '')}" style="text-align:center;font-size:18px"></div>
           <div class="fld" style="flex:1"><label for="opNm">Nome</label><input id="opNm" type="text" maxlength="40" value="${esc(s.name)}" placeholder="Escreva o nome"></div></div>
         ${d.tipo && nova ? `<div class="fld"><label>Vale para</label><div class="seg" id="opTp"><button type="button" data-t="entrada" class="${s.tipo !== 'saida' ? 'on' : ''}">⬇️ Entradas</button><button type="button" data-t="saida" class="${s.tipo === 'saida' ? 'on' : ''}">⬆️ Saídas</button></div></div>` : ''}
+        ${d.tipoCampo ? `<div class="fld"><label for="opTc">Tipo de campo</label><select id="opTc">${d.tipoCampo.map(([v, n]) => `<option value="${v}" ${v === (s.tipo || 'texto') ? 'selected' : ''}>${n}</option>`).join('')}</select></div>` : ''}
         <div class="fld"><label>Cor</label><div class="col-cores" id="opCor">${CORES.map((c) => `<button type="button" class="col-cor ${c === s.color ? 'on' : ''}" data-cor="${c}" style="background:${c}" aria-label="Cor ${c}"></button>`).join('')}<input type="color" id="opCorL" value="${esc(s.color)}" title="Outra cor"></div></div>
         <div class="row" style="justify-content:flex-end"><button class="btn ghost" id="opCn" style="flex:none">Cancelar</button><button class="btn" id="opOk" style="flex:none">${nova ? '＋ Adicionar' : '✔ Salvar'}</button></div>
       </div>`, { small: true });
@@ -112,16 +133,19 @@
     $('#opOk', m).onclick = () => {
       const nm = $('#opNm', m).value.trim().slice(0, 40); if (!nm) return M.falta($('#opNm', m), '✍️ Escreva o nome');
       const em = $('#opEm', m).value.trim().replace(/[<>"'&]/g, '').slice(0, 8);
+      const nmL = d.limpa ? nm.replace(/[<>"'&]/g, '') : nm; if (!nmL) return M.falta($('#opNm', m), '✍️ Escreva o nome');
       // nas listas guardadas pelo nome (categorias e formas), dois com o mesmo nome se confundiriam
       if (d.porNome && L.some((x) => x !== o && x.name.toLowerCase() === nm.toLowerCase() && (!d.tipo || (x.tipo === 'saida') === ((o ? o.tipo : tipo) === 'saida')))) return M.falta($('#opNm', m), '⚠️ Já existe uma com esse nome');
       if (nova) {
         const x = { id: k.slice(0, 3) + M.uid(), name: nm, em, color: cor, ord: L.length, updated: Date.now() };
         if (d.tipo) x.tipo = tipo === 'saida' ? 'saida' : 'entrada';
+        if (d.tipoCampo) x.tipo = $('#opTc', m).value;
         M.db[k] = M.opc(k).concat(x);
         if (op.criou) op.criou(x);
       } else {
         if (d.porNome && o.name !== nm) { const usam = d.usa(o); d.troca(usam, nm); }
-        Object.assign(o, { name: nm, em, color: cor, updated: Date.now() });
+        Object.assign(o, { name: nmL, em, color: cor, updated: Date.now() });
+        if (d.tipoCampo) o.tipo = $('#opTc', m).value;
       }
       M.save(); SFX.play('done'); M.toast(nova ? `${em} “${nm}” adicionad${d.um === 'status' || d.um === 'grupo' ? 'o' : 'a'}` : '✅ Salvo');
       sai();

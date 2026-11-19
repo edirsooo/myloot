@@ -71,6 +71,7 @@
       if (M.cliAberto && M.client && M.client(M.cliAberto)) setTimeout(() => { if (!M.modalOpen()) M.openClient(M.cliAberto); }, 0);
     } });
 
+    M.versaoGuardar('item', it); // como a ficha estava ao abrir
     function draw() {
       const t = M.type(it.type);
       m.innerHTML = `
@@ -79,13 +80,14 @@
           <h2>${t.name}</h2>
           <span class="savedot" id="savedot">✔ salvo</span>
           <button class="icon-btn" id="eClip" title="Anexar arquivo (PDF, imagem, documento)" aria-label="Anexar arquivo">📎</button>
+          ${it._new ? '' : '<button class="icon-btn" id="eVer" title="Versões anteriores desta ficha" aria-label="Versões anteriores">🕘</button>'}
           <button class="icon-btn" id="eFav" title="Favorito" aria-label="Favorito" aria-pressed="${it.fav ? 'true' : 'false'}">${it.fav ? '⭐' : '☆'}</button>
           ${it._new ? '' : `<button class="icon-btn" id="eArq" title="${it.arq ? 'Desarquivar: volta para a lista do dia a dia' : 'Arquivar: sai da lista do dia a dia, mas continua guardado'}" aria-label="${it.arq ? 'Desarquivar' : 'Arquivar'}">${it.arq ? '📤' : '🗃️'}</button>`}
           <button class="icon-btn" id="eDel" title="Mandar para a Lixeira" aria-label="Mandar para a Lixeira">🗑️</button>
           <button class="icon-btn" id="eX" title="Fechar (Esc)" aria-label="Fechar">✕</button>
         </div>
         <div class="modal-b">
-          <div class="types" id="eTypes">${M.TYPES.map((x) => `<div class="slot ${x.id === it.type ? 'on' : ''}" data-t="${x.id}" style="--c:${x.color}">${x.em} ${x.name}</div>`).join('')}</div>
+          <div class="types" id="eTypes">${M.TYPES_TODOS.filter((x) => !x.oculto || x.id === it.type).map((x) => `<div class="slot ${x.id === it.type ? 'on' : ''}" data-t="${x.id}" style="--c:${x.color}">${x.em} ${x.name}</div>`).join('')}</div>
           <div class="com-mic"><input class="title-in" id="eTitle" type="text" placeholder="Título" aria-label="Título" value="${esc(it.title)}">${M.micBtn('#eTitle')}</div>
           ${M.vozErroHTML ? M.vozErroHTML(it) : ''}
           <div class="fld"><label for="eDesc">Descrição ${M.hint('Um resumo curto. Aparece no cartão.')}${M.micBtn('#eDesc')}</label><textarea id="eDesc" style="min-height:56px;font-family:var(--f)" placeholder="Sobre o que é?">${esc(it.desc)}</textarea></div>
@@ -166,12 +168,13 @@
         pend();
         if (!it.title.trim() && !it.desc && !it.content && !it.attachments.length && !it.checklist.length && !it.links.length) return M.falta($('#eTitle', m), '✍️ Escreva pelo menos um título');
         const novo = it._new, mudou = M.rasc.pendente(it);
-        delete it._new; M.rasc.salvar(it); M.save(); M.closeModal();
+        delete it._new; M.rasc.salvar(it); M.save(); M.versaoGuardar('item', it); M.closeModal();
         if (novo) M.toast('✅ Item salvo na Biblioteca'); else if (mudou) M.toast('✅ Alterações salvas');
       };
       if ($('#svRev', m)) $('#svRev', m).onclick = () => { M.rasc.reverter(it); base = M.rasc.foto(it); M.save(); SFX.play('undo'); draw(); M.toast('↩ Alterações descartadas: voltou a versão salva'); };
       if ($('#svNo', m)) $('#svNo', m).onclick = () => { M.db.items = M.db.items.filter((x) => x.id !== it.id); delete it._new; M.save(); M.closeModal(); M.toast('Item descartado'); };
       $('#eDel', m).onclick = () => { M.closeModal(); M.trashItem(it); };
+      if ($('#eVer', m)) $('#eVer', m).onclick = () => { pend(); M.closeModal(); M.versoesAbrir('item', it.id); };
       if ($('#eArq', m)) $('#eArq', m).onclick = () => { $('#eX', m).click(); M.arquivarItem(it); }; // fecha a ficha (guardando rascunho, se houver) e arquiva
       $('#eClip', m).onclick = () => { const fi = $('#eFile', m); if (fi) fi.click(); };
       $('#eFav', m).onclick = () => { it.fav = !it.fav; touch(); SFX.play(it.fav ? 'star' : 'click'); $('#eFav', m).textContent = it.fav ? '⭐' : '☆'; $('#eFav', m).setAttribute('aria-pressed', it.fav ? 'true' : 'false'); };

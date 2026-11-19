@@ -2,16 +2,8 @@
 (function () {
   const M = (window.M = { db: null, ui: { page: 'home', q: '', type: '', cat: '', status: '', tag: '', fav: false, sort: { k: 'updated', d: -1 }, calMonth: null } });
 
-  M.TYPES = [
-    { id: 'estudo', name: 'Estudo / PDF', em: '📚', color: '#3ad7ff' },
-    { id: 'prompt', name: 'Prompt', em: '✨', color: '#a78bfa' },
-    { id: 'instrucao', name: 'Instrução', em: '📜', color: '#ffbe46' },
-    { id: 'comando', name: 'Comando', em: '⌨️', color: '#3cffaa' },
-    { id: 'link', name: 'Link', em: '🔗', color: '#ff7ac6' },
-    { id: 'nota', name: 'Nota', em: '📝', color: '#ff9d4a' },
-  ];
+  // M.TYPES (tipos de item, visíveis) e M.type(id) moram em opcoes.js: a pessoa muda nome, emoji, cor, ordem e esconde
   // M.STATUS (status dos itens) e M.PRIOS (prioridades) são listas da pessoa: ver opcoes.js
-  M.type = (id) => M.TYPES.find((t) => t.id === id) || M.TYPES[5];
   M.cat = (id) => M.db.categories.find((c) => c.id === id);
 
   // ----- utilitários -----

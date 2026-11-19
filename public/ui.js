@@ -137,6 +137,37 @@
     const t = e.target; if (!t.matches || !t.matches('[role="button"][tabindex]') || /^(BUTTON|A|INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
     e.preventDefault(); t.click();
   });
+  // ----- versões das fichas (item e cliente) -----
+  // Guarda uma versão ao abrir a ficha (o jeito que estava) e ao salvar. O servidor fica com as 10 últimas e ignora repetidas.
+  const SEM = ['_salvo', 'rascunho', '_new', '_novo', '_xp', 'updated'];
+  const limpa = (o) => { const c = {}; for (const k of Object.keys(o).sort()) if (!SEM.includes(k)) c[k] = o[k]; return c; };
+  M.versaoGuardar = (tipo, o) => { if (!o || !o.id || o._new || o._novo) return; let d = limpa(o); if (o._salvo) try { d = limpa(JSON.parse(o._salvo)); d.id = o.id; } catch (_) {} M.api('/api/versoes', { method: 'POST', body: JSON.stringify({ tipo, id: o.id, dados: d }) }).catch(() => {}); };
+  M.versoesAbrir = async (tipo, id) => {
+    const lista = tipo === 'client' ? M.db.clients : M.db.items, o = (lista || []).find((x) => x.id === id); if (!o) return;
+    const reabre = () => (tipo === 'client' ? M.openClient(id) : M.openItem(id));
+    let L = []; try { L = (await M.api('/api/versoes?tipo=' + tipo + '&id=' + encodeURIComponent(id))).versoes || []; } catch (e) { return M.toast('⚠️ ' + e.message); }
+    const atual = J0(limpa(o)); L = L.filter((v) => J0(v.dados) !== atual);
+    const NOMES = { title: 'Título', desc: 'Descrição', content: 'Conteúdo', nome: 'Nome', notas: 'Anotações', empresa: 'Empresa', status: 'Status', tags: 'Etiquetas', checklist: 'Checklist', links: 'Links', cat: 'Categoria', type: 'Tipo', date: 'Data', email: 'E-mail', whats: 'WhatsApp', extra: 'Campos próprios' };
+    const dif = (d) => Object.keys(Object.assign({}, d, limpa(o))).filter((k) => k !== 'id' && J0(d[k]) !== J0(o[k])).map((k) => NOMES[k] || k);
+    const quando = (t) => new Date(t).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' às ' + new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const m = M.modal(`<div class="modal-h"><h2>🕘 Versões de “${esc((o.title || o.nome || 'Sem título').slice(0, 40))}”</h2><button class="icon-btn" id="x" aria-label="Fechar">✕</button></div>
+      <div class="modal-b"><p class="opc-dica">As últimas versões salvas desta ficha, neste computador. “Voltar a esta” troca a ficha pela versão escolhida (e dá para desfazer).</p>
+        ${L.length ? L.map((v, i) => `<div class="ver-row"><div class="ver-tx"><b>${quando(v.em)}</b><small>Diferente de agora: ${esc(dif(v.dados).join(', ') || 'nada')}</small><div class="ver-pre" id="vp${i}" hidden>${esc(String(v.dados.content || v.dados.notas || v.dados.desc || '').slice(0, 600)) || '<i>(sem texto)</i>'}</div></div>
+          <button type="button" class="btn ghost sm" data-ver="${i}">👁 Ver</button><button type="button" class="btn sm" data-volta="${i}">↩ Voltar a esta</button></div>`).join('') : '<div class="empty" style="padding:22px"><div class="big">🕘</div><h3>Ainda não há versões antigas</h3><p>Cada vez que você salvar a ficha, a versão anterior fica guardada aqui.</p></div>'}
+        <div class="row" style="justify-content:flex-end"><button class="btn ghost" id="vOk" style="flex:none">Voltar para a ficha</button></div></div>`, { small: true });
+    $('#x', m).onclick = $('#vOk', m).onclick = () => { M.closeModal(); reabre(); };
+    m.querySelector('.modal-b').onclick = (e) => {
+      const vb = e.target.closest('[data-ver]'); if (vb) { const p = $('#vp' + vb.dataset.ver, m); p.hidden = !p.hidden; return; }
+      const b = e.target.closest('[data-volta]'); if (!b) return;
+      const d = L[+b.dataset.volta].dados;
+      for (const k of Object.keys(o)) if (!SEM.includes(k) && k !== 'id' && k !== 'created' && !(k in d)) delete o[k];
+      for (const [k, v] of Object.entries(d)) if (k !== 'id') o[k] = JSON.parse(JSON.stringify(v));
+      delete o.rascunho; delete o._salvo; o.updated = Date.now();
+      M.save(); M.closeModal(); SFX.play('undo'); M.toast('↩ Ficha voltou para a versão de ' + quando(L[+b.dataset.volta].em)); M.render(); reabre();
+    };
+  };
+  const J0 = (x) => JSON.stringify(x);
+
   // ----- não perder o que foi digitado -----
   // Fichas de item e de cliente guardam rascunho sozinhas. As janelas pequenas com botão de salvar (tarefa, lançamento, hábito, meta)
   // não têm rascunho: se a pessoa mudou algo e tenta sair pelo ✕, Esc ou clicando fora, a janela pergunta antes de fechar.
@@ -155,10 +186,34 @@
   const avisaSujo = (m) => {
     if (m.querySelector('.sair-aviso')) return M.falta(m.querySelector('.sair-aviso'), '✍️ Salve ou escolha “Sair sem salvar”');
     const d = document.createElement('div'); d.className = 'sair-aviso';
-    d.innerHTML = '<span>✍️ Você mudou algo aqui e ainda não salvou.</span><span class="sa-b"><button type="button" class="btn ghost sm" data-sa="fica">Continuar editando</button><button type="button" class="btn danger sm" data-sa="sai">Sair sem salvar</button></span>';
+    d.innerHTML = '<span>✍️ Você mudou algo aqui e ainda não salvou.</span><span class="sa-b"><button type="button" class="btn ghost sm" data-sa="fica">Continuar editando</button><button type="button" class="btn sm" data-sa="rasc" title="Fecha e guarda o que você escreveu: ao abrir esta janela de novo, dá para recuperar">📝 Sair e guardar rascunho</button><button type="button" class="btn danger sm" data-sa="sai">Descartar</button></span>';
     m.prepend(d); d.scrollIntoView({ block: 'nearest' });
-    d.onclick = (e) => { const a = e.target.dataset.sa; if (a === 'fica') d.remove(); if (a === 'sai') { sujo = false; foto0 = fotoJanela(m); const x = m.querySelector('.modal-h #x'); if (x) x.click(); else M.closeModal(); } };
+    d.onclick = (e) => { const a = e.target.dataset.sa; if (a === 'fica') d.remove(); if (a === 'sai' || a === 'rasc') { if (a === 'rasc') rascGuarda(m); else rascTira(m); sujo = false; foto0 = fotoJanela(m); const x = m.querySelector('.modal-h #x'); if (x) x.click(); else M.closeModal(); } };
   };
+  // rascunho das janelas pequenas (tarefa, lançamento, hábito, meta, ferramenta…): a chave é o título da janela + como ela abriu,
+  // então a mesma janela do mesmo objeto acha o rascunho de volta. Fica no navegador por 14 dias (até 30 rascunhos).
+  const RK = 'myloot-rasc-janelas';
+  const hash = (s) => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+  const rascLe = () => { try { const o = JSON.parse(localStorage.getItem(RK) || '{}') || {}, lim = Date.now() - 14 * 864e5; for (const k of Object.keys(o)) if (!(o[k].at > lim)) delete o[k]; return o; } catch (_) { return {}; } };
+  const rascGrava = (o) => { const ks = Object.keys(o).sort((a, b) => o[b].at - o[a].at); ks.slice(30).forEach((k) => delete o[k]); try { localStorage.setItem(RK, JSON.stringify(o)); } catch (_) {} };
+  const campos = (m) => [...m.querySelectorAll('input,textarea,select')].filter((e) => e.type !== 'search' && e.type !== 'file');
+  const chaveJ = (m) => m.dataset.rk || '';
+  const rascGuarda = (m) => { const k = chaveJ(m); if (!k) return; const o = rascLe(); o[k] = { at: Date.now(), tit: (m.querySelector('.modal-h h2') || {}).textContent || '', v: campos(m).map((e) => (e.type === 'checkbox' || e.type === 'radio' ? !!e.checked : e.value)) }; rascGrava(o); };
+  const rascTira = (m) => { const k = chaveJ(m); if (!k) return; const o = rascLe(); if (o[k]) { delete o[k]; rascGrava(o); } };
+  // janela nova com botão de salvar: marca a chave e, se tem rascunho dela, oferece recuperar
+  new MutationObserver(() => {
+    const m = $('#overlay.on .modal'); if (!m || m.dataset.rk || !temSalvar(m)) return;
+    const h = m.querySelector('.modal-h h2'); m.dataset.rk = hash(((h && h.textContent) || '') + SEP + fotoJanela(m));
+    const r = rascLe()[m.dataset.rk]; if (!r || r.v.length !== campos(m).length) return;
+    const d = document.createElement('div'); d.className = 'rasc-aviso';
+    d.innerHTML = `<span>📝 Você saiu daqui sem salvar em ${new Date(r.at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${new Date(r.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</span><span class="sa-b"><button type="button" class="btn sm" data-ra="sim">Recuperar o que escrevi</button><button type="button" class="btn ghost sm" data-ra="nao">Descartar</button></span>`;
+    m.querySelector('.modal-b') ? m.querySelector('.modal-b').prepend(d) : m.prepend(d);
+    d.onclick = (e) => {
+      const a = e.target.dataset.ra; if (!a) return;
+      if (a === 'sim') campos(m).forEach((el, i) => { const v = r.v[i]; if (el.type === 'checkbox' || el.type === 'radio') { if (el.checked !== !!v) { el.checked = !!v; el.dispatchEvent(new Event('change', { bubbles: true })); } } else if (el.value !== v) { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } });
+      const o = rascLe(); delete o[m.dataset.rk]; rascGrava(o); d.remove(); if (a === 'sim') M.toast('📝 Rascunho recuperado. Confira e salve.');
+    };
+  }).observe($('#overlay'), { childList: true });
   M.fecharPeloUsuario = () => { const m = $('#overlay.on .modal'); if (m && temSalvar(m) && mudou(m)) return avisaSujo(m); const x = m && m.querySelector('.modal-h #x,.modal-h #eX,.modal-h #cX'); if (x) x.click(); else M.closeModal(); };
   document.addEventListener('click', (e) => { const x = e.target.closest && e.target.closest('#overlay.on .modal-h #x'); if (!x) return; const m = x.closest('.modal'); if (!temSalvar(m) || !mudou(m)) return; e.stopPropagation(); e.preventDefault(); avisaSujo(m); }, true);
   M.closeModal = () => {

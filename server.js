@@ -78,6 +78,9 @@ const CLI_COLS = [
 ];
 const umDe = (v, L, pad) => (L.includes(v) ? v : pad);
 const TIPOS = ['estudo', 'prompt', 'instrucao', 'comando', 'link', 'nota'];
+// tipos de item (v2.21.0): os 6 ids são fixos (Conexões, exportação e voz dependem deles); a pessoa muda nome, emoji, cor, ordem e esconde
+const ITEM_TIPOS = [['estudo', 'Estudo / PDF', '📚', '#3ad7ff'], ['prompt', 'Prompt', '✨', '#a78bfa'], ['instrucao', 'Instrução', '📜', '#ffbe46'],
+  ['comando', 'Comando', '⌨️', '#3cffaa'], ['link', 'Link', '🔗', '#ff7ac6'], ['nota', 'Nota', '📝', '#ff9d4a']].map(([id, name, em, color], i) => ({ id, name, em, color, ord: i, oculto: false }));
 // listas de opções que a pessoa edita (v2.20.0). Os padrão têm id FIXO: dois PCs que criam o padrão sozinhos
 // chegam aos mesmos ids, e a sincronia junta em vez de duplicar.
 const ITEM_ST = [
@@ -130,11 +133,16 @@ function limparWidgets(out, raw) {
       titulo: texto(w.titulo, 60), cfg, updated: w.updated || 0 };
   });
 }
-const OPCS = ['itemStatus', 'taskPrios', 'finCats', 'finFormas', 'toolGroups'];
+const OPCS = ['itemStatus', 'taskPrios', 'finCats', 'finFormas', 'toolGroups', 'itemTypes', 'taskLists', 'cliCampos'];
 function limparIds(out) {
   for (const k of ['categories', 'items', 'tasks', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols', ...OPCS]) for (const o of out[k]) { if (o.id != null) o.id = sid(o.id); }
   for (const t of out.tasks) t.prio = sid(t.prio) || 'media';
   for (const it of out.items) it.status = sid(it.status) || 'ver';
+  for (const t of out.tasks) { if (t.lista) t.lista = sid(t.lista); }
+  for (const c of out.clients) {
+    const x = {}; if (c.extra && typeof c.extra === 'object' && !Array.isArray(c.extra)) for (const [k, v] of Object.entries(c.extra).slice(0, 60)) if (typeof v === 'string' || typeof v === 'number') x[sid(k)] = String(v).slice(0, 2000);
+    if (c.extra !== undefined || Object.keys(x).length) c.extra = x;
+  }
   for (const f of out.tools) { if (f.g != null) f.g = sid(f.g); }
   for (const c of out.categories) { if (c.color != null && !COR.test(String(c.color))) c.color = '#8b5cf6'; }
   for (const t of out.trash) { if (t.data && typeof t.data === 'object' && t.data.id != null) t.data.id = sid(t.data.id); if (t.kind != null) t.kind = sid(t.kind); }
@@ -158,6 +166,11 @@ function migrate(raw) {
   limparOpc(out, 'finCats', FIN_CATS, (o) => ({ tipo: o.tipo === 'saida' ? 'saida' : 'entrada' }));
   limparOpc(out, 'finFormas', FIN_FORMAS);
   limparOpc(out, 'toolGroups', []); // grupos próprios de "Minhas ferramentas" (os oficiais ficam no código)
+  limparOpc(out, 'itemTypes', ITEM_TIPOS, (o) => ({ oculto: !!o.oculto, name: String(o.name || 'Tipo').replace(/[<>"'&]/g, '').slice(0, 40) || 'Tipo' }));
+  limparOpc(out, 'taskLists', []); // listas (projetos) de tarefas: t.lista aponta para uma delas
+  limparOpc(out, 'cliCampos', [], (o) => ({ tipo: umDe(o.tipo, ['texto', 'numero', 'data', 'link'], 'texto') })); // campos próprios da ficha do cliente (c.extra)
+  out.itemTypes = out.itemTypes.filter((o, i, L) => TIPOS.includes(o.id) && L.findIndex((x) => x.id === o.id) === i);
+  for (const t of ITEM_TIPOS) if (!out.itemTypes.some((o) => o.id === t.id)) out.itemTypes.push(Object.assign({}, t));
   limparWidgets(out, raw);
   out.fin.forEach((f) => {
     f.id = f.id || uid(); f.tipo = f.tipo === 'saida' ? 'saida' : 'entrada'; f.valor = Math.round((Number(f.valor) || 0) * 100) / 100;
@@ -1038,6 +1051,19 @@ async function app(req, res) {
         return send(res, 200, db, null, { 'X-Rev': String(REV) });
       }
       if (p === '/api/rev') return send(res, 200, { rev: String(REV) });
+      // versões das fichas (item e cliente): as 10 últimas versões salvas, fora do db.json (não pesam na sincronia)
+      if (p === '/api/versoes') {
+        const b = req.method === 'POST' ? JSON.parse((await readBody(req, 4e6)).toString('utf8') || '{}') : { tipo: u.searchParams.get('tipo'), id: u.searchParams.get('id') };
+        const tipo = b.tipo === 'client' ? 'client' : 'item', id = idSeg(b.id);
+        if (!b.id) return send(res, 400, { erro: 'falta o id' });
+        const dir = path.join(DATA, 'versoes'), f = path.join(dir, tipo + '-' + id + '.json');
+        let L = []; try { L = JSON.parse(fs.readFileSync(f, 'utf8')); if (!Array.isArray(L)) L = []; } catch (_) {}
+        if (req.method !== 'POST') return send(res, 200, { versoes: L });
+        if (!b.dados || typeof b.dados !== 'object' || Array.isArray(b.dados)) return send(res, 400, { erro: 'dados inválidos' });
+        const j = JSON.stringify(b.dados); if (j.length > 2e6) return send(res, 413, { erro: 'grande demais' });
+        if (!L.length || JSON.stringify(L[0].dados) !== j) { L.unshift({ em: Date.now(), dados: b.dados }); L = L.slice(0, 10); fs.mkdirSync(dir, { recursive: true }); gravarArquivo(f, JSON.stringify(L)); }
+        return send(res, 200, { ok: true, n: L.length });
+      }
       if (p === '/api/recuperado') { const r = RECUPERADO; if (req.method === 'POST') RECUPERADO = null; return send(res, 200, { recuperado: r }); }
       if (p === '/api/db' && req.method === 'PUT') {
         // quem salva manda a REV que leu; se outro aparelho salvou no meio, devolve 409 e o app junta as mudanças

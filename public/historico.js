@@ -8,11 +8,11 @@
   // lista do banco: [singular, plural, gênero]
   const COL = { items: ['item', 'itens', 'o'], tasks: ['tarefa', 'tarefas', 'a'], clients: ['cliente', 'clientes', 'o'], fin: ['lançamento', 'lançamentos', 'o'], habits: ['hábito', 'hábitos', 'o'], goals: ['meta', 'metas', 'a'], categories: ['coleção', 'coleções', 'a'], tools: ['ferramenta', 'ferramentas', 'a'], cliCols: ['coluna do funil', 'colunas do funil', 'a'],
     itemStatus: ['status de item', 'status de item', 'o'], taskPrios: ['prioridade', 'prioridades', 'a'], finCats: ['categoria do financeiro', 'categorias do financeiro', 'a'],
-    finFormas: ['forma de pagamento', 'formas de pagamento', 'a'], toolGroups: ['grupo de ferramentas', 'grupos de ferramentas', 'o'], homeWidgets: ['widget do Início', 'widgets do Início', 'o'], trash: ['', '', 'o'] };
-  const EM = { cliCols: '▥', itemStatus: '🏷️', taskPrios: '🚦', finCats: '🧾', finFormas: '💳', toolGroups: '🧰', homeWidgets: '🧩', items: '📦', tasks: '✅', clients: '👥', fin: '💰', habits: '🎯', goals: '🏆', categories: '🗂️', tools: '🧰' };
+    finFormas: ['forma de pagamento', 'formas de pagamento', 'a'], toolGroups: ['grupo de ferramentas', 'grupos de ferramentas', 'o'], homeWidgets: ['widget do Início', 'widgets do Início', 'o'], itemTypes: ['tipo de item', 'tipos de item', 'o'], taskLists: ['lista de tarefas', 'listas de tarefas', 'a'], cliCampos: ['campo do cliente', 'campos do cliente', 'o'], trash: ['', '', 'o'] };
+  const EM = { cliCols: '▥', itemStatus: '🏷️', taskPrios: '🚦', finCats: '🧾', finFormas: '💳', toolGroups: '🧰', homeWidgets: '🧩', itemTypes: '🧱', taskLists: '🗂️', cliCampos: '🪪', items: '📦', tasks: '✅', clients: '👥', fin: '💰', habits: '🎯', goals: '🏆', categories: '🗂️', tools: '🧰' };
   const LIX = { items: 'item', tasks: 'task', clients: 'client', fin: 'fin', habits: 'habit', goals: 'goal', tools: 'tool' }; // o que a Lixeira sabe guardar
   const FORA = ['_salvo', 'rascunho', '_new', '_novo', '_xp', 'updated', 'id'];
-  const MAX = 40, CHAVE = 'myloot-historico';
+  const MAX = 200, CHAVE = 'myloot-historico-v2', DIAS = 30; // v2.21.0: fica no navegador por 30 dias (antes: só a aba aberta)
   const FICA = ['xpd']; // campos que o desfazer não mexe (o XP já ganho não volta, então a marca de "já pontuou" também fica)
   const J = JSON.stringify;
   const chave = (k, o) => (k === 'trash' ? (o && o.data ? o.kind + ':' + o.data.id + ':' + o.at : '') : o && o.id);
@@ -35,8 +35,10 @@
 
   let foto = null, mudo = 0, sinc = false, pend = null, digitou = 0, lazy = 0;
   let H = []; // mais recente primeiro: { id, at, em, txt, recs, desfeito }
-  const guarda = () => { try { let s = J(H); while (s.length > 1500000 && H.length > 1) { H.pop(); s = J(H); } sessionStorage.setItem(CHAVE, s); } catch (_) {} };
-  try { H = JSON.parse(sessionStorage.getItem(CHAVE) || '[]') || []; } catch (_) { H = []; }
+  const guarda = () => { try { const lim = Date.now() - DIAS * 864e5; H = H.filter((e) => e.at > lim).slice(0, MAX); let s = J(H); while (s.length > 2500000 && H.length > 1) { H.pop(); s = J(H); } localStorage.setItem(CHAVE, s); } catch (_) {} };
+  try { H = JSON.parse(localStorage.getItem(CHAVE) || sessionStorage.getItem('myloot-historico') || '[]') || []; } catch (_) { H = []; }
+  // outra aba do MyLoot mexeu no histórico: esta passa a ver a mesma lista
+  addEventListener('storage', (e) => { if (e.key === CHAVE) try { H = JSON.parse(e.newValue || '[]') || []; if (M.modalOpen() && $('#overlay .hist')) desenha(); } catch (_) {} });
 
   function compara() {
     const nova = tira(), recs = [];
@@ -205,7 +207,7 @@
   };
 
   // ----- janela do histórico -----
-  const quando = (at) => { const s = (Date.now() - at) / 1000; return s < 50 ? 'agora há pouco' : s < 3300 ? `há ${Math.max(1, Math.round(s / 60))} min` : 'às ' + new Date(at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); };
+  const quando = (at) => { const s = (Date.now() - at) / 1000, d = new Date(at), hm = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); return s < 50 ? 'agora há pouco' : s < 3300 ? `há ${Math.max(1, Math.round(s / 60))} min` : M.ymd(d) === M.today() ? 'hoje às ' + hm : M.ymd(d) === M.addDays(M.today(), -1) ? 'ontem às ' + hm : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' às ' + hm; };
   function desenha() {
     const b = $('#overlay .hist'); if (!b) return;
     b.querySelector('.hist-lista').innerHTML = H.length ? H.map((e) => `<div class="hist-row ${e.desfeito ? 'off' : ''}"><span class="em">${esc(e.em)}</span><div class="tx"><b>${esc(e.txt)}</b><small>${quando(e.at)}${e.desfeito ? ' · desfeito' : ''}</small></div>
@@ -215,9 +217,9 @@
   function abrir() {
     if (lazy) registra(false);
     const m = M.modal(`<div class="modal-h"><h2>🕘 Histórico de ações</h2><button class="icon-btn" id="x">✕</button></div>
-      <div class="modal-b hist"><p class="hist-dica">O que você fez desde que abriu o MyLoot nesta aba. <b>Desfazer</b> volta aquela ação; ela continua na lista e dá para <b>refazer</b>. <kbd>Ctrl</kbd> + <kbd>Z</kbd> desfaz a última.</p>
+      <div class="modal-b hist"><p class="hist-dica">O que você fez nos últimos 30 dias neste navegador. <b>Desfazer</b> volta aquela ação; ela continua na lista e dá para <b>refazer</b>. <kbd>Ctrl</kbd> + <kbd>Z</kbd> desfaz a última.</p>
       <div class="hist-lista"></div>
-      <div class="row hist-pe"><button type="button" class="btn ghost sm" id="hLix" style="flex:none">🗑️ Abrir a Lixeira</button><span style="flex:1"></span><small>Fechar o MyLoot limpa esta lista. A Lixeira continua guardando o que foi apagado.</small></div></div>`);
+      <div class="row hist-pe"><button type="button" class="btn ghost sm" id="hLix" style="flex:none">🗑️ Abrir a Lixeira</button><span style="flex:1"></span><small>Ações com mais de 30 dias saem desta lista. A Lixeira continua guardando o que foi apagado, e cada ficha tem as suas versões (🕘).</small></div></div>`);
     desenha();
     $('#x', m).onclick = M.closeModal;
     $('#hLix', m).onclick = () => { M.closeModal(); M.go('trash'); };

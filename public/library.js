@@ -21,6 +21,10 @@
       return true;
     });
     const { k, d } = u.sort;
+    if (k === 'ord') { // "minha ordem": os que a pessoa já arrumou primeiro; os outros depois, do mais novo para o mais velho
+      const o = (it) => (Number.isFinite(it.ord) ? it.ord : Infinity);
+      return L.sort((a, b) => o(a) - o(b) || (b.updated || 0) - (a.updated || 0));
+    }
     const val = (it) => k === 'cat' ? ((M.cat(it.cat) || {}).name || '') : k === 'type' ? M.type(it.type).name : k === 'tags' ? it.tags.join(',') : it[k] || '';
     L.sort((a, b) => { const x = val(a), y = val(b); return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'pt')) * d; });
     return L;
@@ -86,6 +90,7 @@
   M.pages = M.pages || {};
   M.pages.lib = () => {
     const u = M.ui, s = M.db.settings;
+    if (!u._ordLida) { u._ordLida = true; if (s.libOrdem && s.libOrdem.k) u.sort = { k: String(s.libOrdem.k), d: s.libOrdem.d === 1 ? 1 : -1 }; } // a ordem escolhida volta ao abrir o MyLoot
     const v = $('#view');
     const vivos = M.db.items.filter((i) => !!i.arq === !!u.arq), nArq = M.db.items.filter((i) => i.arq).length;
     if (u.arq && !nArq) u.arq = false;
@@ -95,8 +100,9 @@
       <div class="lib-topo"><div class="hotbar" id="hotbar" data-lab="Tipo">
         <div class="slot ${!u.type ? 'on' : ''}" data-type="" tabindex="0" role="button">📦 Tudo <span class="n">${vivos.length}</span></div>
         ${M.TYPES.map((t) => `<div class="slot ${u.type === t.id ? 'on' : ''}" data-type="${t.id}" style="--c:${t.color}" tabindex="0" role="button">${t.em} ${t.name} <span class="n">${count(t.id)}</span></div>`).join('')}
-      </div>
+      ${M.opcBtn('itemTypes')}</div>
         <div class="lib-ver">${s.view === 'board' ? `<select id="fby" title="Colunas do quadro"><option value="status" ${s.boardBy === 'status' ? 'selected' : ''}>Colunas: status</option><option value="cat" ${s.boardBy === 'cat' ? 'selected' : ''}>Colunas: categoria</option><option value="type" ${s.boardBy === 'type' ? 'selected' : ''}>Colunas: tipo</option></select>` : ''}
+        <select id="fso" title="Ordem dos itens" aria-label="Ordem dos itens">${[['updated:-1', '🕘 Mexidos por último'], ['created:-1', '🆕 Mais novos'], ['created:1', '📜 Mais antigos'], ['title:1', '🔤 Nome (A–Z)'], ['ord:1', '✋ Minha ordem']].map(([v, n]) => `<option value="${v}" ${v === u.sort.k + ':' + u.sort.d ? 'selected' : ''}>${n}</option>`).join('')}</select>
         <div class="seg" id="views" title="Jeito de ver">${[['grid', '▦ Grade'], ['list', '☰ Lista'], ['table', '▤ Tabela'], ['board', '▥ Quadro']].map(([k, n]) => `<button data-v="${k}" class="${s.view === k ? 'on' : ''}">${n}</button>`).join('')}</div></div></div>
       <div class="toolbar barra" data-lab="Filtrar">
         <input class="search" id="fq" type="search" placeholder="Filtrar esta lista…" value="${esc(u.q)}">
@@ -130,6 +136,7 @@
     $('#selBar').onclick = (e) => { const b = e.target.closest('[data-s]'); if (b) acaoSel(b.dataset.s); };
     $('#selBar').onchange = (e) => { if (e.target.dataset.sv) acaoSel(e.target.dataset.sv, e.target.value); };
     if ($('#fby')) $('#fby').onchange = (e) => { s.boardBy = e.target.value; M.save(); rr(); };
+    $('#fso').onchange = (e) => { const [k, d] = e.target.value.split(':'); u.sort = { k, d: +d }; M.db.settings.libOrdem = u.sort; M.save(); if (k === 'ord') M.toast('✋ Arraste os cartões para mudar a ordem (no celular: ⋯ → Subir ou Descer)'); M.render(); };
     $('#views').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; s.view = b.dataset.v; M.save(); SFX.play('click'); M.render(); };
 
     const res = $('#libres');
@@ -153,8 +160,12 @@
     let dragId = null;
     res.ondragstart = (e) => { const c = e.target.closest('.card'); if (!c) return; dragId = c.dataset.id; c.classList.add('dragging'); e.dataTransfer.setData('text/x-myloot', dragId); e.dataTransfer.effectAllowed = 'move'; };
     res.ondragend = () => { dragId = null; $$('.dragging').forEach((x) => x.classList.remove('dragging')); $$('.col.over').forEach((x) => x.classList.remove('over')); };
-    res.ondragover = (e) => { const col = e.target.closest('.col'); if (col && dragId) { e.preventDefault(); $$('.col.over').forEach((x) => { if (x !== col) x.classList.remove('over'); }); col.classList.add('over'); } };
+    const manual = () => u.sort.k === 'ord' && s.view !== 'board' && s.view !== 'table';
+    res.ondragover = (e) => {
+      if (manual() && dragId) { const c = e.target.closest('.card[data-id]'); if (c) { e.preventDefault(); $$('.card.alvo').forEach((x) => x !== c && x.classList.remove('alvo')); c.classList.add('alvo'); } return; }
+      const col = e.target.closest('.col'); if (col && dragId) { e.preventDefault(); $$('.col.over').forEach((x) => { if (x !== col) x.classList.remove('over'); }); col.classList.add('over'); } };
     res.ondrop = (e) => {
+      if (manual() && dragId) { const c = e.target.closest('.card[data-id]'); $$('.card.alvo').forEach((x) => x.classList.remove('alvo')); if (!c || c.dataset.id === dragId) return; e.preventDefault(); e.stopPropagation(); const r = c.getBoundingClientRect(); M.ordemMover(dragId, c.dataset.id, s.view === 'list' ? e.clientY > r.top + r.height / 2 : e.clientX > r.left + r.width / 2); return; }
       const col = e.target.closest('.col'); if (!col || !dragId) return;
       e.preventDefault(); e.stopPropagation();
       const it = M.db.items.find((i) => i.id === dragId); if (!it) return;
@@ -236,12 +247,25 @@
     M.toast('📋 Copiado!');
   };
 
+  // "minha ordem": põe o item antes (ou depois) de outro e renumera a lista inteira do jeito que está na tela
+  M.ordemMover = (id, alvo, depois) => {
+    const u = M.ui, ant = u.sort; u.sort = { k: 'ord', d: 1 };
+    const T = M.db.items.slice(); const vis = (() => { const q = u; return T.filter((it) => !!it.arq === !!q.arq); })();
+    const o = (it) => (Number.isFinite(it.ord) ? it.ord : Infinity);
+    const L = vis.sort((a, b) => o(a) - o(b) || (b.updated || 0) - (a.updated || 0)); u.sort = ant;
+    const a = L.findIndex((x) => x.id === id); if (a < 0) return; const [it] = L.splice(a, 1);
+    let b = alvo === '_ini' ? 0 : alvo === '_fim' ? L.length : L.findIndex((x) => x.id === alvo); if (b < 0) return; if (depois) b++;
+    L.splice(b, 0, it); L.forEach((x, i) => { if (x.ord !== i) x.ord = i; });
+    M.save(); SFX.play('drop'); M.render();
+  };
   M.itemMenu = (e, it) => {
     if (!it) return;
+    const ordem = M.ui.sort.k === 'ord' && M.ui.page === 'lib' ? (() => { const L = M.filtered(), i = L.indexOf(it); return [...(i > 0 ? [{ em: '⬆', t: 'Subir na minha ordem', fn: () => M.ordemMover(it.id, L[i - 1].id, false) }, { em: '⏫', t: 'Para o começo', fn: () => M.ordemMover(it.id, '_ini') }] : []), ...(i >= 0 && i < L.length - 1 ? [{ em: '⬇', t: 'Descer na minha ordem', fn: () => M.ordemMover(it.id, L[i + 1].id, true) }] : [])]; })() : [];
     const cats = M.db.categories.filter((c) => c.id !== it.cat).map((c) => ({ em: c.icon, t: c.name, fn: () => { it.cat = c.id; it.updated = Date.now(); M.save(); SFX.play('drop'); M.render(); } }));
     if (it.cat) cats.unshift({ em: '📦', t: 'Sem categoria', fn: () => { it.cat = ''; it.updated = Date.now(); M.save(); M.render(); } });
     M.ctxMenu(e, [
       { em: '📂', t: 'Abrir', fn: () => M.openItem(it.id) },
+      ...ordem,
       { em: '📋', t: 'Copiar conteúdo', fn: () => M.copyItem(it) },
       { em: '⭐', t: it.fav ? 'Tirar dos favoritos' : 'Favoritar', fn: () => M.toggleFav(it.id) },
       { em: '📒', t: 'Enviar para o Notion', fn: () => M.sendItem(it, 'notion') },

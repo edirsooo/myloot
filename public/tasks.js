@@ -160,6 +160,8 @@
     if (M.cliAberto && M.modalOpen() && M.openClient) M.openClient(M.cliAberto); // dentro da ficha do cliente, redesenha a ficha
   }, true);
 
+  // lista da tarefa (quando a tela não está filtrando por ela)
+  const lsTag = (t) => { if (!t.lista) return ''; const l = M.opc('taskLists').find((x) => x.id === t.lista); return l && M.ui.tLista !== l.id ? `<span class="tag tl" style="--c:${esc(l.color)}" title="Lista">${esc(l.em)} ${esc(l.name)}</span>` : ''; };
   function taskHTML(t) {
     const foi = M.evPassou(t), late = !t.done && !t.ev && t.date && t.date < M.today();
     const cli = t.client && M.client ? M.client(t.client) : null;
@@ -171,7 +173,7 @@
     const pular = prox ? `<button type="button" class="tpula" data-a="pular" title="A tarefa vai para ${M.fmtDate(proxPulo(t))}, sem contar como concluída e sem dar XP" aria-label="Pular esta vez">⏭ Pular esta vez</button>` : '';
     const feita = t.done ? 'Reabrir a tarefa' : 'Marcar como feita';
     const marca = t.ev ? `<span class="tev" data-a="date" title="Compromisso${foi ? ' (já passou)' : ''}. Clique para editar." aria-label="Compromisso">📅</span>` : `<input type="checkbox" ${t.done ? 'checked' : ''} title="${feita}" aria-label="${feita}">`;
-    return `<div class="task ${t.done ? 'done' : ''} ${t.ev ? 'ev' : ''} ${foi ? 'passou' : ''}" data-id="${t.id}">${marca}<div class="tcorpo"><span class="tx">${esc(t.text)}</span><span class="tmeta">${hora}${rep}${cli ? `<span class="tag" title="Cliente">👤 ${esc(cli.nome)}</span>` : ''}${data}${prio}${pular}</span></div><button class="xbtn" data-a="rm" title="Mandar para a lixeira" aria-label="Mandar para a lixeira">🗑️</button></div>`;
+    return `<div class="task ${t.done ? 'done' : ''} ${t.ev ? 'ev' : ''} ${foi ? 'passou' : ''}" data-id="${t.id}">${marca}<div class="tcorpo"><span class="tx">${esc(t.text)}</span><span class="tmeta">${hora}${rep}${lsTag(t)}${cli ? `<span class="tag" title="Cliente">👤 ${esc(cli.nome)}</span>` : ''}${data}${prio}${pular}</span></div><button class="xbtn" data-a="rm" title="Mandar para a lixeira" aria-label="Mandar para a lixeira">🗑️</button></div>`;
   }
 
   M.taskHTML = taskHTML;
@@ -180,15 +182,19 @@
   const feitasOrd = () => M.db.tasks.filter((t) => t.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
   M.pages.tasks = () => {
     const v = $('#view'), today = M.today(), u = M.ui;
-    const open = M.db.tasks.filter(M.tarefaPendente);
+    const LS = M.opc('taskLists'), lsDe = (t) => (t.lista && LS.find((x) => x.id === t.lista)) || null;
+    if (u.tLista && u.tLista !== '_sem' && !LS.some((x) => x.id === u.tLista)) u.tLista = '';
+    const naLista = (t) => !u.tLista || (u.tLista === '_sem' ? !lsDe(t) : t.lista === u.tLista);
+    const abertas = M.db.tasks.filter(M.tarefaPendente), open = abertas.filter(naLista);
+    const porLista = u.tAgrupa === 'lista' && LS.length;
     const srt = (a, b) => (a.date || '9').localeCompare(b.date || '9') || M.prioOrdem(a.prio) - M.prioOrdem(b.prio) || (a.hora || '99').localeCompare(b.hora || '99');
-    const G = [
+    const G = porLista ? LS.map((l) => [`ls" style="--hc:${esc(l.color)}`, `${esc(l.em)} ${esc(l.name)}`, open.filter((t) => t.lista === l.id).sort(srt)]).concat([['none', '📥 Sem lista', open.filter((t) => !lsDe(t)).sort(srt)]]) : [
       ['late', '🔥 Atrasadas', open.filter((t) => t.date && t.date < today).sort(srt)],
       ['today', '🌞 Hoje', open.filter((t) => t.date === today).sort(srt)],
       ['next', '🗓️ Próximas', open.filter((t) => t.date > today).sort(srt)],
       ['none', '📥 Sem data', open.filter((t) => !t.date).sort(srt)],
     ];
-    const feitas = feitasOrd(), nF = Math.max(FEITAS_1, u.tasksFeitas || 0), done = feitas.slice(0, nF), resto = feitas.length - done.length;
+    const feitas = feitasOrd().filter(naLista), nF = Math.max(FEITAS_1, u.tasksFeitas || 0), done = feitas.slice(0, nF), resto = feitas.length - done.length;
     v.innerHTML = `
       <div class="tnova">
         <div class="tn-t">${tipoHTML('tTipo')}${M.hint(TIPO_DICA + ' Para criar: 1) escreva (ou fale no 🎙️). 2) Se quiser, escolha data, hora, prioridade e repetição. 3) Aperte Enter ou clique em Adicionar. Dica: “Pagar conta amanhã” já entra com a data de amanhã.')}</div>
@@ -203,10 +209,13 @@
           <div class="tn-op" id="tOpIni" hidden><span class="lbl">🕘 Início ${M.hint('A que horas o compromisso começa. Nesse horário o computador mostra um aviso, mesmo com a aba fechada.')}</span><input type="time" id="tIni" title="Hora em que começa"></div>
           <div class="tn-op" id="tOpFim" hidden><span class="lbl">🏁 Fim ${M.hint(FIM_DICA)}</span><input type="time" id="tFim" title="Hora em que termina (opcional)"></div>
           <div class="tn-op" id="tOpPr"><span class="lbl">🚦 Prioridade ${M.hint(PRIO_DICA)}</span><select id="tPr">${M.opc('taskPrios').map((p) => `<option value="${esc(p.id)}" ${p.id === M.prio('media').id ? 'selected' : ''}>${esc(p.em)} ${esc(p.name)}</option>`).join('')}</select>${M.opcBtn('taskPrios')}</div>
+          ${LS.length ? `<div class="tn-op" id="tOpLs"><span class="lbl">🗂️ Lista</span><select id="tLsN"><option value="">📥 Sem lista</option>${LS.map((l) => `<option value="${esc(l.id)}" ${u.tLista === l.id ? 'selected' : ''}>${esc(l.em)} ${esc(l.name)}</option>`).join('')}</select></div>` : ''}
           <div class="tn-op" id="tOpRp"><span class="lbl">🔁 Repetir ${M.hint('Para o que volta sempre (ex.: postar todo dia, pagar o aluguel todo mês). Quando você conclui, a próxima já nasce na data certa. Se não der para fazer num dia, use “Pular esta vez” na linha da tarefa. Todo mês: volta sempre no mesmo dia; em mês mais curto, cai no último dia.')}</span><select id="tRp">${M.REP.map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></div>
         </div>
         ${diasHTML('tRpD', [], true)}
       </div>
+      <div class="tl-barra"><div class="hotbar" id="tLs" data-lab="Lista"><div class="slot ${!u.tLista ? 'on' : ''}" data-l="">🗂️ Todas <span class="n">${abertas.length}</span></div>${LS.map((l) => `<div class="slot ${u.tLista === l.id ? 'on' : ''}" data-l="${esc(l.id)}" style="--c:${esc(l.color)}">${esc(l.em)} ${esc(l.name)} <span class="n">${abertas.filter((t) => t.lista === l.id).length}</span></div>`).join('')}${LS.length ? `<div class="slot ${u.tLista === '_sem' ? 'on' : ''}" data-l="_sem">📥 Sem lista <span class="n">${abertas.filter((t) => !lsDe(t)).length}</span></div>` : ''}<div class="slot col-mais" data-lnova="1" title="Criar uma lista (projeto ou área)">＋ Lista</div></div>
+        ${LS.length ? `<div class="seg" id="tAg" title="Como agrupar as tarefas"><button data-g="data" class="${porLista ? '' : 'on'}">📅 Por data</button><button data-g="lista" class="${porLista ? 'on' : ''}">🗂️ Por lista</button></div>${M.opcBtn('taskLists')}` : ''}</div>
       ${!open.length ? '<div class="empty" style="padding:26px 20px"><div class="big">🎉</div><h3>Nenhuma tarefa pendente</h3></div>' : ''}
       <div class="tcols">${G.map(([k, n, L]) => L.length ? `<div class="tgroup ${k}"><h4>${n} <span class="cnt">${L.length}</span>${k === 'late' && L.length > 1 ? '<button type="button" class="btn ghost sm tg-hoje" data-todas-hoje title="Muda a data de todas as atrasadas para hoje, de uma vez (dá para desfazer)">→ Todas para hoje</button>' : ''}</h4>${L.map(taskHTML).join('')}</div>` : '').join('')}
       ${feitas.length ? `<div class="tgroup feitas"><h4>✅ Concluídas <span class="cnt">${feitas.length}</span></h4>${done.map(taskHTML).join('')}
@@ -230,6 +239,7 @@
       if (hora) t.hora = hora;
       if (ev) { t.ev = true; if ($('#tFim').value) t.timeEnd = $('#tFim').value; }
       if (rep) t.rep = rep;
+      if ($('#tLsN') && $('#tLsN').value) t.lista = $('#tLsN').value;
       if (rep === 'dias') { t.repDias = novosDias.slice(); if (!t.date) t.date = proxDia(M.today(), t.repDias, true); }
       if ((hora || rep) && !t.date) t.date = M.today(); // lembrete e repetição precisam de um dia
       fixaRepDia(t);
@@ -252,6 +262,8 @@
     if ($('#tMais')) $('#tMais').onclick = () => { u.tasksFeitas = nF + FEITAS_MAIS; SFX.play('click'); M.render(); };
     if ($('#tMenos')) $('#tMenos').onclick = () => { u.tasksFeitas = 0; SFX.play('click'); M.render(); };
     $('#tIn').focus();
+    $('#tLs').onclick = (e) => { const x = e.target.closest('[data-l],[data-lnova]'); if (!x) return; if (x.dataset.lnova) return M.opcEditar('taskLists', null, { criou: (l) => { u.tLista = l.id; } }); u.tLista = x.dataset.l; SFX.play('click'); M.render(); };
+    if ($('#tAg')) $('#tAg').onclick = (e) => { const b = e.target.closest('[data-g]'); if (!b) return; u.tAgrupa = b.dataset.g; SFX.play('click'); M.render(); };
     v.onclick = (e) => {
       if (e.target.closest('[data-todas-hoje]')) { // remarcar as atrasadas numa gravação só (um Desfazer volta todas)
         const hoje = M.today(), L = M.db.tasks.filter((t) => M.tarefaPendente(t) && t.date && t.date < hoje);
@@ -294,6 +306,7 @@
       ${diasHTML('erD', t.repDias || [], t.rep !== 'dias')}
       <div class="rep-nota" id="eNota" hidden></div>
       ${t.rep && !t.done && !t.ev ? `<div class="rep-acoes" id="eRepB"><button type="button" class="btn ghost sm" id="epu" title="A tarefa vai para a próxima data, sem contar como concluída e sem dar XP">⏭ Pular esta vez</button><button type="button" class="btn ghost sm" id="eer" title="Salva e encerra a repetição: a tarefa continua na lista, mas não volta mais depois de concluída">⏹ Encerrar repetição</button></div>` : ''}
+      ${M.opc('taskLists').length ? `<div class="fld"><label>🗂️ Lista</label><select id="els"><option value="">📥 Sem lista</option>${M.opc('taskLists').map((l) => `<option value="${esc(l.id)}" ${l.id === t.lista ? 'selected' : ''}>${esc(l.em)} ${esc(l.name)}</option>`).join('')}</select></div>` : ''}
       ${C.length ? `<div class="fld"><label>Cliente</label><select id="ec"><option value="">— nenhum —</option>${C.map((c) => `<option value="${c.id}" ${c.id === t.client ? 'selected' : ''}>${esc(c.nome || 'Sem nome')}</option>`).join('')}</select></div>` : ''}
       <div class="row" style="justify-content:space-between"><button class="btn danger" id="dl" style="flex:none">🗑️ Lixeira</button><button class="btn" id="ok" style="flex:none">✔ Salvar</button></div></div>`, { small: true });
     $('#x', m).onclick = () => { M.closeModal(); if (depois) depois(); };
@@ -303,7 +316,7 @@
     $$('#erD .chip-b', m).forEach((b) => b.classList.toggle('on', eDias.includes(+b.dataset.i)));
     ligaDias($('#erD', m), eDias);
     // o que está na janela agora, para saber se a pessoa mudou algo
-    const foto = () => [ev, $('#et', m).value, $('#ed', m).value, $('#eh', m).value, $('#ef', m).value, $('#er', m).value, $('#ep', m).value, $('#ec', m) ? $('#ec', m).value : '', eDias.slice().sort()].join('|');
+    const foto = () => [ev, $('#et', m).value, $('#ed', m).value, $('#eh', m).value, $('#ef', m).value, $('#er', m).value, $('#ep', m).value, $('#ec', m) ? $('#ec', m).value : '', $('#els', m) ? $('#els', m).value : '', eDias.slice().sort()].join('|');
     // trocar o tipo ou os dias da semana também conta como mudança para o aviso de "não salvou" (ui.js só vê campos de digitar)
     const tocou = () => $('#et', m).dispatchEvent(new Event('change', { bubbles: true }));
     // dia em que a repetição mensal volta: o guardado, se a data não mudou; senão o dia da data escolhida
@@ -335,6 +348,7 @@
       if (t.rep && !t.date) t.date = M.today();
       fixaRepDia(t, manter);
       if ($('#ec', m)) t.client = $('#ec', m).value;
+      if ($('#els', m)) { if ($('#els', m).value) t.lista = $('#els', m).value; else delete t.lista; }
       M.save();
       if (fimRep) M.toast('⏹ Repetição encerrada. A tarefa continua na lista.');
       M.closeModal(); M.render(); if (depois) depois();
@@ -369,18 +383,23 @@
     for (let i = 0; i < 42; i++) { const d = new Date(start); d.setDate(start.getDate() + i); days.push(d); }
     const today = M.today();
     const v = $('#view');
+    // o que aparece nos dias: a pessoa liga e desliga (settings.calVer, cada aparelho do seu jeito)
+    const cv = Object.assign({ tarefas: true, comp: true, feitas: true, contas: true, habitos: true, itens: true }, M.db.settings.calVer || {});
+    const CV = [['tarefas', '✅ Tarefas'], ['comp', '📅 Compromissos'], ['feitas', '✔ Concluídas'], ['contas', '💰 Contas'], ['habitos', '🎯 Hábitos'], ['itens', '📦 Itens com data']];
     v.innerHTML = `<div class="cal-h"><button class="icon-btn" id="cp">‹</button><h3>${title}</h3><button class="icon-btn" id="cn">›</button><button class="btn ghost sm" id="ct">Hoje</button>${M.hint('Clique em um dia para adicionar uma tarefa ou um compromisso (com hora de início e fim). Arraste para outro dia para remarcar. O compromisso que já passou continua no dia, mais apagado.')}</div>
+      <div class="cal-ver" id="calVer" role="group" aria-label="O que mostrar no calendário"><span class="lbl">Mostrar:</span>${CV.map(([k, n]) => `<button type="button" class="chip-b ${cv[k] ? 'on' : ''}" data-cv="${k}" aria-pressed="${!!cv[k]}">${n}</button>`).join('')}</div>
       <div class="cal">${['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'].map((d) => `<div class="dow">${d}</div>`).join('')}${days.map((d) => {
         const k = M.ymd(d);
         // o que tem hora vem primeiro, na ordem do relógio
-        const ts = M.db.tasks.filter((t) => t.date === k).sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99')), its = M.db.items.filter((i) => i.date === k);
+        const ts = M.db.tasks.filter((t) => t.date === k && (t.ev ? cv.comp : cv.tarefas) && (cv.feitas || !t.done)).sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99')), its = cv.itens ? M.db.items.filter((i) => i.date === k) : [];
         // contas em aberto do dia (a pagar e a receber): abrem o lançamento
-        const fs = (M.db.fin || []).filter((f) => !f.pago && f.data === k);
-        return `<div class="day ${d.getMonth() !== Mo ? 'out' : ''} ${k === today ? 'today' : ''} ${d.getDay() % 6 === 0 ? 'we' : ''}" data-d="${k}"><span class="dn">${d.getDate()}</span>${rotDia(k, today)}${ts.map(chipHTML).join('')}${fs.map((f) => `<div class="chip fin ${f.tipo}" data-f="${f.id}" title="${f.tipo === 'saida' ? 'A pagar' : 'A receber'}: ${esc(f.desc || 'lançamento')} · ${M.reais ? M.reais(f.valor) : f.valor}">${f.tipo === 'saida' ? '🔻' : '💰'} ${esc(f.desc || (f.tipo === 'saida' ? 'Conta' : 'Receber'))}</div>`).join('')}${its.map((i) => `<div class="chip it" style="--c:${M.type(i.type).color}" data-i="${i.id}" title="${esc(i.title)}">${M.type(i.type).em} ${esc(i.title || 'Sem título')}</div>`).join('')}</div>`;
+        const fs = cv.contas ? (M.db.fin || []).filter((f) => !f.pago && f.data === k) : [];
+        return `<div class="day ${d.getMonth() !== Mo ? 'out' : ''} ${k === today ? 'today' : ''} ${d.getDay() % 6 === 0 ? 'we' : ''}" data-d="${k}"><span class="dn">${d.getDate()}</span>${cv.habitos ? rotDia(k, today) : ''}${ts.map(chipHTML).join('')}${fs.map((f) => `<div class="chip fin ${f.tipo}" data-f="${f.id}" title="${f.tipo === 'saida' ? 'A pagar' : 'A receber'}: ${esc(f.desc || 'lançamento')} · ${M.reais ? M.reais(f.valor) : f.valor}">${f.tipo === 'saida' ? '🔻' : '💰'} ${esc(f.desc || (f.tipo === 'saida' ? 'Conta' : 'Receber'))}</div>`).join('')}${its.map((i) => `<div class="chip it" style="--c:${M.type(i.type).color}" data-i="${i.id}" title="${esc(i.title)}">${M.type(i.type).em} ${esc(i.title || 'Sem título')}</div>`).join('')}</div>`;
       }).join('')}</div>`;
     const go = (n) => { const d = new Date(Y, Mo + n, 1); u.calMonth = [d.getFullYear(), d.getMonth()]; M.render(); };
     $('#cp').onclick = () => go(-1); $('#cn').onclick = () => go(1);
     $('#ct').onclick = () => { u.calMonth = null; M.render(); };
+    $('#calVer').onclick = (e) => { const b = e.target.closest('[data-cv]'); if (!b) return; M.db.settings.calVer = Object.assign({}, cv, { [b.dataset.cv]: !cv[b.dataset.cv] }); M.save(); SFX.play('click'); M.render(); };
     let drag = null;
     v.onclick = (e) => {
       const chip = e.target.closest('.chip');
@@ -408,7 +427,7 @@
     const m = M.modal(`<div class="modal-h"><h2 id="qTit">Nova tarefa · ${M.fmtDate(date)}</h2><button class="icon-btn" id="x" title="Fechar" aria-label="Fechar">✕</button></div><div class="modal-b">
       <div class="tn-t">${tipoHTML('qTipo')}${M.hint(TIPO_DICA)}</div>
       <div class="com-mic"><input type="text" id="qt" placeholder="O que precisa ser feito?">${M.micBtn('#qt')}</div>
-      <div class="row" id="qRowT"><div class="fld"><label>Prioridade ${M.hint(PRIO_DICA)}</label><select id="qp"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Média</option><option value="baixa">🔵 Baixa</option></select></div><div class="fld"><label>Hora ${M.hint('Opcional. No horário marcado o computador mostra um aviso.')}</label><input type="time" id="qh"></div></div>
+      <div class="row" id="qRowT"><div class="fld"><label>Prioridade ${M.hint(PRIO_DICA)}</label><select id="qp">${M.opc('taskPrios').map((p) => `<option value="${esc(p.id)}" ${p.id === M.prio('media').id ? 'selected' : ''}>${esc(p.em)} ${esc(p.name)}</option>`).join('')}</select></div><div class="fld"><label>Hora ${M.hint('Opcional. No horário marcado o computador mostra um aviso.')}</label><input type="time" id="qh"></div></div>
       <div class="row" id="qRowE" hidden><div class="fld"><label>Início ${M.hint('A que horas começa. Nesse horário o computador mostra um aviso.')}</label><input type="time" id="qi"></div><div class="fld"><label>Fim ${M.hint(FIM_DICA)}</label><input type="time" id="qf"></div></div>
       <div class="row" style="justify-content:flex-end"><button class="btn" id="qa" style="flex:none">＋ Adicionar</button></div></div>`, { small: true });
     $('#x', m).onclick = M.closeModal;

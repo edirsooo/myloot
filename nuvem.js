@@ -13,7 +13,7 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const LISTAS = ['categories', 'items', 'tasks', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols', 'itemStatus', 'taskPrios', 'finCats', 'finFormas', 'toolGroups', 'homeWidgets', 'trash'];
+const LISTAS = ['categories', 'items', 'tasks', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols', 'itemStatus', 'taskPrios', 'finCats', 'finFormas', 'toolGroups', 'homeWidgets', 'itemTypes', 'taskLists', 'cliCampos', 'trash'];
 const J = (o) => JSON.stringify(o);
 const chave = (k, o) => (k === 'trash' ? o && o.data && o.data.id != null && 'trash:' + o.kind + ':' + o.data.id + ':' + o.at : o && o.id != null && k + ':' + o.id);
 

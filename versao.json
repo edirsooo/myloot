@@ -1,7 +1,21 @@
 {
-  "versao": "2.20.0",
-  "data": "2026-11-18",
+  "versao": "2.21.0",
+  "data": "2026-11-19",
   "novidades": [
+    "🧱 Tipos de item do seu jeito: mude nome, emoji, cor e ordem, ou esconda os que não usa (⚙️ nas abas da Biblioteca)",
+    "✋ “Minha ordem” na Biblioteca: escolha a ordem e arraste os cartões para onde quiser (no celular, pelo ⋯)",
+    "🗂️ Listas de tarefas (Casa, Trabalho, Cliente X…): filtre por lista, agrupe por lista e escolha a lista de cada tarefa",
+    "🪪 Campos seus na ficha do cliente (CNPJ, aniversário, link do contrato…) e esconda os campos prontos que não usa",
+    "🗓️ Calendário: escolha o que aparece nos dias (tarefas, compromissos, concluídas, contas, hábitos, itens)",
+    "🎯 Missões do dia escolhidas por você, com os números que quiser",
+    "🧭 Menu do seu jeito: mude a ordem, esconda telas e escolha os atalhos da barra do celular",
+    "🕘 Versões das fichas: item e cliente guardam as últimas versões salvas, e dá para voltar a qualquer uma",
+    "📝 Rascunho também nas janelas de tarefa, lançamento, hábito e meta: saia sem salvar e recupere depois",
+    "↩ O histórico de ações agora fica guardado por 30 dias (antes sumia ao fechar a aba)",
+    "😀 Rotina: qualquer emoji e qualquer unidade nos hábitos"
+  ],
+  "historico": {
+    "2.20.0": [
     "🧩 Monte o seu Início como quiser: em “✏️ Organizar Início” você arrasta os quadros (com o mouse ou o dedo), muda o tamanho, oculta, tira e põe de volta. Dá para desfazer e voltar ao padrão",
     "＋ Quadros novos para o Início: contas a pagar e receber, próximos compromissos, bloco de notas, atalhos para telas e links, metas, funil de clientes, hábitos de hoje e modo foco",
     "🏷️ Status dos itens do seu jeito: crie (ex.: Ideia, Gravando, Publicado), renomeie, mude a cor, a ordem ou apague, no ⚙️ ao lado do filtro da Biblioteca",
@@ -9,8 +23,7 @@
     "💰 Financeiro: categorias e formas de pagamento suas (ex.: Cartão Nubank). Renomear muda também os lançamentos que já usam",
     "🧰 Grupos próprios para organizar “Minhas ferramentas”",
     "⚙️ Tudo isso também em Configurações → Personalizar, e sincroniza entre os seus computadores"
-  ],
-  "historico": {
+    ],
     "2.19.0": [
     "▥ Clientes com colunas do seu jeito, como no Trello: no Funil, crie colunas (“＋ Nova coluna”), troque nome, emoji e cor, arraste o título para mudar a ordem e apague as que não usa (os clientes dela vão para a coluna que você escolher). Dá para desfazer",
     "＋ Botão “Cliente aqui” no pé de cada coluna, que já cria o cliente naquela etapa",

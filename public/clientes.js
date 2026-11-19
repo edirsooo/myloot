@@ -116,7 +116,7 @@
     const cnt = (id) => C.filter((c) => colDe(c) === id).length;
     v.innerHTML = `
       <div class="hotbar" id="cliF" data-lab="Status"><div class="slot ${!filtro ? 'on' : ''}" data-f="">👥 Todos <span class="n">${C.length}</span></div>${COLS.map((s) => `<div class="slot ${filtro === s.id ? 'on' : ''}" data-f="${esc(s.id)}" style="--c:${s.color}">${esc(s.em)} ${esc(s.name)} <span class="n">${cnt(s.id)}</span></div>`).join('')}<div class="slot col-mais" data-colnova="1" title="Criar uma coluna nova no funil">＋ Coluna</div></div>
-      <div class="toolbar"><button class="btn" id="cliNovo">＋ Novo cliente</button>
+      <div class="toolbar"><button class="btn" id="cliNovo">＋ Novo cliente</button>${M.opcBtn('cliCampos', 'Campos da ficha')}
         <input class="search" id="cliQ" type="search" placeholder="Buscar cliente…" value="${esc(busca)}">
         <span class="grow"></span><div class="seg" id="cliV"><button data-v="cards" class="${modo === 'cards' ? 'on' : ''}">▦ Cartões</button><button data-v="funil" class="${modo === 'funil' ? 'on' : ''}">▥ Funil</button></div>${M.hint('Cartões: todos os clientes lado a lado. Funil: uma coluna por status, como no Trello. Arraste o cliente de uma coluna para outra; crie colunas em “＋ Nova coluna”, edite ou apague no ⋯ da coluna e arraste o título para mudar a ordem.')}</div>
       <div id="cliRes">${!C.length ? `<div class="empty"><div class="big">👥</div><h3>Nenhum cliente ainda</h3><p>Guarde contato, status, link do Trello e a pasta de cada cliente,<br>e junte as tarefas e os itens dele num lugar só.</p><button class="btn" data-novo="1" style="margin-top:12px">＋ Cadastrar o primeiro</button></div>`
@@ -223,7 +223,10 @@
       if (!eraNovo && M.db.clients.includes(c) && M.rasc.guardar(c)) M.toast('📝 Alterações guardadas como rascunho. Abra a ficha de novo para salvar ou descartar.');
       delete c._novo; M.save(); M.render();
     } });
-    const campo = (k, lbl, ph, tipo) => `<div class="fld"><label for="cf_${k}">${lbl}</label><input type="${tipo || 'text'}" id="cf_${k}" data-k="${k}" value="${esc(c[k])}" placeholder="${ph}"></div>`;
+    const oc = M.db.settings.cliOcultos || []; // campos prontos que a pessoa escondeu (o que já estava escrito continua guardado)
+    const campo = (k, lbl, ph, tipo) => oc.includes(k) && !c[k] ? '' : `<div class="fld"><label for="cf_${k}">${lbl}</label><input type="${tipo || 'text'}" id="cf_${k}" data-k="${k}" value="${esc(c[k])}" placeholder="${ph}"></div>`;
+    const TIPO_IN = { texto: 'text', numero: 'text', data: 'date', link: 'url' };
+    const extras = () => M.opc('cliCampos').map((f) => { const val = (c.extra || {})[f.id] || ''; const link = f.tipo === 'link' && /^https?:\/\//i.test(val) ? ` <a href="${esc(val)}" target="_blank" rel="noopener" title="Abrir">↗</a>` : ''; return `<div class="fld"><label for="cx_${esc(f.id)}">${esc(f.em)} ${esc(f.name)}${link}</label><input type="${TIPO_IN[f.tipo] || 'text'}" ${f.tipo === 'numero' ? 'inputmode="decimal"' : ''} id="cx_${esc(f.id)}" data-x="${esc(f.id)}" value="${esc(val)}"></div>`; }).join('');
     // redesenha a ficha (atalhos de contato, cabeçalho) sem perder o campo em que a pessoa entrou com Tab ou clique
     const redesenha = () => setTimeout(() => {
       const f = document.activeElement, id = f && m.contains(f) && f.id, pos = f && typeof f.selectionStart === 'number' ? f.selectionStart : null;
@@ -231,6 +234,7 @@
       const e = id && m.querySelector('#' + CSS.escape(id));
       if (e) { e.focus(); if (pos != null) try { e.setSelectionRange(pos, pos); } catch (_) {} }
     }, 0);
+    if (novoAberto !== c.id) M.versaoGuardar('client', c); // como a ficha estava ao abrir
     function draw() {
       const s = cst(c.status);
       const ts = M.db.tasks.filter((t) => t.client === c.id).sort((a, b) => a.done - b.done || (a.date || '9').localeCompare(b.date || '9'));
@@ -238,7 +242,7 @@
       const soltos = M.db.items.filter((i) => !i.client && !i.modelo);
       m.innerHTML = `
         <div class="modal-h" style="border-bottom-color:${s.color}"><span class="av" style="background:${corDe(c.nome)}">${esc(iniciais(c.nome))}</span><h2>${esc(c.nome || 'Novo cliente')}</h2>
-          <button class="icon-btn" id="cDel" title="Lixeira">🗑️</button><button class="icon-btn" id="cX" title="Fechar (Esc)">✕</button></div>
+          ${novoAberto === c.id ? '' : '<button class="icon-btn" id="cVer" title="Versões anteriores desta ficha" aria-label="Versões anteriores">🕘</button>'}<button class="icon-btn" id="cDel" title="Lixeira">🗑️</button><button class="icon-btn" id="cX" title="Fechar (Esc)">✕</button></div>
         <div class="modal-b">
           <input class="title-in" id="cNome" type="text" placeholder="Nome do cliente" value="${esc(c.nome)}">
           <div class="types" id="cSt">${M.CST.map((x) => `<div class="slot ${x.id === colDe(c) ? 'on' : ''}" data-s="${esc(x.id)}" style="--c:${x.color}">${esc(x.em)} ${esc(x.name)}</div>`).join('')}</div>
@@ -246,7 +250,8 @@
           <div class="row">${campo('empresa', 'Empresa / marca', 'Ex: Padaria do João')}${campo('whats', 'WhatsApp', '(11) 99999-9999', 'tel')}</div>
           <div class="row">${campo('email', 'E-mail', 'nome@email.com', 'email')}${campo('insta', 'Instagram', '@perfil')}</div>
           <div class="row">${campo('site', 'Site', 'site.com.br')}${campo('trello', 'Quadro do Trello', 'Cole o link do quadro')}</div>
-          <div class="fld"><label>Pasta do cliente ${M.hint('Caminho da pasta no computador (ex.: D:\\Clientes\\João) ou link do Google Drive. O botão 📁 abre direto.')}</label><input type="text" data-k="pasta" value="${esc(c.pasta)}" placeholder="${M.sistema === 'win32' ? 'D:\\Clientes\\Nome' : '/Users/voce/Clientes/Nome'} ou link do Drive"></div>
+          ${extras() ? `<div class="cli-extra">${extras()}</div>` : ''}
+          ${oc.includes('pasta') && !c.pasta ? '' : `<div class="fld"><label>Pasta do cliente ${M.hint('Caminho da pasta no computador (ex.: D:\\Clientes\\João) ou link do Google Drive. O botão 📁 abre direto.')}</label><input type="text" data-k="pasta" value="${esc(c.pasta)}" placeholder="${M.sistema === 'win32' ? 'D:\\Clientes\\Nome' : '/Users/voce/Clientes/Nome'} ou link do Drive"></div>`}
           <div class="fld"><label>Etiquetas</label><input type="text" id="cTags" value="${esc(c.tags.join(', '))}" placeholder="social media, mensal…"></div>
           <div class="fld"><label>Anotações${M.micBtn('[data-k=notas]')}</label><textarea data-k="notas" style="font-family:var(--f);min-height:80px" placeholder="Briefing, combinados, valores, preferências…">${esc(c.notas)}</textarea></div>
           <div class="fld"><label>✅ Tarefas do cliente</label>
@@ -264,7 +269,8 @@
     }
     function bind() {
       $('#cX', m).onclick = M.closeModal;
-      $('#svOk', m).onclick = () => { if (!c.nome.trim()) return M.falta($('#cNome', m), '✍️ Dê um nome ao cliente primeiro'); const novo = novoAberto === c.id; novoAberto = null; delete c._novo; M.rasc.salvar(c); M.save(); M.closeModal(); M.toast(novo ? '✅ Cliente cadastrado' : '✅ Cliente salvo'); };
+      if ($('#cVer', m)) $('#cVer', m).onclick = () => { M.closeModal(); M.versoesAbrir('client', c.id); };
+      $('#svOk', m).onclick = () => { if (!c.nome.trim()) return M.falta($('#cNome', m), '✍️ Dê um nome ao cliente primeiro'); const novo = novoAberto === c.id; novoAberto = null; delete c._novo; M.rasc.salvar(c); M.save(); M.versaoGuardar('client', c); M.closeModal(); M.toast(novo ? '✅ Cliente cadastrado' : '✅ Cliente salvo'); };
       if ($('#svRev', m)) $('#svRev', m).onclick = () => { M.rasc.reverter(c); base = M.rasc.foto(c); M.save(); SFX.play('undo'); draw(); M.toast('↩ Alterações descartadas: voltou a versão salva'); };
       if ($('#svNo', m)) $('#svNo', m).onclick = () => { M.db.clients = M.db.clients.filter((x) => x !== c); novoAberto = null; M.save(); M.closeModal(); M.toast('Cadastro descartado'); };
       // apaga ANTES de fechar: assim o fechamento da ficha (rascunho, "cliente salvo", volta para a ficha) não mexe mais nele
@@ -279,6 +285,7 @@
       $('#cNome', m).oninput = (e) => { c.nome = e.target.value; touch(); $('.modal-h h2', m).textContent = c.nome || 'Novo cliente'; };
       $('#cNome', m).onchange = redesenha;
       m.querySelectorAll('[data-k]').forEach((el) => { el.oninput = () => { c[el.dataset.k] = el.value; touch(); }; el.onchange = () => { if (el.tagName === 'INPUT') redesenha(); }; });
+      m.querySelectorAll('[data-x]').forEach((el) => { el.oninput = () => { c.extra = Object.assign({}, c.extra, { [el.dataset.x]: el.value.slice(0, 2000) }); if (!el.value) delete c.extra[el.dataset.x]; touch(); }; });
       $('#cTags', m).oninput = (e) => { c.tags = [...new Set(e.target.value.split(',').map((x) => x.trim().replace(/^#/, '')).filter(Boolean))]; touch(); };
       $('#cSt', m).onclick = (e) => { const x = e.target.closest('[data-s]'); if (!x) return; c.status = x.dataset.s; touch(); SFX.play('click'); draw(); };
       m.querySelectorAll('.cli-bar [data-pasta]').forEach((b) => { b.onclick = () => M.abrirPastaCliente(c); });

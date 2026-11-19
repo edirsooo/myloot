@@ -1140,3 +1140,30 @@ body.light .qc-copy h2 b{text-shadow:0 3px 0 #cfc6ee}
   .home-acoes .btn{flex:1 1 auto}
 }
 .home-acoes>.grow{flex:1}
+
+/* ===== v2.21.0: calendário, listas, campos, ordem, versões e rascunhos ===== */
+.cal-ver{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
+.cal-ver .lbl{font:700 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-right:4px}
+.cal-ver .chip-b{opacity:.55}.cal-ver .chip-b.on{opacity:1;border-color:var(--accent);background:var(--accent-soft)}
+.tl-barra{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+.tl-barra .hotbar{flex:1;min-width:0;margin:0}
+.tag.tl{border-color:color-mix(in srgb,var(--c) 55%,transparent);color:var(--text)}
+.tgroup.ls>h4{--hc:var(--accent)}
+.cli-extra{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr));gap:0 12px}
+.cli-extra label a{margin-left:4px;color:var(--accent)}
+.em-outro{margin-top:8px;max-width:340px}
+.card.alvo{outline:3px dashed var(--accent);outline-offset:2px}
+.w-mis{display:flex;flex-direction:column;gap:6px}
+.w-mis label{display:flex;align-items:center;gap:10px;justify-content:space-between;font-size:13.5px}
+.w-mis input{width:80px;flex:none}
+.mn-fixa{width:32px;text-align:center;flex:none}
+.ver-row{display:flex;align-items:flex-start;gap:8px;padding:8px;border:1px solid var(--edge);border-radius:10px;background:var(--bg2)}
+.ver-row+.ver-row{margin-top:6px}
+.ver-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ver-tx small{color:var(--dim);font-size:12px}
+.ver-pre{margin-top:6px;padding:8px;border-radius:8px;background:var(--panel);white-space:pre-wrap;font-size:12.5px;max-height:180px;overflow:auto;user-select:text}
+.ver-row .btn{flex:none}
+.rasc-aviso{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:6px;border:2px solid var(--accent);border-radius:12px;background:var(--accent-soft);font-size:13.5px;font-weight:600}
+.rasc-aviso .sa-b,.sair-aviso .sa-b{display:flex;gap:6px;flex-wrap:wrap}
+@media (max-width:700px){.ver-row{flex-wrap:wrap}.tl-barra .seg{width:100%}}
+#tOpPr{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:6px;align-items:center}#tOpPr .lbl{grid-column:1/-1}

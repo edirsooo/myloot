@@ -8,13 +8,23 @@
   let org = false; // modo "Organizar Início" ligado
 
   // ----- missões do dia -----
+  // a pessoa escolhe as missões e os números no ⚙️ do widget Missões (cfg.missoes = ['task:2', 'item:1', …]; 0 desliga)
+  const MISSOES = [
+    ['task', '⚔️', (q) => `Concluir ${q} tarefa${q > 1 ? 's' : ''}`, 2], ['item', '🧱', (q) => `Guardar ${q} ite${q > 1 ? 'ns novos' : 'm novo'}`, 1],
+    ['focus', '⏱', (q) => `Fazer ${q} foco${q > 1 ? 's' : ''}`, 1], ['habit', '🎯', (q) => `Marcar ${q} hábito${q > 1 ? 's' : ''}`, 0],
+    ['check', '☑️', (q) => `Marcar ${q} passo${q > 1 ? 's' : ''} de checklist`, 0], ['attach', '📎', (q) => `Anexar ${q} arquivo${q > 1 ? 's' : ''}`, 0],
+  ];
+  M.MISSOES = MISSOES;
+  const alvosMissoes = () => {
+    const w = M.db && (M.db.homeWidgets || []).find((x) => x.tipo === 'missoes'), L = w && Array.isArray(w.cfg && w.cfg.missoes) ? w.cfg.missoes : null;
+    const o = {}; MISSOES.forEach(([k, , , pad]) => { o[k] = pad; });
+    if (L) { MISSOES.forEach(([k]) => { o[k] = 0; }); L.forEach((s) => { const [k, q] = String(s).split(':'); if (k in o) o[k] = Math.max(0, Math.min(50, +q || 0)); }); }
+    return o;
+  };
   M.quests = () => {
-    const n = (M.dayLog().n) || {};
-    return [
-      { em: '⚔️', t: 'Concluir 2 tarefas', v: n.task || 0, max: 2 },
-      { em: '🧱', t: 'Guardar 1 item novo', v: n.item || 0, max: 1 },
-      { em: '⏱', t: 'Fazer 1 foco de 25 min', v: n.focus || 0, max: 1 },
-    ];
+    const n = (M.dayLog().n) || {}, a = alvosMissoes();
+    const L = MISSOES.filter(([k]) => a[k] > 0).map(([k, em, t]) => ({ em, t: t(a[k]), v: n[k] || 0, max: a[k] }));
+    return L.length ? L : [{ em: '⚔️', t: 'Concluir 2 tarefas', v: n.task || 0, max: 2 }];
   };
   M.checkQuests = () => {
     const log = M.dayLog();
@@ -72,10 +82,11 @@
     hoje: { em: '🌞', nome: 'Para hoje', desc: 'Tarefas de hoje e atrasadas, e os hábitos do dia.', un: 1, tam: 'm',
       aj: [['habitos', 'sim', 'Mostrar os hábitos de hoje', true]],
       html(w, c) { return `<div class="panel principal"><h4>${tit(w, '🌞 Para hoje')} <a data-go="tasks">ver todas →</a></h4>${[...c.late, ...c.now].map(M.taskHTML).join('') || '<div class="empty" style="padding:22px">Tudo em dia ✨</div>'}${w.cfg.habitos !== false && M.rotinaHojeHTML ? M.rotinaHojeHTML() : ''}</div>`; } },
-    missoes: { em: '🎯', nome: 'Missões do dia', desc: 'Três missões que dão bônus de XP. Zeram todo dia.', un: 1, tam: 'm',
+    missoes: { em: '🎯', nome: 'Missões do dia', desc: 'Missões que dão bônus de XP quando você completa todas. Zeram todo dia.', un: 1, tam: 'm',
+      aj: [['missoes', 'missoes', 'Missões (0 desliga)']],
       html(w) {
         if (!M.db.settings.gamify) return `<div class="panel"><h4>${tit(w, '🎯 Missões do dia')}</h4>${vazio('Os pontos estão desligados. Ligue em Configurações → Diversão.')}</div>`;
-        return `<div class="panel"><h4>${tit(w, '🎯 Missões do dia')} ${M.hint('Complete as três para ganhar um bônus de XP. Zera todo dia.')}</h4>${M.quests().map((q) => `<div class="quest ${q.v >= q.max ? 'ok' : ''}"><span>${q.em} ${q.t}</span><div class="bar"><i style="width:${Math.min(100, (q.v / q.max) * 100)}%"></i></div><small>${q.v >= q.max ? '✔' : q.v + '/' + q.max}</small></div>`).join('')}</div>`;
+        return `<div class="panel"><h4>${tit(w, '🎯 Missões do dia')} ${M.hint('Complete todas para ganhar um bônus de XP. Zera todo dia. Escolha as missões no ⚙️ (em ✏️ Organizar Início).')}</h4>${M.quests().map((q) => `<div class="quest ${q.v >= q.max ? 'ok' : ''}"><span>${q.em} ${q.t}</span><div class="bar"><i style="width:${Math.min(100, (q.v / q.max) * 100)}%"></i></div><small>${q.v >= q.max ? '✔' : q.v + '/' + q.max}</small></div>`).join('')}</div>`;
       } },
     andamento: { em: '⛏️', nome: 'Itens por status', desc: 'Os itens de um status (por padrão, “Em andamento”).', tam: 'p',
       aj: [['status', 'status', 'Status'], ['n', 'n', 'Quantos mostrar', 5]],
@@ -327,6 +338,7 @@
       if (tp === 'tipo') return `<div class="fld"><label for="aj-${k}">${rot}</label><select id="aj-${k}"><option value="">Todos os tipos</option>${M.TYPES.map((t) => `<option value="${t.id}" ${t.id === cf[k] ? 'selected' : ''}>${t.em} ${t.name}</option>`).join('')}</select></div>`;
       if (tp === 'modos') { const on = Array.isArray(cf[k]) && cf[k].length ? cf[k] : MODOS.map((x) => x[0]); return `<div class="fld"><label>${rot}</label><div class="w-chk">${MODOS.map(([id, n]) => `<label><input type="checkbox" data-mod="${id}" ${on.includes(id) ? 'checked' : ''}> ${n}</label>`).join('')}</div></div>`; }
       if (tp === 'abas') { const on = Array.isArray(cf[k]) ? cf[k] : ['tasks', 'fin', 'clients']; return `<div class="fld"><label>${rot}</label><div class="w-chk">${PAGINAS.map(([id, em, n]) => `<label><input type="checkbox" data-aba="${id}" ${on.includes(id) ? 'checked' : ''}> ${em} ${n}</label>`).join('')}</div></div>`; }
+      if (tp === 'missoes') { const a = alvosMissoes(); return `<div class="fld"><label>${rot}</label><div class="w-mis">${MISSOES.map(([id, em, t]) => `<label><span>${em} ${esc(t(2).replace(/\d+/, 'N'))}</span><input type="number" min="0" max="50" data-mis="${id}" value="${a[id]}"></label>`).join('')}</div></div>`; }
       if (tp === 'links') return `<div class="fld"><label for="aj-${k}">${rot}</label><textarea id="aj-${k}" rows="3" placeholder="Canva | https://canva.com">${esc(cf[k] || '')}</textarea></div>`;
       return '';
     };
@@ -349,6 +361,7 @@
         else if (tp === 'status' || tp === 'tipo' || tp === 'links') n[k] = el.value;
         else if (tp === 'modos') { const L = [...m.querySelectorAll('[data-mod]:checked')].map((x) => x.dataset.mod); n[k] = L.length ? L : MODOS.map((x) => x[0]); }
         else if (tp === 'abas') n[k] = [...m.querySelectorAll('[data-aba]:checked')].map((x) => x.dataset.aba);
+        else if (tp === 'missoes') n[k] = [...m.querySelectorAll('[data-mis]')].map((x) => x.dataset.mis + ':' + Math.max(0, Math.min(50, Math.round(+x.value) || 0)));
       });
       const onde = $('#ajOnde', m).value;
       mexe(w, { cfg: n, titulo: $('#ajT', m) ? $('#ajT', m).value.trim().slice(0, 60) : w.titulo, tam: $('#ajTam', m).value, alto: $('#ajAl', m).value, soPc: onde === 'pc', soCel: onde === 'cel' });

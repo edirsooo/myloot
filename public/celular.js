@@ -13,10 +13,19 @@
   };
 
   // ----- menu de baixo (celular) -----
-  const BN = [['home', '🏠', 'Início'], ['lib', '📦', 'Itens'], ['novo', '＋', 'Novo'], ['tasks', '✅', 'Tarefas'], ['mais', '☰', 'Mais']];
+  // os 3 atalhos ao lado do ＋ são da pessoa (settings.bnav, em Configurações → Personalizar → Menu)
+  const CURTO = { lib: 'Itens', clients: 'Clientes', fin: 'Finanças', cal: 'Agenda', tools: 'Ferram.', ach: 'Conquistas', trash: 'Lixeira' };
   const bnav = document.createElement('nav');
   bnav.id = 'bnav';
-  bnav.innerHTML = BN.map(([id, em, n]) => `<button data-b="${id}" class="${id === 'novo' ? 'novo' : ''}"><span>${em}</span><small>${n}</small></button>`).join('');
+  let bnSig = '';
+  const pintaBnav = () => {
+    const s = (M.db && M.db.settings) || {}, esc3 = Array.isArray(s.bnav) && s.bnav.length === 3 ? s.bnav : ['home', 'lib', 'tasks'];
+    const P = (id) => (M.PAGINAS || []).find((x) => x[0] === id) || ['home', '🏠', 'Início'];
+    const BN = [esc3[0], esc3[1], 'novo', esc3[2], 'mais'].map((id) => (id === 'novo' ? ['novo', '＋', 'Novo'] : id === 'mais' ? ['mais', '☰', 'Mais'] : [id, P(id)[1], CURTO[id] || P(id)[2]]));
+    const sig = JSON.stringify(BN); if (sig === bnSig) return; bnSig = sig;
+    bnav.innerHTML = BN.map(([id, em, n]) => `<button data-b="${id}" class="${id === 'novo' ? 'novo' : ''}"><span>${em}</span><small>${esc(n)}</small></button>`).join('');
+  };
+  pintaBnav();
   document.body.appendChild(bnav);
   bnav.onclick = (e) => {
     const b = e.target.closest('[data-b]'); if (!b) return;
@@ -25,7 +34,7 @@
     if (id === 'novo') return M.novoComModelo();
     M.go(id);
   };
-  M.onRender = (p) => { $$('#bnav [data-b]').forEach((b) => b.classList.toggle('on', b.dataset.b === p)); };
+  M.onRender = (p) => { pintaBnav(); $$('#bnav [data-b]').forEach((b) => b.classList.toggle('on', b.dataset.b === p)); };
 
   // ----- toque longo abre o menu do cartão (o iPhone não tem clique direito) -----
   if (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform))) {
