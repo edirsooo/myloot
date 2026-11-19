@@ -7,3 +7,6 @@ __pycache__/
 
 # propostas e rascunhos internos
 _propostas/
+
+# anotações internas de desenvolvimento (ficam só no PC)
+NOTAS.md

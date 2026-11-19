@@ -278,6 +278,15 @@ Se você tem uma versão mais antiga (ou ainda a Mochila), baixe o ZIP novo uma 
 - Interface: HTML, CSS e JavaScript puros em `public/`.
 - Conteúdo inicial: arquivos em `exemplos/` (cada `.json` é um pacote que entra uma vez só).
 
+### Conexões (para programadores)
+
+Outro programa do seu computador pode mandar itens para o MyLoot. Crie um código em Configurações → Conexões e use:
+
+- `GET http://127.0.0.1:4321/api/entrada/ping` com o cabeçalho `X-MyLoot-Conexao: <código>` → `{ok, app:'myloot', versao, formato}`.
+- `POST http://127.0.0.1:4321/api/entrada` com o mesmo cabeçalho e o corpo `{"formato":"myloot-entrada-1","app":"Nome do programa","itens":[{"id":"id-estável-no-programa","tipo":"link|nota|prompt|instrucao|comando|estudo","titulo":"","descricao":"","conteudo":"","url":"https://…","rotulo":"","etiquetas":[],"checklist":[],"links":[{"url":"","label":""}],"cliente":"nome do cliente","data":"AAAA-MM-DD"}]}` (até 200 itens, 8 MB).
+- Resposta: `{ok, criados, atualizados, itens:[{id, item, novo}]}`. O mesmo `app` + `id` atualiza o item em vez de duplicar. Etiquetas, checklist e links só acrescentam. `cliente` liga ao cliente de mesmo nome, se existir.
+- Sem código válido: 401. Só responde a pedidos do próprio computador.
+
 ## Novidades
 
 O repositório vai sendo atualizado: quando houver material novo (guias, links, melhorias), ele entra aqui e o app avisa você.

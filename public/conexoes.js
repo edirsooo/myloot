@@ -19,7 +19,7 @@
         <button class="icon-btn" data-a="apagar" title="Apagar esta conexão">🗑️</button>
       </div>`).join('') : '<small style="color:var(--dim);display:block;margin-bottom:8px">Nenhum programa conectado ainda.</small>'}
       <div class="row" style="align-items:center;gap:8px;margin-top:8px"><input type="text" id="cnxNome" placeholder="Nome do programa (ex.: minha automação)" style="flex:2"><button class="btn ghost" id="cnxNovo" style="flex:none">＋ Gerar código de conexão</button></div>
-      <small style="color:var(--faint);display:block;margin-top:8px">Endereço para o programa: <code>http://127.0.0.1:${r.porta}/api/entrada</code> · formato <code>${esc(r.formato)}</code>. Detalhes no arquivo NOTAS.md.</small>`;
+      <small style="color:var(--faint);display:block;margin-top:8px">Endereço para o programa: <code>http://127.0.0.1:${r.porta}/api/entrada</code> · formato <code>${esc(r.formato)}</code>. Detalhes no README do MyLoot (seção Conexões).</small>`;
     $('#cnxNovo').onclick = async () => {
       try { const c = await M.api('/api/conexoes', { method: 'POST', body: JSON.stringify({ nome: $('#cnxNome').value }) }); await navigator.clipboard.writeText(c.codigo).catch(() => {}); SFX.play('coin'); M.toast('🤝 Conexão criada. O código já está copiado.'); }
       catch (e) { M.toast('⚠️ ' + e.message); }
