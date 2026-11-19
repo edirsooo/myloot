@@ -43,7 +43,7 @@ function defaults() {
     version: DB_VERSION,
     settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, musica: false, musicaVol: 0.2, musicaLoop: false, confetti: true, gamify: true, dailyGoal: 50,
       view: 'grid', boardBy: 'status', janela: 'app', aiModel: 'claude-opus-5-5', drive: { on: false, path: '' } },
-    categories: [], items: [], tasks: [], trash: [], clients: [], fin: [], habits: [], goals: [], tools: [],
+    categories: [], items: [], tasks: [], trash: [], clients: [], fin: [], habits: [], goals: [], tools: [], cliCols: [],
     game: { xp: 0, log: {}, streak: { last: '', count: 0 }, achievements: {}, counters: {}, goalDays: 0 },
   };
 }
@@ -71,12 +71,17 @@ function seed() {
 const SEGURO = /^[\w.:-]{1,100}$/;
 const sid = (v) => (v == null || v === '' ? v : SEGURO.test(String(v)) ? v : String(v).replace(/[^\w.:-]/g, '_').slice(0, 100));
 const COR = /^#[0-9a-f]{3,8}$/i;
+const CLI_COLS = [
+  { id: 'prospect', name: 'Prospect', em: '🎯', color: '#ffbe46', ord: 0 }, { id: 'ativo', name: 'Ativo', em: '🟢', color: '#3cffaa', ord: 1 },
+  { id: 'pausado', name: 'Pausado', em: '⏸️', color: '#3ad7ff', ord: 2 }, { id: 'encerrado', name: 'Encerrado', em: '📁', color: '#9aa3c9', ord: 3 },
+];
 const umDe = (v, L, pad) => (L.includes(v) ? v : pad);
-const TIPOS = ['estudo', 'prompt', 'instrucao', 'comando', 'link', 'nota'], ST_ITEM = ['ver', 'and', 'ok'], ST_CLI = ['prospect', 'ativo', 'pausado', 'encerrado'], PRIOS = ['baixa', 'media', 'alta'];
+const TIPOS = ['estudo', 'prompt', 'instrucao', 'comando', 'link', 'nota'], ST_ITEM = ['ver', 'and', 'ok'], PRIOS = ['baixa', 'media', 'alta'];
 function limparIds(out) {
-  for (const k of ['categories', 'items', 'tasks', 'clients', 'fin', 'habits', 'goals', 'tools']) for (const o of out[k]) { if (o.id != null) o.id = sid(o.id); }
+  for (const k of ['categories', 'items', 'tasks', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols']) for (const o of out[k]) { if (o.id != null) o.id = sid(o.id); }
   for (const c of out.categories) { if (c.color != null && !COR.test(String(c.color))) c.color = '#8b5cf6'; }
   for (const t of out.trash) { if (t.data && typeof t.data === 'object' && t.data.id != null) t.data.id = sid(t.data.id); if (t.kind != null) t.kind = sid(t.kind); }
+  for (const c of out.clients) c.status = sid(c.status) || 'ativo';
   for (const k of ['items', 'tasks', 'fin']) for (const o of out[k]) { if (o.client) o.client = sid(o.client); if (o.serie) o.serie = sid(o.serie); }
   for (const it of out.items) { if (it.cat) it.cat = sid(it.cat); }
 }
@@ -90,7 +95,7 @@ function migrate(raw) {
   out.settings.drive = Object.assign({}, d.settings.drive, (raw.settings || {}).drive || {});
   out.game = Object.assign({}, d.game, raw.game || {});
   out.game.streak = Object.assign({}, d.game.streak, out.game.streak || {});
-  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin', 'habits', 'goals', 'tools']) out[k] = Array.isArray(out[k]) ? out[k].filter((o) => o && typeof o === 'object' && !Array.isArray(o)) : [];
+  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols']) out[k] = Array.isArray(out[k]) ? out[k].filter((o) => o && typeof o === 'object' && !Array.isArray(o)) : [];
   out.fin.forEach((f) => {
     f.id = f.id || uid(); f.tipo = f.tipo === 'saida' ? 'saida' : 'entrada'; f.valor = Math.round((Number(f.valor) || 0) * 100) / 100;
     f.data = /^\d{4}-\d\d-\d\d$/.test(f.data || '') ? f.data : today(); f.pago = !!f.pago;
@@ -100,8 +105,14 @@ function migrate(raw) {
     c.id = c.id || uid(); c.nome = c.nome || ''; c.status = c.status || 'ativo';
     for (const k of ['empresa', 'email', 'whats', 'insta', 'site', 'trello', 'pasta', 'notas']) c[k] = c[k] || '';
     c.tags = Array.isArray(c.tags) ? c.tags : []; c.created = c.created || Date.now(); c.updated = c.updated || c.created;
-    c.status = umDe(c.status, ST_CLI, 'ativo');
+    c.status = String(c.status).slice(0, 100); // o id da coluna passa por sid() em limparIds
   });
+  // colunas do funil de clientes: a pessoa cria, renomeia, reordena e apaga (quadro estilo Trello)
+  if (!out.cliCols.length) out.cliCols = CLI_COLS.map((o) => Object.assign({}, o));
+  out.cliCols = out.cliCols.slice(0, 40).map((o, i) => ({
+    id: o.id || uid(), name: String(o.name || 'Coluna').slice(0, 40), em: String(o.em || '').replace(/[<>"'&]/g, '').slice(0, 8),
+    color: COR.test(String(o.color || '')) ? o.color : '#9aa3c9', ord: Number.isFinite(+o.ord) ? +o.ord : i, updated: o.updated || 0,
+  }));
   out.items.forEach((it) => {
     it.id = it.id || uid();
     it.type = it.type || 'nota';

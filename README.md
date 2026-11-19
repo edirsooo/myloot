@@ -16,6 +16,11 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 
 ![Tela inicial](docs/site/telas/inicio.webp)
 
+## Novidades da versão 2.19
+
+- ▥ Clientes com colunas do seu jeito, como no Trello: crie, renomeie, troque emoji e cor, arraste para reordenar e apague colunas do funil
+- ＋ "Cliente aqui" no pé de cada coluna e 🗑️ lixeira direto no cartão do cliente
+
 ## Novidades da versão 2.18
 
 - 🔎 Busca (Ctrl+K) por palavras, em qualquer ordem e sem ligar para pontuação: "dra marina" acha "Dra. Marina". Também acha lançamentos, hábitos, metas e ferramentas, e tem os comandos Nova tarefa, Fazer backup, Usar no celular e Guardar o link copiado
@@ -144,7 +149,7 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 - **4 jeitos de ver:** grade, lista, tabela e quadro estilo Trello (arrastando os cartões).
 - **Busca em tudo** com `Ctrl+K` — títulos, textos, etiquetas e nome dos anexos.
 - **Anexos:** arraste um arquivo para a janela e ele vira um item. Dá para pré-visualizar e abrir no programa do computador.
-- **Clientes (mini CRM):** contato, WhatsApp, e-mail, Instagram, status do funil (prospect, ativo, pausado, encerrado), link do quadro do Trello e a pasta do cliente com um clique. As tarefas e os itens de cada cliente ficam juntos na ficha dele. Ótimo para social media e freelancer.
+- **Clientes (mini CRM):** contato, WhatsApp, e-mail, Instagram, funil com colunas que você cria e organiza (começa com prospect, ativo, pausado, encerrado), link do quadro do Trello e a pasta do cliente com um clique. As tarefas e os itens de cada cliente ficam juntos na ficha dele. Ótimo para social media e freelancer.
 - **No celular:** ligue "Usar no celular" nas Configurações, aponte a câmera para o QR Code e pronto. Protegido por um código, só na sua rede. Dá para adicionar à tela inicial como um app.
 - **Financeiro:** fluxo de caixa do mês com entradas e saídas, o que já foi pago/recebido e o que falta, contas que repetem todo mês, parcelas, pagamentos por cliente, gráfico dos últimos 6 meses, calculadora de valor da hora e planilha em CSV. O computador avisa das contas do dia.
 - **Kit do negócio e Kit de lançamento:** 23 materiais prontos, cada um com texto editável e um PDF: briefings (social media, posts, identidade visual, site), contratos, proposta comercial, roteiro de call de vendas, mensagens de WhatsApp, onboarding, debriefing, relatório mensal, planejamento de conteúdo, avatar, objeções, oferta, cronograma e roteiro de lançamento. São **exemplos de referência** (os PDFs levam a identidade da Prestes Design): adapte para a sua marca, e cada material traz uma dica de como fazer isso com IA.

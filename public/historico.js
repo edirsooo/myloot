@@ -6,8 +6,8 @@
 (function () {
   const { esc, $ } = M;
   // lista do banco: [singular, plural, gênero]
-  const COL = { items: ['item', 'itens', 'o'], tasks: ['tarefa', 'tarefas', 'a'], clients: ['cliente', 'clientes', 'o'], fin: ['lançamento', 'lançamentos', 'o'], habits: ['hábito', 'hábitos', 'o'], goals: ['meta', 'metas', 'a'], categories: ['coleção', 'coleções', 'a'], tools: ['ferramenta', 'ferramentas', 'a'], trash: ['', '', 'o'] };
-  const EM = { items: '📦', tasks: '✅', clients: '👥', fin: '💰', habits: '🎯', goals: '🏆', categories: '🗂️', tools: '🧰' };
+  const COL = { items: ['item', 'itens', 'o'], tasks: ['tarefa', 'tarefas', 'a'], clients: ['cliente', 'clientes', 'o'], fin: ['lançamento', 'lançamentos', 'o'], habits: ['hábito', 'hábitos', 'o'], goals: ['meta', 'metas', 'a'], categories: ['coleção', 'coleções', 'a'], tools: ['ferramenta', 'ferramentas', 'a'], cliCols: ['coluna do funil', 'colunas do funil', 'a'], trash: ['', '', 'o'] };
+  const EM = { cliCols: '▥', items: '📦', tasks: '✅', clients: '👥', fin: '💰', habits: '🎯', goals: '🏆', categories: '🗂️', tools: '🧰' };
   const LIX = { items: 'item', tasks: 'task', clients: 'client', fin: 'fin', habits: 'habit', goals: 'goal', tools: 'tool' }; // o que a Lixeira sabe guardar
   const FORA = ['_salvo', 'rascunho', '_new', '_novo', '_xp', 'updated', 'id'];
   const MAX = 40, CHAVE = 'myloot-historico';

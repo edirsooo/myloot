@@ -203,13 +203,14 @@
       b.onclick = () => { c.hidden = true; en.fn(); };
       c.appendChild(b);
     });
-    c.hidden = false;
+    c.hidden = false; M._ctxAt = Date.now();
     const r = c.getBoundingClientRect();
     c.style.left = Math.min(e.clientX, innerWidth - r.width - 8) + 'px';
     c.style.top = Math.min(e.clientY, innerHeight - r.height - 8) + 'px';
   };
   document.addEventListener('mousedown', (e) => { if (!e.target.closest('#ctx')) $('#ctx').hidden = true; });
-  document.addEventListener('scroll', () => { $('#ctx').hidden = true; }, true);
+  // rolagem logo depois de abrir (o navegador trazendo o botão clicado para a vista, num quadro que rola de lado) não fecha o menu
+  document.addEventListener('scroll', () => { if (Date.now() - (M._ctxAt || 0) > 400) $('#ctx').hidden = true; }, true);
 
   // ----- busca global (Ctrl+K ou /) -----
   M.openSearch = () => {

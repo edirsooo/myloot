@@ -1037,3 +1037,25 @@ body.light .qc-copy h2 b{text-shadow:0 3px 0 #cfc6ee}
 .card.cli h3{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
 .card.cli .top .badge{flex:none;white-space:nowrap}
 .card.cli .mi.atras{color:var(--red,#ff486e);font-weight:700}
+
+/* ----- Clientes: colunas do funil editáveis e lixeira no cartão (v2.19) ----- */
+.cli-abrir{display:flex;align-items:center;justify-content:center;position:relative}
+.cli-del{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:8px;border:0;background:transparent;cursor:pointer;font-size:14px;opacity:.45;transition:opacity .15s,background .15s}
+.card.cli:hover .cli-del,.cli-del:focus-visible{opacity:1}
+.cli-del:hover{background:rgba(255,70,90,.18)}
+@media (pointer:coarse){.cli-del{opacity:.8;width:40px;height:40px}}
+.col[data-col]{border-top:3px solid var(--c,var(--edge))}
+.col-h{cursor:grab;user-select:none}
+.col-h:active{cursor:grabbing}
+.col-h .col-nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.col-mn{flex:none;width:28px;height:28px;border-radius:8px;border:0;background:transparent;color:var(--dim);cursor:pointer;font-size:16px;line-height:1}
+.col-mn:hover{background:var(--accent-soft);color:var(--accent)}
+.col-add{border:1px dashed var(--edge);background:transparent;color:var(--dim);border-radius:10px;padding:8px;cursor:pointer;font-weight:700;font-size:12px}
+.col-add:hover{border-color:var(--accent);color:var(--accent)}
+.col.col-nova{background:transparent;border-style:dashed;align-items:stretch}
+.col.col-nova .btn{width:100%}
+.slot.col-mais{opacity:.75;border-style:dashed}
+.col-cores{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.col-cor{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+.col-cor.on{border-color:var(--text,#fff);box-shadow:0 0 0 2px var(--bg2)}
+#colCorL{width:40px;height:32px;padding:0;border-radius:8px;cursor:pointer}

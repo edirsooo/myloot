@@ -1,7 +1,13 @@
 {
-  "versao": "2.18.0",
+  "versao": "2.19.0",
   "data": "2026-11-18",
   "novidades": [
+    "▥ Clientes com colunas do seu jeito, como no Trello: no Funil, crie colunas (“＋ Nova coluna”), troque nome, emoji e cor, arraste o título para mudar a ordem e apague as que não usa (os clientes dela vão para a coluna que você escolher). Dá para desfazer",
+    "＋ Botão “Cliente aqui” no pé de cada coluna, que já cria o cliente naquela etapa",
+    "🗑️ Lixeira direto no cartão do cliente, e a lixeira da ficha agora sempre manda o cliente para a Lixeira (com Desfazer)"
+  ],
+  "historico": {
+    "2.18.0": [
     "🔎 Busca (Ctrl+K) por palavras, em qualquer ordem e sem ligar para pontuação: “dra marina” acha “Dra. Marina”. Agora acha também lançamentos, hábitos, metas e ferramentas, e tem os comandos Nova tarefa, Fazer backup, Usar no celular e Guardar o link copiado",
     "🗓️ Escreva a data e a hora do jeito que fala: “Ligar para o contador amanhã às 9h”, “reunião sexta 14:30”, “pagar aluguel dia 10” ou “entregar 20/11”",
     "🔗 Link guardado pelo Início ganha o título real da página, em vez de só o nome do site",
@@ -10,8 +16,7 @@
     "📎 Botão de anexar no topo da ficha, e o MyLoot avisa quando o arquivo já estava anexado",
     "💾 O Início lembra de fazer backup quando o último tem mais de 14 dias",
     "🛡️ Mais proteção para os seus dados: a sincronização entre computadores para se muita coisa sumir de uma vez, o arquivo de dados danificado volta sozinho da cópia automática (com aviso), e o MyLoot ficou mais rápido com muitos itens"
-  ],
-  "historico": {
+    ],
     "2.17.1": [
     "⬇️ Atualizar com um clique também para quem instalou pelo Git (ou pediu para a IA instalar): o aviso de versão nova agora traz o botão “Atualizar agora” em vez de pedir git pull",
     "🔔 O aviso de versão nova no menu ficou laranja e piscando, com o nome “Atualizar para a…”, para não passar despercebido"
