@@ -28,10 +28,10 @@
 
   function cardHTML(it, view) {
     const t = M.type(it.type), cat = M.cat(it.cat), p = progress(it);
-    const st = M.STATUS.find((s) => s.id === it.status) || M.STATUS[0];
+    const st = M.statusDe(it.status), st0 = M.STATUS[0];
     const preview = it.desc || (it.type === 'link' ? it.content : it.content);
     const col = cat ? `<div class="colec">${esc(cat.icon)} ${esc(cat.name)}</div>` : '';
-    const meta = `${it.rascunho ? '<span class="tag rasc" title="Tem alterações não salvas. Abra para salvar ou descartar.">📝 rascunho</span>' : ''}${view === 'list' && cat ? `<span class="tag">${esc(cat.icon)} ${esc(cat.name)}</span>` : ''}${it.status !== 'ver' ? `<span class="st ${it.status}">${st.name}</span>` : ''}${it.tags.slice(0, 2).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}${it.date ? `<span class="mi">${M.ic('data', 14)} ${M.fmtDate(it.date)}</span>` : ''}${it.attachments.length ? `<span class="mi" title="Anexos">${M.ic('clipe', 14)} ${it.attachments.length}</span>` : ''}`;
+    const meta = `${it.rascunho ? '<span class="tag rasc" title="Tem alterações não salvas. Abra para salvar ou descartar.">📝 rascunho</span>' : ''}${view === 'list' && cat ? `<span class="tag">${esc(cat.icon)} ${esc(cat.name)}</span>` : ''}${st !== st0 ? `<span class="st" style="--sc:${hex(st.color)}">${esc(st.em)} ${esc(st.name)}</span>` : ''}${it.tags.slice(0, 2).map((x) => `<span class="tag">#${esc(x)}</span>`).join('')}${it.date ? `<span class="mi">${M.ic('data', 14)} ${M.fmtDate(it.date)}</span>` : ''}${it.attachments.length ? `<span class="mi" title="Anexos">${M.ic('clipe', 14)} ${it.attachments.length}</span>` : ''}`;
     const nomeIt = esc(it.title || 'item sem título');
     // no modo de seleção o cartão mostra a caixinha; fora dele, a estrela e o botão "⋯" (as mesmas ações do clique direito, para o toque)
     const fav = M.ui.selModo ? `<span class="selbox ${sel.has(it.id) ? 'on' : ''}" aria-hidden="true">${sel.has(it.id) ? '✔' : ''}</span>`
@@ -54,20 +54,20 @@
     const cols = [['title', 'Título'], ['type', 'Tipo'], ['cat', 'Categoria'], ['status', 'Status'], ['tags', 'Etiquetas'], ['date', 'Data'], ['updated', 'Alterado']];
     const s = M.ui.sort;
     return `<table class="tbl"><thead><tr>${cols.map(([k, n]) => `<th data-sort="${k}">${n} ${s.k === k ? (s.d > 0 ? '▲' : '▼') : ''}</th>`).join('')}</tr></thead><tbody>${L.map((it) => {
-      const t = M.type(it.type), c = M.cat(it.cat), st = M.STATUS.find((x) => x.id === it.status) || M.STATUS[0];
-      return `<tr data-id="${it.id}" tabindex="0" role="button" class="${sel.has(it.id) ? 'sel' : ''}"><td>${M.ui.selModo ? `<span class="selbox ${sel.has(it.id) ? 'on' : ''}" aria-hidden="true">${sel.has(it.id) ? '✔' : ''}</span> ` : ''}${it.fav ? '⭐ ' : ''}<b>${esc(it.title || 'Sem título')}</b></td><td><span class="badge" style="--c:${t.color}">${t.em} ${t.name}</span></td><td>${c ? esc(c.icon + ' ' + c.name) : '<span class="tdate">—</span>'}</td><td><span class="st ${it.status}">${st.name}</span></td><td>${it.tags.map((x) => `<span class="tag">#${esc(x)}</span>`).join(' ')}</td><td class="tdate">${M.fmtDate(it.date)}</td><td class="tdate">${new Date(it.updated).toLocaleDateString('pt-BR')}</td></tr>`;
+      const t = M.type(it.type), c = M.cat(it.cat), st = M.statusDe(it.status);
+      return `<tr data-id="${it.id}" tabindex="0" role="button" class="${sel.has(it.id) ? 'sel' : ''}"><td>${M.ui.selModo ? `<span class="selbox ${sel.has(it.id) ? 'on' : ''}" aria-hidden="true">${sel.has(it.id) ? '✔' : ''}</span> ` : ''}${it.fav ? '⭐ ' : ''}<b>${esc(it.title || 'Sem título')}</b></td><td><span class="badge" style="--c:${t.color}">${t.em} ${t.name}</span></td><td>${c ? esc(c.icon + ' ' + c.name) : '<span class="tdate">—</span>'}</td><td><span class="st" style="--sc:${hex(st.color)}">${esc(st.em)} ${esc(st.name)}</span></td><td>${it.tags.map((x) => `<span class="tag">#${esc(x)}</span>`).join(' ')}</td><td class="tdate">${M.fmtDate(it.date)}</td><td class="tdate">${new Date(it.updated).toLocaleDateString('pt-BR')}</td></tr>`;
     }).join('')}</tbody></table>`;
   }
 
   function boardHTML(L) {
     const by = M.db.settings.boardBy;
     let cols;
-    if (by === 'status') cols = M.STATUS.map((s) => ({ id: s.id, name: s.em + ' ' + s.name }));
+    if (by === 'status') cols = M.STATUS.map((s) => ({ id: s.id, name: s.em + ' ' + s.name, opc: 1 }));
     else if (by === 'type') cols = M.TYPES.map((t) => ({ id: t.id, name: t.em + ' ' + t.name }));
     else cols = [{ id: '', name: '📦 Sem categoria' }].concat(M.db.categories.map((c) => ({ id: c.id, name: c.icon + ' ' + c.name })));
     const key = by === 'status' ? 'status' : by === 'type' ? 'type' : 'cat';
     return `<div class="board">${cols.map((c) => {
-      const its = L.filter((it) => (it[key] || '') === c.id);
+      const its = L.filter((it) => (key === 'status' ? M.statusDe(it.status).id : it[key] || '') === c.id); // status que não existe mais cai na primeira coluna
       return `<div class="col" data-col="${esc(c.id)}"><h4>${esc(c.name)}<span class="n">${its.length}</span></h4><div class="cards">${its.map((it) => cardHTML(it)).join('')}</div></div>`;
     }).join('')}</div>`;
   }
@@ -101,7 +101,7 @@
       <div class="toolbar barra" data-lab="Filtrar">
         <input class="search" id="fq" type="search" placeholder="Filtrar esta lista…" value="${esc(u.q)}">
         <select id="fcat"><option value="">Todas as categorias</option>${M.db.categories.map((c) => `<option value="${c.id}" ${u.cat === c.id ? 'selected' : ''}>${esc(c.icon)} ${esc(c.name)}</option>`).join('')}</select>
-        <select id="fst"><option value="">Qualquer status</option>${M.STATUS.map((x) => `<option value="${x.id}" ${u.status === x.id ? 'selected' : ''}>${x.name}</option>`).join('')}</select>
+        <select id="fst"><option value="">Qualquer status</option>${M.STATUS.map((x) => `<option value="${esc(x.id)}" ${u.status === x.id ? 'selected' : ''}>${esc(x.em)} ${esc(x.name)}</option>`).join('')}</select>${M.opcBtn('itemStatus')}
         <select id="ftag"><option value="">Todas as etiquetas</option>${M.allTags().map((x) => `<option ${u.tag === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>
         ${M.sw('ffav', u.fav, '⭐ Favoritos', 'Mostra só os itens marcados com estrela.')}
         ${M.db.items.some((i) => i.origem) ? M.sw('fref', u.ref, '📥 Recebidos', 'Mostra só o que chegou de outro programa pelas Conexões.') : ''}
@@ -172,7 +172,7 @@
     b.innerHTML = `<b>${n ? n + (n === 1 ? ' selecionado' : ' selecionados') : 'Clique nos itens para marcar'}</b>
       <button class="btn ghost sm" data-s="todos">${n === L.length && n ? 'Desmarcar todos' : 'Marcar todos (' + L.length + ')'}</button>
       <select data-sv="cat" ${n ? '' : 'disabled'} aria-label="Mover os selecionados para uma categoria"><option value="-">📂 Mover para…</option><option value="">📦 Sem categoria</option>${M.db.categories.map((c) => `<option value="${c.id}">${esc(c.icon)} ${esc(c.name)}</option>`).join('')}</select>
-      <select data-sv="status" ${n ? '' : 'disabled'} aria-label="Mudar o status dos selecionados"><option value="-">🏷️ Status…</option>${M.STATUS.map((x) => `<option value="${x.id}">${x.em} ${x.name}</option>`).join('')}</select>
+      <select data-sv="status" ${n ? '' : 'disabled'} aria-label="Mudar o status dos selecionados"><option value="-">🏷️ Status…</option>${M.STATUS.map((x) => `<option value="${esc(x.id)}">${esc(x.em)} ${esc(x.name)}</option>`).join('')}</select>
       <button class="btn ghost sm" data-s="tag" ${n ? '' : 'disabled'}>＃ Etiquetar</button>
       <button class="btn ghost sm" data-s="arq" ${n ? '' : 'disabled'}>${M.ui.arq ? '📤 Desarquivar' : '📦 Arquivar'}</button>
       <button class="btn danger sm" data-s="lixo" ${n ? '' : 'disabled'}>🗑️ Lixeira</button>

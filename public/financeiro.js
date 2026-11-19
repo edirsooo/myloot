@@ -3,11 +3,8 @@
 (function () {
   const { esc, $, $$ } = M;
   M.pages = M.pages || {};
-  M.FIN_CAT = {
-    entrada: ['Serviço / cliente', 'Venda de produto', 'Comissão / parceria', 'Rendimento', 'Outros'],
-    saida: ['Ferramentas e assinaturas', 'Impostos e taxas', 'Anúncios e marketing', 'Equipamentos', 'Pró-labore / salário', 'Equipe e freelas', 'Casa e contas', 'Alimentação', 'Transporte', 'Outros'],
-  };
-  M.FORMAS = ['PIX', 'Cartão', 'Boleto', 'Transferência', 'Dinheiro'];
+  // categorias (M.FIN_CAT) e formas de pagamento (M.FORMAS) agora são da pessoa: db.finCats e db.finFormas (opcoes.js).
+  // O lançamento continua guardando o NOME (f.cat, f.forma); renomear muda os lançamentos junto.
   const fin = () => M.db.fin || (M.db.fin = []);
   M.reais = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   M.lerValor = (s) => { s = String(s || '').replace(/[^\d,.-]/g, ''); if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, ''); /* "10.000" é dez mil, não dez */ const n = parseFloat(s); return isFinite(n) ? Math.round(n * 100) / 100 : 0; };
@@ -78,7 +75,7 @@
       <div class="cal-h fin-h"><button class="icon-btn" id="fp">‹</button><h3>${nomeMes(mes)}</h3><button class="icon-btn" id="fn">›</button><button class="btn ghost sm" id="fh">Hoje</button>
         <button class="btn sm fin-e" id="fAddE">＋ Entrada</button><button class="btn sm fin-s" id="fAddS">− Saída</button>
         <span class="grow" style="flex:1"></span>
-        <button class="btn ghost sm" id="fCalc">🧮 Calcular preço</button><a class="btn ghost sm" id="fCsv" href="#">⬇️ Planilha (CSV)</a></div>
+        ${M.opcBtn('finCats', 'Categorias')}${M.opcBtn('finFormas', 'Formas')}<button class="btn ghost sm" id="fCalc">🧮 Calcular preço</button><a class="btn ghost sm" id="fCsv" href="#">⬇️ Planilha (CSV)</a></div>
       ${atras.length ? `<div class="fin-alerta">⚠️ ${atras.length} conta${atras.length > 1 ? 's' : ''} de meses anteriores ainda em aberto (${M.reais(atras.reduce((s, f) => s + (f.tipo === 'entrada' ? f.valor : -f.valor), 0))}). <a data-atras="1">ver</a></div>` : ''}
       <div class="fin-resumo">
         <div class="stat fr-saldo"><span class="fr-t">💰 Saldo do mês ${M.hint('Recebido menos pago, só o que já aconteceu.')}</span><b class="${R.saldo >= 0 ? 'pos' : 'neg'}">${M.reais(R.saldo)}</b><small>recebido menos pago</small></div>

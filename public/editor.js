@@ -97,7 +97,7 @@
           </div>
           <div class="row">
             <div class="fld"><label for="eCat">Categoria</label><select id="eCat"><option value="">— nenhuma —</option>${M.db.categories.map((c) => `<option value="${c.id}" ${c.id === it.cat ? 'selected' : ''}>${esc(c.icon)} ${esc(c.name)}</option>`).join('')}</select></div>
-            <div class="fld"><label for="eSt">Status</label><select id="eSt">${M.STATUS.map((s) => `<option value="${s.id}" ${s.id === it.status ? 'selected' : ''}>${s.em} ${s.name}</option>`).join('')}</select></div>
+            <div class="fld"><label for="eSt">Status</label><select id="eSt">${M.STATUS.map((s) => `<option value="${esc(s.id)}" ${s.id === M.statusDe(it.status).id ? 'selected' : ''}>${esc(s.em)} ${esc(s.name)}</option>`).join('')}</select></div>
             <div class="fld"><label for="eDate">Data</label><input type="date" id="eDate" value="${it.date}"></div>
             ${(M.db.clients || []).length ? `<div class="fld"><label for="eCli">Cliente</label><select id="eCli"><option value="">— nenhum —</option>${M.db.clients.map((c) => `<option value="${c.id}" ${c.id === it.client ? 'selected' : ''}>👤 ${esc(c.nome || 'Sem nome')}</option>`).join('')}</select></div>` : ''}
           </div>

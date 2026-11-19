@@ -54,7 +54,10 @@
   GRUPOS.push({ id: 'outras', em: '📌', nome: 'Outras', cor: '#ff9d4a', minha: true }); // só aparece em "Minhas ferramentas"
   const st = { q: '', g: '', aba: '', arq: false }; // aba: 'minhas' ou 'rec' (vazio = decide ao abrir a tela); arq: seção "Arquivadas" aberta
   const host = (u) => String(u || '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
-  const grupo = (id) => GRUPOS.find((x) => x.id === id) || GRUPOS[GRUPOS.length - 1];
+  // grupos oficiais (das recomendadas) + os grupos que a pessoa criou para as dela (db.toolGroups, opcoes.js)
+  const todos = () => GRUPOS.concat(M.opc('toolGroups').map((g) => ({ id: g.id, em: esc(g.em), nome: esc(g.name), cor: esc(g.color), minha: true, meu: true }))); // já escapados: a tela põe nome e emoji do grupo direto no HTML
+  M.toolGruposTodos = todos;
+  const grupo = (id) => todos().find((x) => x.id === id) || GRUPOS.find((x) => x.id === 'outras');
   const tem = (f) => (M.db.tools || []).some((t) => t.u === f.u && t.n === f.n);
   const copia = (f) => ({ id: M.uid(), n: f.n, u: f.u, p: f.p || '', s: f.s || '', gr: f.gr || '', onde: f.onde || '', g: f.g, de: 'rec', created: Date.now() });
   // Minhas ferramentas (M.db.tools): as que a pessoa incluiu (de: 'eu') e as recomendadas que ela salvou (de: 'rec').
@@ -110,7 +113,7 @@
         <div class="fld"><label for="tfN">Nome</label><input type="text" id="tfN" value="${esc(t.n)}" placeholder="Ex.: Canva" maxlength="80"></div>
         <div class="fld"><label for="tfU">Link ${M.hint('O endereço do site ou do programa. Pode colar só “canva.com”.')}</label><input type="text" id="tfU" value="${esc(t.u)}" placeholder="https://…" inputmode="url" autocapitalize="off" spellcheck="false"></div>
         <div class="fld"><label for="tfP">Para que serve <small style="color:var(--faint)">(opcional)</small></label><textarea id="tfP" rows="2" maxlength="240" placeholder="Uma linha para você lembrar depois">${esc(desc)}</textarea></div>
-        <div class="row"><div class="fld"><label for="tfG">Grupo</label><select id="tfG">${GRUPOS.map((g) => `<option value="${g.id}" ${grupo(t.g).id === g.id ? 'selected' : ''}>${g.em} ${g.nome}</option>`).join('')}</select></div>
+        <div class="row"><div class="fld"><label for="tfG">Grupo</label><select id="tfG">${todos().map((g) => `<option value="${g.id}" ${grupo(t.g).id === g.id ? 'selected' : ''}>${g.em} ${g.nome}</option>`).join('')}</select></div>
           <div class="fld"><label for="tfGr">É grátis? <small style="color:var(--faint)">(opcional)</small></label><input type="text" id="tfGr" value="${esc(t.gr || '')}" placeholder="Ex.: Sim, com limite" maxlength="40"></div></div>
         <div class="row" style="justify-content:flex-end"><button class="btn ghost" id="tfNo" style="flex:none">Cancelar</button><button class="btn" id="tfOk" style="flex:none">${novo ? '＋ Adicionar ferramenta' : '✔ Salvar'}</button></div>
       </div>`, { small: true });
@@ -184,11 +187,11 @@
     if (M.parceiroHTML() === '' && !M._parceiroVisto) { M._parceiroVisto = true; M.parceiroCarregar().then((p) => { if (p && M.ui.page === 'tools') M.render(); }); }
     if (!st.aba) st.aba = T.length ? 'minhas' : 'rec';
     const meu = st.aba === 'minhas', base = fonte();
-    const gs = GRUPOS.filter((g) => (meu ? base.some((f) => grupo(f.g).id === g.id) : !g.minha));
+    const gs = todos().filter((g) => (meu ? base.some((f) => grupo(f.g).id === g.id) : !g.minha));
     if (st.g && !gs.some((g) => g.id === st.g)) st.g = '';
     v.innerHTML = `${M.parceiroHTML()}
       <div class="tool-abas"><div class="seg" role="tablist" aria-label="Quais ferramentas mostrar"><button type="button" role="tab" aria-selected="${meu}" class="${meu ? 'on' : ''}" data-aba="minhas">⭐ Minhas ferramentas <span class="n">${T.filter((t) => !t.arq).length}</span></button><button type="button" role="tab" aria-selected="${!meu}" class="${meu ? '' : 'on'}" data-aba="rec">💡 Recomendadas <span class="n">${F.length}</span></button></div>
-        <span class="grow"></span><button class="btn sm" id="fNova" title="Incluir um site ou programa seu">＋ Adicionar ferramenta</button></div>
+        <span class="grow"></span>${meu ? M.opcBtn('toolGroups', 'Meus grupos') : ''}<button class="btn sm" id="fNova" title="Incluir um site ou programa seu">＋ Adicionar ferramenta</button></div>
       ${base.length ? `<div class="hotbar" id="fG" data-lab="Grupo"><div class="slot ${!st.g ? 'on' : ''}" data-g="">🧰 Tudo <span class="n">${base.length}</span></div>${gs.map((g) => `<div class="slot ${st.g === g.id ? 'on' : ''}" data-g="${g.id}" style="--c:${g.cor}">${g.em} ${g.nome} <span class="n">${base.filter((f) => grupo(f.g).id === g.id).length}</span></div>`).join('')}</div>
       <div class="toolbar"><input class="search" id="fQ" type="search" aria-label="Buscar ferramenta" placeholder="Buscar ferramenta… (ex.: vídeo, Photoshop)" value="${esc(st.q)}" style="max-width:340px">
         ${M.hint(meu ? 'As suas ferramentas: as que você adicionou e as recomendadas que salvou. Dá para editar e remover (o que sai vai para a Lixeira). O botão ⋯ de cada cartão tem mais ações: duplicar, arquivar e guardar o link na Biblioteca.' : 'Sugestões tiradas dos guias em PDF que vêm no MyLoot. “Salvar” copia a ferramenta para Minhas ferramentas, onde você pode editar. O botão ⋯ do cartão também guarda o link na sua Biblioteca. Preços e planos mudam sempre: confira no site oficial.')}

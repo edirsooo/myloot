@@ -289,7 +289,7 @@
           const t = M.db.tasks.find((x) => x.id === row.dataset.id); if (!t) return;
           if (e.target.type === 'checkbox') { M.toggleTask(t, e); M.openClient(c.id); }
           else if (e.target.dataset.a === 'rm') { M.trashTask(t); M.openClient(c.id); }
-          else if (e.target.dataset.a === 'prio') { t.prio = M.PRIOS[(M.PRIOS.indexOf(t.prio) + 1) % 3]; M.save(); draw(); }
+          else if (e.target.dataset.a === 'prio') { t.prio = M.proxPrio(t.prio); M.save(); draw(); }
           else M.editTask(t, () => M.openClient(c.id));
         };
       });

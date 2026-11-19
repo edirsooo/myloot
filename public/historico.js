@@ -6,8 +6,10 @@
 (function () {
   const { esc, $ } = M;
   // lista do banco: [singular, plural, gênero]
-  const COL = { items: ['item', 'itens', 'o'], tasks: ['tarefa', 'tarefas', 'a'], clients: ['cliente', 'clientes', 'o'], fin: ['lançamento', 'lançamentos', 'o'], habits: ['hábito', 'hábitos', 'o'], goals: ['meta', 'metas', 'a'], categories: ['coleção', 'coleções', 'a'], tools: ['ferramenta', 'ferramentas', 'a'], cliCols: ['coluna do funil', 'colunas do funil', 'a'], trash: ['', '', 'o'] };
-  const EM = { cliCols: '▥', items: '📦', tasks: '✅', clients: '👥', fin: '💰', habits: '🎯', goals: '🏆', categories: '🗂️', tools: '🧰' };
+  const COL = { items: ['item', 'itens', 'o'], tasks: ['tarefa', 'tarefas', 'a'], clients: ['cliente', 'clientes', 'o'], fin: ['lançamento', 'lançamentos', 'o'], habits: ['hábito', 'hábitos', 'o'], goals: ['meta', 'metas', 'a'], categories: ['coleção', 'coleções', 'a'], tools: ['ferramenta', 'ferramentas', 'a'], cliCols: ['coluna do funil', 'colunas do funil', 'a'],
+    itemStatus: ['status de item', 'status de item', 'o'], taskPrios: ['prioridade', 'prioridades', 'a'], finCats: ['categoria do financeiro', 'categorias do financeiro', 'a'],
+    finFormas: ['forma de pagamento', 'formas de pagamento', 'a'], toolGroups: ['grupo de ferramentas', 'grupos de ferramentas', 'o'], homeWidgets: ['widget do Início', 'widgets do Início', 'o'], trash: ['', '', 'o'] };
+  const EM = { cliCols: '▥', itemStatus: '🏷️', taskPrios: '🚦', finCats: '🧾', finFormas: '💳', toolGroups: '🧰', homeWidgets: '🧩', items: '📦', tasks: '✅', clients: '👥', fin: '💰', habits: '🎯', goals: '🏆', categories: '🗂️', tools: '🧰' };
   const LIX = { items: 'item', tasks: 'task', clients: 'client', fin: 'fin', habits: 'habit', goals: 'goal', tools: 'tool' }; // o que a Lixeira sabe guardar
   const FORA = ['_salvo', 'rascunho', '_new', '_novo', '_xp', 'updated', 'id'];
   const MAX = 40, CHAVE = 'myloot-historico';

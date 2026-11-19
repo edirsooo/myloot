@@ -44,6 +44,7 @@ function defaults() {
     settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, musica: false, musicaVol: 0.2, musicaLoop: false, confetti: true, gamify: true, dailyGoal: 50,
       view: 'grid', boardBy: 'status', janela: 'app', aiModel: 'claude-opus-5-5', drive: { on: false, path: '' } },
     categories: [], items: [], tasks: [], trash: [], clients: [], fin: [], habits: [], goals: [], tools: [], cliCols: [],
+    itemStatus: [], taskPrios: [], finCats: [], finFormas: [], toolGroups: [], homeWidgets: HOME_W.map((o) => Object.assign({}, o, { cfg: {} })),
     game: { xp: 0, log: {}, streak: { last: '', count: 0 }, achievements: {}, counters: {}, goalDays: 0 },
   };
 }
@@ -76,9 +77,65 @@ const CLI_COLS = [
   { id: 'pausado', name: 'Pausado', em: '⏸️', color: '#3ad7ff', ord: 2 }, { id: 'encerrado', name: 'Encerrado', em: '📁', color: '#9aa3c9', ord: 3 },
 ];
 const umDe = (v, L, pad) => (L.includes(v) ? v : pad);
-const TIPOS = ['estudo', 'prompt', 'instrucao', 'comando', 'link', 'nota'], ST_ITEM = ['ver', 'and', 'ok'], PRIOS = ['baixa', 'media', 'alta'];
+const TIPOS = ['estudo', 'prompt', 'instrucao', 'comando', 'link', 'nota'];
+// listas de opções que a pessoa edita (v2.20.0). Os padrão têm id FIXO: dois PCs que criam o padrão sozinhos
+// chegam aos mesmos ids, e a sincronia junta em vez de duplicar.
+const ITEM_ST = [
+  { id: 'ver', name: 'Para ver', em: '👀', color: '#ffbe46', ord: 0 }, { id: 'and', name: 'Em andamento', em: '⛏️', color: '#3ad7ff', ord: 1 },
+  { id: 'ok', name: 'Concluído', em: '✅', color: '#3cffaa', ord: 2 },
+];
+const TASK_PR = [
+  { id: 'alta', name: 'Alta', em: '🔴', color: '#ff486e', ord: 0 }, { id: 'media', name: 'Média', em: '🟡', color: '#ffbe46', ord: 1 },
+  { id: 'baixa', name: 'Baixa', em: '🔵', color: '#3ad7ff', ord: 2 },
+];
+const FIN_CATS = [
+  ['fe-servico', 'entrada', 'Serviço / cliente', '🤝'], ['fe-venda', 'entrada', 'Venda de produto', '🛍️'], ['fe-comissao', 'entrada', 'Comissão / parceria', '🤜'],
+  ['fe-rend', 'entrada', 'Rendimento', '📈'], ['fe-outros', 'entrada', 'Outros', '➕'],
+  ['fs-ferr', 'saida', 'Ferramentas e assinaturas', '🧰'], ['fs-imp', 'saida', 'Impostos e taxas', '🏛️'], ['fs-ads', 'saida', 'Anúncios e marketing', '📣'],
+  ['fs-equip', 'saida', 'Equipamentos', '💻'], ['fs-pro', 'saida', 'Pró-labore / salário', '👤'], ['fs-equipe', 'saida', 'Equipe e freelas', '👥'],
+  ['fs-casa', 'saida', 'Casa e contas', '🏠'], ['fs-alim', 'saida', 'Alimentação', '🍽️'], ['fs-transp', 'saida', 'Transporte', '🚗'], ['fs-outros', 'saida', 'Outros', '➖'],
+].map(([id, tipo, name, em], i) => ({ id, tipo, name, em, color: tipo === 'entrada' ? '#3cffaa' : '#ff7e00', ord: i }));
+const FIN_FORMAS = [['fp-pix', 'PIX', '⚡'], ['fp-cartao', 'Cartão', '💳'], ['fp-boleto', 'Boleto', '🧾'], ['fp-transf', 'Transferência', '🏦'], ['fp-dinheiro', 'Dinheiro', '💵']]
+  .map(([id, name, em], i) => ({ id, name, em, color: '#9aa3c9', ord: i }));
+// Início montado com widgets: o padrão repete o Início de antes da v2.20.0
+const HOME_W = [
+  ['w-saudacao', 'saudacao', 'g', ''], ['w-mapa', 'mapa', 'p', 'duplo'], ['w-captura', 'captura', 'g', ''], ['w-hoje', 'hoje', 'm', ''],
+  ['w-missoes', 'missoes', 'm', ''], ['w-andamento', 'andamento', 'p', ''], ['w-favoritos', 'favoritos', 'p', ''], ['w-recentes', 'recentes', 'p', ''],
+].map(([id, tipo, tam, alto], i) => ({ id, tipo, tam, alto, ord: i, oculto: false, updated: 0 }));
+const W_TAM = ['p', 'm', 'g', 'cheio'];
+const texto = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').slice(0, n);
+// lista de opções: nome, emoji e cor limpos; vazia volta ao padrão (precisa de pelo menos uma), menos onde `vazio` permite
+function limparOpc(out, k, padrao, extra) {
+  if (!out[k].length && padrao.length) out[k] = padrao.map((o) => Object.assign({}, o));
+  out[k] = out[k].slice(0, 80).map((o, i) => Object.assign({
+    id: o.id || uid(), name: String(o.name || 'Sem nome').replace(/[<>]/g, '').slice(0, 40), em: String(o.em || '').replace(/[<>"'&]/g, '').slice(0, 8),
+    color: COR.test(String(o.color || '')) ? o.color : '#9aa3c9', ord: Number.isFinite(+o.ord) ? +o.ord : i, updated: o.updated || 0,
+  }, extra ? extra(o) : {}));
+}
+function limparWidgets(out, raw) {
+  if (!Array.isArray(raw.homeWidgets)) out.homeWidgets = HOME_W.map((o) => Object.assign({}, o, { cfg: {} })); // lista vazia é escolha da pessoa: fica vazia
+  out.homeWidgets = out.homeWidgets.slice(0, 60).map((w, i) => {
+    const cfg = {};
+    if (w.cfg && typeof w.cfg === 'object' && !Array.isArray(w.cfg)) {
+      for (const [c, v] of Object.entries(w.cfg).slice(0, 30)) {
+        if (!/^\w{1,30}$/.test(c)) continue;
+        if (typeof v === 'string') cfg[c] = v.slice(0, 4000);
+        else if (typeof v === 'number' && Number.isFinite(v)) cfg[c] = v;
+        else if (typeof v === 'boolean') cfg[c] = v;
+        else if (Array.isArray(v)) cfg[c] = v.slice(0, 40).filter((x) => typeof x === 'string').map((x) => x.slice(0, 300));
+      }
+    }
+    return { id: sid(w.id || uid()), tipo: /^[a-z]{2,20}$/.test(w.tipo || '') ? w.tipo : 'nota', ord: Number.isFinite(+w.ord) ? +w.ord : i,
+      tam: umDe(w.tam, W_TAM, 'm'), alto: w.alto === 'duplo' ? 'duplo' : '', oculto: !!w.oculto, soPc: !!w.soPc, soCel: !!w.soCel,
+      titulo: texto(w.titulo, 60), cfg, updated: w.updated || 0 };
+  });
+}
+const OPCS = ['itemStatus', 'taskPrios', 'finCats', 'finFormas', 'toolGroups'];
 function limparIds(out) {
-  for (const k of ['categories', 'items', 'tasks', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols']) for (const o of out[k]) { if (o.id != null) o.id = sid(o.id); }
+  for (const k of ['categories', 'items', 'tasks', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols', ...OPCS]) for (const o of out[k]) { if (o.id != null) o.id = sid(o.id); }
+  for (const t of out.tasks) t.prio = sid(t.prio) || 'media';
+  for (const it of out.items) it.status = sid(it.status) || 'ver';
+  for (const f of out.tools) { if (f.g != null) f.g = sid(f.g); }
   for (const c of out.categories) { if (c.color != null && !COR.test(String(c.color))) c.color = '#8b5cf6'; }
   for (const t of out.trash) { if (t.data && typeof t.data === 'object' && t.data.id != null) t.data.id = sid(t.data.id); if (t.kind != null) t.kind = sid(t.kind); }
   for (const c of out.clients) c.status = sid(c.status) || 'ativo';
@@ -95,7 +152,13 @@ function migrate(raw) {
   out.settings.drive = Object.assign({}, d.settings.drive, (raw.settings || {}).drive || {});
   out.game = Object.assign({}, d.game, raw.game || {});
   out.game.streak = Object.assign({}, d.game.streak, out.game.streak || {});
-  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols']) out[k] = Array.isArray(out[k]) ? out[k].filter((o) => o && typeof o === 'object' && !Array.isArray(o)) : [];
+  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols', 'homeWidgets', ...OPCS]) out[k] = Array.isArray(out[k]) ? out[k].filter((o) => o && typeof o === 'object' && !Array.isArray(o)) : [];
+  limparOpc(out, 'itemStatus', ITEM_ST);
+  limparOpc(out, 'taskPrios', TASK_PR);
+  limparOpc(out, 'finCats', FIN_CATS, (o) => ({ tipo: o.tipo === 'saida' ? 'saida' : 'entrada' }));
+  limparOpc(out, 'finFormas', FIN_FORMAS);
+  limparOpc(out, 'toolGroups', []); // grupos próprios de "Minhas ferramentas" (os oficiais ficam no código)
+  limparWidgets(out, raw);
   out.fin.forEach((f) => {
     f.id = f.id || uid(); f.tipo = f.tipo === 'saida' ? 'saida' : 'entrada'; f.valor = Math.round((Number(f.valor) || 0) * 100) / 100;
     f.data = /^\d{4}-\d\d-\d\d$/.test(f.data || '') ? f.data : today(); f.pago = !!f.pago;
@@ -123,7 +186,7 @@ function migrate(raw) {
     it.links = Array.isArray(it.links) ? it.links : [];
     it.attachments = Array.isArray(it.attachments) ? it.attachments : [];
     it.tags = Array.isArray(it.tags) ? it.tags : [];
-    it.status = umDe(it.status || 'ver', ST_ITEM, 'ver');
+    it.status = String(it.status || 'ver').slice(0, 100); // id de db.itemStatus (passa por sid() em limparIds)
     it.type = umDe(it.type, TIPOS, 'nota');
     it.cat = it.cat || '';
     it.date = it.date || '';
@@ -132,7 +195,7 @@ function migrate(raw) {
     it.created = it.created || Date.now();
     it.updated = it.updated || it.created;
   });
-  out.tasks.forEach((t) => { t.id = t.id || uid(); t.text = t.text || ''; t.date = t.date || ''; t.prio = t.prio || 'media'; t.done = !!t.done; t.created = t.created || Date.now(); t.client = t.client || ''; t.rep = t.rep || ''; t.hora = t.hora || ''; t.prio = umDe(t.prio, PRIOS, 'media'); });
+  out.tasks.forEach((t) => { t.id = t.id || uid(); t.text = t.text || ''; t.date = t.date || ''; t.prio = t.prio || 'media'; t.done = !!t.done; t.created = t.created || Date.now(); t.client = t.client || ''; t.rep = t.rep || ''; t.hora = t.hora || ''; t.prio = String(t.prio).slice(0, 100); });
   limparIds(out);
   out.version = DB_VERSION;
   return out;
@@ -300,7 +363,8 @@ function itemToMd(it, db) {
   L.push(`titulo: ${JSON.stringify(it.title)}`);
   L.push(`tipo: ${it.type}`);
   if (cat) L.push(`categoria: ${JSON.stringify(cat.name)}`);
-  L.push(`status: ${STATUS[it.status] || it.status}`);
+  const st = ((db && db.itemStatus) || []).find((s) => s.id === it.status);
+  L.push(`status: ${st ? st.name : STATUS[it.status] || it.status}`);
   if (it.tags.length) L.push(`etiquetas: [${it.tags.map((t) => JSON.stringify(t)).join(', ')}]`);
   if (it.date) L.push(`data: ${it.date}`);
   if (it.fav) L.push('favorito: true');

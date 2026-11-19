@@ -4,7 +4,6 @@
   M.pages = M.pages || {};
 
   const PRIO_DICA = 'Alta: urgente, aparece primeiro e em vermelho. Média: o normal. Baixa: pode esperar. Dá para mudar depois clicando na etiqueta da tarefa.';
-  const PRIO_NOME = { alta: '🔴 Alta', media: '🟡 Média', baixa: '🔵 Baixa' };
   const TIPO_DICA = 'Tarefa: algo para fazer e marcar como feito. Compromisso: tem dia e hora para acontecer (reunião, consulta, aula). Quando o horário passa, ele sai das pendentes sem virar atrasado e continua no calendário.';
   const FIM_DICA = 'Opcional. Tem que ser depois do início. Sem fim, o MyLoot considera 1 hora de duração.';
   const TIPOS = [['t', '✅ Tarefa'], ['e', '📅 Compromisso']];
@@ -168,7 +167,7 @@
     const hora = !t.hora ? '' : t.ev ? `<span class="tdate tfaixa" title="Horário do compromisso${foi ? ' (já passou)' : ''}">🕘 ${esc(M.faixaHora(t))}</span>` : `<span class="tdate" title="Lembrete">⏰ ${esc(t.hora)}</span>`;
     const rep = t.rep && !t.ev ? `<span class="tdate trep" title="Repete: ${esc(M.repNome(t))}.${prox ? ' Quando você concluir, a próxima nasce em ' + M.fmtDate(prox) + '.' : ''}">🔁 ${esc(t.rep === 'dias' ? diasTx(t, ' ') : t.rep === 'mes' && diaMes(t) ? 'todo dia ' + diaMes(t) : REP_CURTO[t.rep] || '')}${prox ? ' · próxima ' + dm(prox) : ''}</span>` : '';
     const data = t.date ? `<span class="tdate" data-a="date" style="${late ? 'color:var(--red)' : ''};cursor:pointer" title="Mudar data">📅 ${M.fmtDate(t.date)}</span>` : `<span class="tdate" data-a="date" style="cursor:pointer;opacity:.6" title="Definir data">📅 —</span>`;
-    const prio = t.ev ? '' : `<span class="prio ${t.prio}" data-a="prio" title="Prioridade ${t.prio === 'media' ? 'média' : t.prio}. Clique para mudar (baixa, média, alta).">${t.prio === 'media' ? 'média' : t.prio}</span>`;
+    const prio = t.ev ? '' : M.prioHTML(t);
     const pular = prox ? `<button type="button" class="tpula" data-a="pular" title="A tarefa vai para ${M.fmtDate(proxPulo(t))}, sem contar como concluída e sem dar XP" aria-label="Pular esta vez">⏭ Pular esta vez</button>` : '';
     const feita = t.done ? 'Reabrir a tarefa' : 'Marcar como feita';
     const marca = t.ev ? `<span class="tev" data-a="date" title="Compromisso${foi ? ' (já passou)' : ''}. Clique para editar." aria-label="Compromisso">📅</span>` : `<input type="checkbox" ${t.done ? 'checked' : ''} title="${feita}" aria-label="${feita}">`;
@@ -182,8 +181,7 @@
   M.pages.tasks = () => {
     const v = $('#view'), today = M.today(), u = M.ui;
     const open = M.db.tasks.filter(M.tarefaPendente);
-    const order = { alta: 0, media: 1, baixa: 2 };
-    const srt = (a, b) => (a.date || '9').localeCompare(b.date || '9') || order[a.prio] - order[b.prio] || (a.hora || '99').localeCompare(b.hora || '99');
+    const srt = (a, b) => (a.date || '9').localeCompare(b.date || '9') || M.prioOrdem(a.prio) - M.prioOrdem(b.prio) || (a.hora || '99').localeCompare(b.hora || '99');
     const G = [
       ['late', '🔥 Atrasadas', open.filter((t) => t.date && t.date < today).sort(srt)],
       ['today', '🌞 Hoje', open.filter((t) => t.date === today).sort(srt)],
@@ -204,7 +202,7 @@
           <div class="tn-op" id="tOpHr"><span class="lbl">⏰ Hora ${M.hint('Opcional. No horário marcado o computador mostra um aviso, mesmo com a aba fechada. Sem data, vale para hoje.')}</span><input type="time" id="tHr" title="Escolher o horário do lembrete"></div>
           <div class="tn-op" id="tOpIni" hidden><span class="lbl">🕘 Início ${M.hint('A que horas o compromisso começa. Nesse horário o computador mostra um aviso, mesmo com a aba fechada.')}</span><input type="time" id="tIni" title="Hora em que começa"></div>
           <div class="tn-op" id="tOpFim" hidden><span class="lbl">🏁 Fim ${M.hint(FIM_DICA)}</span><input type="time" id="tFim" title="Hora em que termina (opcional)"></div>
-          <div class="tn-op" id="tOpPr"><span class="lbl">🚦 Prioridade ${M.hint(PRIO_DICA)}</span><select id="tPr"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Média</option><option value="baixa">🔵 Baixa</option></select></div>
+          <div class="tn-op" id="tOpPr"><span class="lbl">🚦 Prioridade ${M.hint(PRIO_DICA)}</span><select id="tPr">${M.opc('taskPrios').map((p) => `<option value="${esc(p.id)}" ${p.id === M.prio('media').id ? 'selected' : ''}>${esc(p.em)} ${esc(p.name)}</option>`).join('')}</select>${M.opcBtn('taskPrios')}</div>
           <div class="tn-op" id="tOpRp"><span class="lbl">🔁 Repetir ${M.hint('Para o que volta sempre (ex.: postar todo dia, pagar o aluguel todo mês). Quando você conclui, a próxima já nasce na data certa. Se não der para fazer num dia, use “Pular esta vez” na linha da tarefa. Todo mês: volta sempre no mesmo dia; em mês mais curto, cai no último dia.')}</span><select id="tRp">${M.REP.map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></div>
         </div>
         ${diasHTML('tRpD', [], true)}
@@ -266,7 +264,7 @@
       const a = e.target.dataset.a;
       if (e.target.type === 'checkbox') M.toggleTask(t, e);
       else if (a === 'rm') M.trashTask(t);
-      else if (a === 'prio') { t.prio = M.PRIOS[(M.PRIOS.indexOf(t.prio) + 1) % 3]; M.save(); SFX.play('click'); M.render(); }
+      else if (a === 'prio') { t.prio = M.proxPrio(t.prio); M.save(); SFX.play('click'); M.render(); }
       else if (a === 'date') editTask(t);
       else if (e.target.classList.contains('tx')) editTask(t);
     };
@@ -292,7 +290,7 @@
       ${t.done ? '' : `<div class="tn-t">${tipoHTML('eTipo')}${M.hint(TIPO_DICA)}</div>`}
       <div class="com-mic"><input type="text" id="et" value="${esc(t.text)}">${M.micBtn('#et')}</div>
       <div class="row"><div class="fld"><label>Data</label><input type="date" id="ed" value="${t.date}"></div><div class="fld"><label id="ehT">Lembrete ${M.hint('No horário, aparece um aviso no computador (mesmo com a aba fechada). Precisa ter data.')}</label><label id="ehE" hidden>Início ${M.hint('A que horas começa. Nesse horário aparece um aviso no computador, mesmo com a aba fechada.')}</label><input type="time" id="eh" value="${esc(t.hora || '')}"></div><div class="fld" id="eFF" hidden><label>Fim ${M.hint(FIM_DICA)}</label><input type="time" id="ef" value="${esc(t.timeEnd || '')}"></div></div>
-      <div class="row" id="eRowR"><div class="fld"><label>Repetir ${M.hint('Quando você conclui, a próxima já nasce na data certa.')}</label><select id="er">${M.REP.map(([k, n]) => `<option value="${k}" ${k === (t.rep || '') ? 'selected' : ''}>${n}</option>`).join('')}</select></div><div class="fld"><label>Prioridade ${M.hint(PRIO_DICA)}</label><select id="ep">${M.PRIOS.map((p) => `<option value="${p}" ${p === t.prio ? 'selected' : ''}>${PRIO_NOME[p]}</option>`).join('')}</select></div></div>
+      <div class="row" id="eRowR"><div class="fld"><label>Repetir ${M.hint('Quando você conclui, a próxima já nasce na data certa.')}</label><select id="er">${M.REP.map(([k, n]) => `<option value="${k}" ${k === (t.rep || '') ? 'selected' : ''}>${n}</option>`).join('')}</select></div><div class="fld"><label>Prioridade ${M.hint(PRIO_DICA)}</label><select id="ep">${M.opc('taskPrios').map((p) => `<option value="${esc(p.id)}" ${p.id === M.prio(t.prio).id ? 'selected' : ''}>${esc(p.em)} ${esc(p.name)}</option>`).join('')}</select></div></div>
       ${diasHTML('erD', t.repDias || [], t.rep !== 'dias')}
       <div class="rep-nota" id="eNota" hidden></div>
       ${t.rep && !t.done && !t.ev ? `<div class="rep-acoes" id="eRepB"><button type="button" class="btn ghost sm" id="epu" title="A tarefa vai para a próxima data, sem contar como concluída e sem dar XP">⏭ Pular esta vez</button><button type="button" class="btn ghost sm" id="eer" title="Salva e encerra a repetição: a tarefa continua na lista, mas não volta mais depois de concluída">⏹ Encerrar repetição</button></div>` : ''}
@@ -361,7 +359,7 @@
   const chipHTML = (t) => {
     const foi = M.evPassou(t);
     const dica = (t.ev ? '📅 ' + M.faixaHora(t) + (foi ? ' (já passou)' : '') + ' · ' : t.hora ? '⏰ ' + t.hora + ' · ' : '') + t.text;
-    return `<div class="chip ${t.ev ? 'ev' : t.prio} ${t.done ? 'done' : ''} ${foi ? 'passou' : ''}" draggable="true" data-t="${t.id}" title="${esc(dica)}">${t.ev ? `<span class="ch-e">📅 </span><span class="ch-h">${esc(t.hora || '')}${t.hora && t.timeEnd ? `<span class="ch-fim">–${esc(t.timeEnd)}</span>` : ''}</span> ` : ''}${esc(t.text)}</div>`;
+    return `<div class="chip ${t.ev ? 'ev' : 'pr'} ${t.done ? 'done' : ''} ${foi ? 'passou' : ''}" ${t.ev ? '' : `style="--pc:${esc(M.prio(t.prio).color)}"`} draggable="true" data-t="${t.id}" title="${esc(dica)}">${t.ev ? `<span class="ch-e">📅 </span><span class="ch-h">${esc(t.hora || '')}${t.hora && t.timeEnd ? `<span class="ch-fim">–${esc(t.timeEnd)}</span>` : ''}</span> ` : ''}${esc(t.text)}</div>`;
   };
   M.pages.cal = () => {
     const u = M.ui; if (!u.calMonth) { const n = new Date(); u.calMonth = [n.getFullYear(), n.getMonth()]; }

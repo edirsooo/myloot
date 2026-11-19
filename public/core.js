@@ -10,8 +10,7 @@
     { id: 'link', name: 'Link', em: '🔗', color: '#ff7ac6' },
     { id: 'nota', name: 'Nota', em: '📝', color: '#ff9d4a' },
   ];
-  M.STATUS = [{ id: 'ver', name: 'Para ver', em: '👀' }, { id: 'and', name: 'Em andamento', em: '⛏️' }, { id: 'ok', name: 'Concluído', em: '✅' }];
-  M.PRIOS = ['baixa', 'media', 'alta'];
+  // M.STATUS (status dos itens) e M.PRIOS (prioridades) são listas da pessoa: ver opcoes.js
   M.type = (id) => M.TYPES.find((t) => t.id === id) || M.TYPES[5];
   M.cat = (id) => M.db.categories.find((c) => c.id === id);
 

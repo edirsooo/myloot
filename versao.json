@@ -1,12 +1,21 @@
 {
-  "versao": "2.19.0",
+  "versao": "2.20.0",
   "data": "2026-11-18",
   "novidades": [
+    "🧩 Monte o seu Início como quiser: em “✏️ Organizar Início” você arrasta os quadros (com o mouse ou o dedo), muda o tamanho, oculta, tira e põe de volta. Dá para desfazer e voltar ao padrão",
+    "＋ Quadros novos para o Início: contas a pagar e receber, próximos compromissos, bloco de notas, atalhos para telas e links, metas, funil de clientes, hábitos de hoje e modo foco",
+    "🏷️ Status dos itens do seu jeito: crie (ex.: Ideia, Gravando, Publicado), renomeie, mude a cor, a ordem ou apague, no ⚙️ ao lado do filtro da Biblioteca",
+    "🚦 Prioridades das tarefas personalizáveis: crie a sua (ex.: Urgente), mude nome, cor e ordem",
+    "💰 Financeiro: categorias e formas de pagamento suas (ex.: Cartão Nubank). Renomear muda também os lançamentos que já usam",
+    "🧰 Grupos próprios para organizar “Minhas ferramentas”",
+    "⚙️ Tudo isso também em Configurações → Personalizar, e sincroniza entre os seus computadores"
+  ],
+  "historico": {
+    "2.19.0": [
     "▥ Clientes com colunas do seu jeito, como no Trello: no Funil, crie colunas (“＋ Nova coluna”), troque nome, emoji e cor, arraste o título para mudar a ordem e apague as que não usa (os clientes dela vão para a coluna que você escolher). Dá para desfazer",
     "＋ Botão “Cliente aqui” no pé de cada coluna, que já cria o cliente naquela etapa",
     "🗑️ Lixeira direto no cartão do cliente, e a lixeira da ficha agora sempre manda o cliente para a Lixeira (com Desfazer)"
-  ],
-  "historico": {
+    ],
     "2.18.0": [
     "🔎 Busca (Ctrl+K) por palavras, em qualquer ordem e sem ligar para pontuação: “dra marina” acha “Dra. Marina”. Agora acha também lançamentos, hábitos, metas e ferramentas, e tem os comandos Nova tarefa, Fazer backup, Usar no celular e Guardar o link copiado",
     "🗓️ Escreva a data e a hora do jeito que fala: “Ligar para o contador amanhã às 9h”, “reunião sexta 14:30”, “pagar aluguel dia 10” ou “entregar 20/11”",
