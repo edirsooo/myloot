@@ -1,0 +1,2 @@
+PDF.js 6.5.438 (Mozilla, licença Apache-2.0), do pacote npm pdfjs-dist.
+Usado só para gerar a miniatura da 1ª página dos PDFs anexados (cartões da Biblioteca).

@@ -17,6 +17,7 @@ const DATA = process.env.MYLOOT_DATA || process.env.MOCHILA_DATA || path.join(RO
 const DB = path.join(DATA, 'db.json');
 const BAK = path.join(DATA, 'backups');
 const ANX = path.join(DATA, 'anexos');
+const MINI = path.join(DATA, 'miniaturas'); // imagem da 1ª página dos PDFs (gerada uma vez pelo app; dá para apagar, volta sozinha)
 const MANIFEST = path.join(DATA, 'drive-manifest.json');
 const DB_VERSION = 3;
 
@@ -26,7 +27,7 @@ for (const d of [DATA, BAK, ANX]) fs.mkdirSync(d, { recursive: true });
 const ANEXO_NA_TELA = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.pdf', '.txt', '.md', '.mp3', '.wav', '.ogg', '.opus', '.m4a', '.mp4', '.webm']);
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+  '.json': 'application/json; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
   '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.pdf': 'application/pdf',
   '.txt': 'text/plain; charset=utf-8', '.md': 'text/plain; charset=utf-8', '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.opus': 'audio/ogg', '.m4a': 'audio/mp4',
   '.mp4': 'video/mp4', '.webm': 'video/webm', '.ttf': 'font/ttf', '.woff2': 'font/woff2',
@@ -1010,7 +1011,7 @@ async function app(req, res) {
     }
 
     const sfs = req.headers['sec-fetch-site'];
-    if ((p.startsWith('/api/') || p.startsWith('/anexos/')) && (sfs === 'cross-site' || sfs === 'same-site')) return send(res, 403, { erro: 'origem' });
+    if ((p.startsWith('/api/') || p.startsWith('/anexos/') || p.startsWith('/miniaturas/')) && (sfs === 'cross-site' || sfs === 'same-site')) return send(res, 403, { erro: 'origem' });
     if (p.startsWith('/api/')) {
       if (req.method !== 'GET' && req.headers['x-myloot'] !== '1' && req.headers['x-mochila'] !== '1') return send(res, 403, { erro: 'cabeçalho' });
       if (!pc && SO_PC.includes(p)) return send(res, 403, { erro: 'Isso só dá para fazer no computador onde o MyLoot está instalado.' });
@@ -1090,6 +1091,16 @@ async function app(req, res) {
         catch (e) { try { fs.unlinkSync(parte); } catch (_) {} return send(res, 400, { erro: 'O envio do arquivo foi interrompido. Tente de novo.' }); }
         fs.renameSync(parte, dst);
         return send(res, 200, { file, name, size: fs.statSync(dst).size, mime: req.headers['content-type'] || '' });
+      }
+      // miniatura do PDF: o app desenha a 1ª página uma vez e manda o JPG; fica em data/miniaturas/<arquivo>.jpg
+      if (p === '/api/miniatura' && req.method === 'POST') {
+        const file = path.basename(String(u.searchParams.get('file') || ''));
+        if (!file || !/\.pdf$/i.test(file) || !fs.existsSync(path.join(ANX, file))) return send(res, 404, { erro: 'anexo não achado' });
+        const buf = await readBody(req, 2e6);
+        if (!buf || buf.length < 100 || buf.length > 1.5e6 || buf[0] !== 0xff || buf[1] !== 0xd8) return send(res, 400, { erro: 'imagem inválida' });
+        fs.mkdirSync(MINI, { recursive: true });
+        fs.writeFileSync(path.join(MINI, file + '.jpg'), buf);
+        return send(res, 200, { ok: true });
       }
       if ((p === '/api/open' || p === '/api/reveal') && req.method === 'POST') {
         const { file } = JSON.parse((await readBody(req)).toString('utf8'));
@@ -1299,6 +1310,11 @@ async function app(req, res) {
       return send(res, 404, { erro: 'rota' });
     }
 
+    if (p.startsWith('/miniaturas/')) {
+      const full = path.join(MINI, path.basename(p));
+      if (!/\.jpg$/i.test(full) || !inside(MINI, full)) return send(res, 404, { erro: 'não achado' });
+      return serveFile(req, res, full, { 'X-Content-Type-Options': 'nosniff' });
+    }
     if (p.startsWith('/anexos/')) {
       const full = path.join(ANX, path.basename(p));
       const h = { 'X-Content-Type-Options': 'nosniff' }; // html, svg e afins nunca abrem como página: sempre baixam

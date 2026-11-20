@@ -57,7 +57,7 @@
     SFX.play('open');
     let base = M.rasc.abrir(it); // traz de volta o rascunho guardado (se houver) e tira a foto da versão salva
     const touch = () => { if (!it._new) M.rasc.tocar(it, base); it.updated = Date.now(); M.save(); M.rodapePinta(m, it, it._new); };
-    let novoPasso = '', novoLink = '', linkEd = null, attEd = null; // texto ainda não incorporado em "Novo passo" e "Novo link"; link e anexo em edição
+    let novoPasso = '', novoLink = '', linkEd = null, attEd = null, prevId = null; // texto ainda não incorporado em "Novo passo" e "Novo link"; link e anexo em edição
     const m = M.modal('<div></div>', { onClose: () => {
       M.cur = null;
       // item que já existia e foi mudado sem "Salvar": o cartão fica com a versão antiga e as mudanças viram rascunho
@@ -300,7 +300,7 @@
       // renomear (✏️) muda só o nome mostrado: a extensão fica e o arquivo no disco (a.file) não é tocado
       box.innerHTML = it.attachments.map((a) => `<div class="attach" data-id="${a.id}"><span class="ic">${M.fileIcon(a)}</span>${a.id === attEd
         ? `<span class="nm-ed"><input type="text" id="eAttNome" value="${esc(nomeExt(a.name)[0])}" maxlength="120" aria-label="Nome do anexo"><small>${esc(nomeExt(a.name)[1])}</small></span><button type="button" class="btn sm" data-a="renok" title="Concluir a troca de nome">✔ OK</button>`
-        : `<span class="nm" title="${esc(a.name)}">${esc(a.name)}</span><small>${M.size(a.size)}</small><button class="btn sm ghost" data-a="prev" title="${M.isText(a.name) ? 'Ler em blocos' : 'Ver aqui dentro'}">${M.isText(a.name) ? M.ic('livro') + ' Ler' : M.ic('olho') + ' Ver'}</button><button class="btn sm ghost" data-a="open" title="Abrir no programa do computador">${M.ic('abrir')} Abrir</button><button class="btn sm ghost" data-a="show" title="Mostrar na pasta">${M.ic('pasta')} Pasta</button><button type="button" class="xbtn" data-a="ren" title="Renomear (muda só o nome mostrado aqui)" aria-label="Renomear anexo">✏️</button>${lixo('anexo')}`}</div>`).join('<div style="height:6px"></div>') +
+        : `<span class="nm" title="${esc(a.name)}">${esc(a.name)}</span><small>${M.size(a.size)}</small>${prevBtn(a)}<button class="btn sm ghost" data-a="open" title="Abrir no programa do computador">${M.ic('abrir')} Abrir</button><button class="btn sm ghost" data-a="show" title="Mostrar na pasta">${M.ic('pasta')} Pasta</button><button type="button" class="xbtn" data-a="ren" title="Renomear (muda só o nome mostrado aqui)" aria-label="Renomear anexo">✏️</button>${lixo('anexo')}`}</div>`).join('<div style="height:6px"></div>') +
         `<div class="dz" id="eDz" role="button" tabindex="0" aria-label="Escolher arquivos para anexar" style="margin-top:8px">${M.ic('clipe')} Arraste arquivos aqui ou clique para escolher</div><input type="file" id="eFile" multiple hidden>`;
       box.oninput = (e) => {
         if (e.target.id !== 'eAttNome') return;
@@ -311,7 +311,7 @@
       box.onclick = async (e) => {
         const b = e.target.closest('[data-a]'); if (!b) return;
         const a = it.attachments.find((x) => x.id === b.closest('.attach').dataset.id);
-        if (b.dataset.a === 'rm') { it.attachments = it.attachments.filter((x) => x !== a); touch(); drawAtt(); $('#ePrev', m).innerHTML = ''; }
+        if (b.dataset.a === 'rm') { it.attachments = it.attachments.filter((x) => x !== a); touch(); if (prevId === a.id) { $('#ePrev', m).innerHTML = ''; prevId = null; } drawAtt(); }
         else if (b.dataset.a === 'ren') { attEd = a.id; drawAtt(); const i = $('#eAttNome', m); if (i) { i.focus(); i.select(); } }
         else if (b.dataset.a === 'renok') { attEd = null; drawAtt(); }
         else if (b.dataset.a === 'open') M.api('/api/open', { method: 'POST', body: JSON.stringify({ file: a.file }) }).catch((er) => M.toast('⚠️ ' + er.message));
@@ -327,8 +327,17 @@
       dz.ondrop = (e) => { e.preventDefault(); e.stopPropagation(); dz.classList.remove('over'); M.attachFiles(it, [...e.dataTransfer.files], () => { touch(); drawAtt(); }); };
     }
 
+    // Ver abre a prévia; clicar de novo (ou em "Fechar prévia") recolhe
+    function prevAberta(a) { const box = $('#ePrev', m); return !!(a && prevId === a.id && box && box.firstElementChild); }
+    function prevBtn(a) {
+      if (M.isText(a.name)) return `<button class="btn sm ghost" data-a="prev" title="Ler em blocos">${M.ic('livro')} Ler</button>`;
+      const on = prevAberta(a);
+      return `<button class="btn sm ghost${on ? ' on' : ''}" data-a="prev" aria-expanded="${on}" title="${on ? 'Fechar a prévia' : 'Ver aqui dentro'}">${on ? '▴ Fechar' : M.ic('olho') + ' Ver'}</button>`;
+    }
+    function prevFecha() { const box = $('#ePrev', m); if (box) box.innerHTML = ''; prevId = null; drawAtt(); }
     function preview(a) {
       if (M.isText(a.name)) return M.openReader(a);
+      if (prevAberta(a)) return prevFecha();
       const url = '/anexos/' + encodeURIComponent(a.file), n = a.name.toLowerCase(), box = $('#ePrev', m);
       let h = '';
       if (/\.(png|jpe?g|gif|webp|svg)$/.test(n)) h = `<img src="${url}" alt="">`;
@@ -337,7 +346,9 @@
       else if (/\.(mp3|wav|ogg|m4a)$/.test(n)) h = `<audio src="${url}" controls style="width:100%"></audio>`;
       else if (/\.(txt|md|json|csv|log)$/.test(n)) h = `<iframe src="${url}" style="background:#fff"></iframe>`;
       else { M.toast('Sem pré-visualização para esse tipo. Use “Abrir”.'); return; }
-      box.innerHTML = `<div class="preview" style="margin-top:10px">${h}</div>`;
+      box.innerHTML = `<div class="preview" style="margin-top:10px"><div class="prev-bar"><b title="${esc(a.name)}">${esc(a.name)}</b><button type="button" class="btn sm ghost" data-pfecha title="Recolher a prévia">▴ Fechar prévia</button></div>${h}</div>`;
+      box.querySelector('[data-pfecha]').onclick = prevFecha;
+      prevId = a.id; drawAtt();
       box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 

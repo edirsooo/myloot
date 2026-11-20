@@ -1,11 +1,15 @@
 {
-  "versao": "2.22.1",
+  "versao": "2.22.2",
   "data": "2026-11-20",
   "novidades": [
-    "🖼️ Prévia dos anexos no cartão da Biblioteca: imagem, vídeo, a primeira página do PDF ou o começo do texto (.txt e .md) aparecem antes de abrir a ficha. Na Lista e em Pastas vira uma miniatura. Dá para desligar no botão “🖼️ Prévias”",
-    "⤢ Ficha minimizada que volta agora segue a sua escolha atual de Expandir"
+    "📕 PDF no cartão agora é uma miniatura da 1ª página, criada uma vez só e guardada: a Biblioteca fica leve mesmo com muitos PDFs",
+    "👁️ O botão Ver dos anexos abre e fecha: clique de novo (ou em “Fechar prévia”) e a prévia volta a ficar pequena"
   ],
   "historico": {
+    "2.22.1": [
+      "🖼️ Prévia dos anexos no cartão da Biblioteca: imagem, vídeo, a primeira página do PDF ou o começo do texto (.txt e .md) aparecem antes de abrir a ficha. Na Lista e em Pastas vira uma miniatura. Dá para desligar no botão “🖼️ Prévias”",
+      "⤢ Ficha minimizada que volta agora segue a sua escolha atual de Expandir"
+    ],
     "2.22.0": [
       "📁 Pastas na Biblioteca: crie pastas dentro de pastas, em quantos níveis quiser, recolha e expanda cada uma (ou todas de uma vez) e arraste itens e pastas para organizar. A Categoria continua igual",
       "🕸️ Mapa na Biblioteca: veja os itens como no grafo do Obsidian, ligados por etiqueta, categoria, pasta ou quando um cita o título do outro (escreva [[Nome do item]]). Respeita os filtros",

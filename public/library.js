@@ -40,11 +40,50 @@
     let h;
     if (AP.img.test(n)) h = `<img src="${url}" loading="lazy" alt="" draggable="false">`;
     else if (AP.vid.test(n)) h = `<video src="${url}#t=0.5" preload="metadata" muted playsinline tabindex="-1"></video><span class="ap-play" aria-hidden="true">▶</span>`;
-    else if (AP.pdf.test(n) && !mini) h = `<iframe src="${url}#toolbar=0&navpanes=0&scrollbar=0&view=FitH" loading="lazy" tabindex="-1" title="Prévia de ${esc(n)}" aria-hidden="true"></iframe>`;
+    else if (AP.pdf.test(n) && !M.pdfMiniFalhou(a.file)) h = `<img class="ap-pdf" src="/miniaturas/${encodeURIComponent(a.file || '')}.jpg${M.pdfMiniV(a.file)}" data-pdfmini="${esc(a.file || '')}" loading="lazy" alt="" draggable="false">`;
     else if (AP.txt.test(n) && !mini) h = `<pre class="ap-txt" data-aptxt="${esc(a.file || '')}">${esc(txtCache.get(a.file) || '…')}</pre>`;
     else h = `<span class="ap-ic" aria-hidden="true">${AP.aud.test(n) ? '🎧' : AP.pdf.test(n) ? '📕' : AP.txt.test(n) ? '📄' : AP.vid.test(n) ? '🎬' : '📎'}</span>`;
     return `<div class="aprev${mini ? ' mini' : ''}" title="${esc(n)}">${h}${mini ? '' : `<span class="ap-nome">${esc(n)}</span>`}${mais}</div>`;
   }
+  // ----- miniatura dos PDFs: desenha a 1ª página uma vez (pdf.js), guarda no servidor e daí em diante é só uma imagem -----
+  const miniFalhou = new Set(), miniFeita = new Map(), miniFila = [];
+  let miniRodando = false, pdfjs = null;
+  M.pdfMiniFalhou = (f) => miniFalhou.has(f);
+  M.pdfMiniV = (f) => (miniFeita.has(f) ? '?v=' + miniFeita.get(f) : '');
+  async function geraMini(f) {
+    if (!pdfjs) { pdfjs = await import('/vendor/pdfjs/pdf.min.mjs'); pdfjs.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.mjs'; }
+    const tarefa = pdfjs.getDocument({ url: '/anexos/' + encodeURIComponent(f), disableAutoFetch: true, isEvalSupported: false }), doc = await tarefa.promise;
+    try {
+      const pg = await doc.getPage(1), v0 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: 520 / v0.width });
+      const cv = document.createElement('canvas'); cv.width = Math.round(vp.width); cv.height = Math.round(Math.min(vp.height, vp.width * 1.6));
+      const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+      // intent 'print': desenha mesmo com a janela em segundo plano (o modo de tela espera o próximo quadro); 20 s no máximo por PDF
+      await Promise.race([pg.render({ canvasContext: cx, canvas: cv, viewport: vp, intent: 'print' }).promise, new Promise((_, no) => setTimeout(() => no(new Error('demorou')), 20000))]);
+      const blob = await new Promise((r) => cv.toBlob(r, 'image/jpeg', 0.82));
+      const r = await fetch('/api/miniatura?file=' + encodeURIComponent(f), { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'X-MyLoot': '1' }, body: blob });
+      if (!r.ok) throw new Error('não gravou');
+    } finally { try { tarefa.destroy(); } catch (_) {} } // libera o PDF da memória (falhar aqui não estraga a miniatura)
+  }
+  async function rodaFila() {
+    if (miniRodando) return; miniRodando = true;
+    while (miniFila.length) {
+      const f = miniFila.shift();
+      try { await geraMini(f); miniFeita.set(f, Date.now()); } catch (_) { miniFalhou.add(f); }
+      document.querySelectorAll(`img[data-pdfmini="${CSS.escape(f)}"]`).forEach((im) => {
+        if (miniFalhou.has(f)) { const ic = document.createElement('span'); ic.className = 'ap-ic'; ic.textContent = '📕'; im.replaceWith(ic); }
+        else im.src = '/miniaturas/' + encodeURIComponent(f) + '.jpg?v=' + miniFeita.get(f);
+      });
+    }
+    miniRodando = false;
+  }
+  // a imagem ainda não existe (404): entra na fila, uma de cada vez
+  document.addEventListener('error', (e) => {
+    const im = e.target; if (!im || !im.matches || !im.matches('img[data-pdfmini]')) return;
+    const f = im.dataset.pdfmini; if (!f || miniFalhou.has(f)) return;
+    if (miniFeita.has(f)) { miniFalhou.add(f); return; } // já gerou e mesmo assim não abre: desiste
+    if (!miniFila.includes(f)) { miniFila.push(f); rodaFila(); }
+  }, true);
+
   // texto dos anexos .txt/.md: busca só o comecinho, uma vez, e guarda
   const txtCache = new Map();
   M.anxTxtPreenche = (box) => {
