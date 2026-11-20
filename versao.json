@@ -1,56 +1,62 @@
 {
-  "versao": "2.21.0",
-  "data": "2026-11-19",
+  "versao": "2.22.0",
+  "data": "2026-11-20",
   "novidades": [
-    "🧱 Tipos de item do seu jeito: mude nome, emoji, cor e ordem, ou esconda os que não usa (⚙️ nas abas da Biblioteca)",
-    "✋ “Minha ordem” na Biblioteca: escolha a ordem e arraste os cartões para onde quiser (no celular, pelo ⋯)",
-    "🗂️ Listas de tarefas (Casa, Trabalho, Cliente X…): filtre por lista, agrupe por lista e escolha a lista de cada tarefa",
-    "🪪 Campos seus na ficha do cliente (CNPJ, aniversário, link do contrato…) e esconda os campos prontos que não usa",
-    "🗓️ Calendário: escolha o que aparece nos dias (tarefas, compromissos, concluídas, contas, hábitos, itens)",
-    "🎯 Missões do dia escolhidas por você, com os números que quiser",
-    "🧭 Menu do seu jeito: mude a ordem, esconda telas e escolha os atalhos da barra do celular",
-    "🕘 Versões das fichas: item e cliente guardam as últimas versões salvas, e dá para voltar a qualquer uma",
-    "📝 Rascunho também nas janelas de tarefa, lançamento, hábito e meta: saia sem salvar e recupere depois",
-    "↩ O histórico de ações agora fica guardado por 30 dias (antes sumia ao fechar a aba)",
-    "😀 Rotina: qualquer emoji e qualquer unidade nos hábitos"
+    "📁 Pastas na Biblioteca: crie pastas dentro de pastas, em quantos níveis quiser, recolha e expanda cada uma (ou todas de uma vez) e arraste itens e pastas para organizar. A Categoria continua igual",
+    "🕸️ Mapa na Biblioteca: veja os itens como no grafo do Obsidian, ligados por etiqueta, categoria, pasta ou quando um cita o título do outro (escreva [[Nome do item]]). Respeita os filtros",
+    "⤢ Expandir a caixa de Conteúdo: para quem escreve muito, a ficha fica larga e a caixa de escrita alta. O MyLoot lembra da sua escolha",
+    "➖ Várias fichas abertas: minimize uma ficha e ela fica na barra de baixo, do jeitinho que estava. Abra outra, copie de uma para a outra e volte com um clique"
   ],
   "historico": {
+    "2.21.0": [
+      "🧱 Tipos de item do seu jeito: mude nome, emoji, cor e ordem, ou esconda os que não usa (⚙️ nas abas da Biblioteca)",
+      "✋ “Minha ordem” na Biblioteca: escolha a ordem e arraste os cartões para onde quiser (no celular, pelo ⋯)",
+      "🗂️ Listas de tarefas (Casa, Trabalho, Cliente X…): filtre por lista, agrupe por lista e escolha a lista de cada tarefa",
+      "🪪 Campos seus na ficha do cliente (CNPJ, aniversário, link do contrato…) e esconda os campos prontos que não usa",
+      "🗓️ Calendário: escolha o que aparece nos dias (tarefas, compromissos, concluídas, contas, hábitos, itens)",
+      "🎯 Missões do dia escolhidas por você, com os números que quiser",
+      "🧭 Menu do seu jeito: mude a ordem, esconda telas e escolha os atalhos da barra do celular",
+      "🕘 Versões das fichas: item e cliente guardam as últimas versões salvas, e dá para voltar a qualquer uma",
+      "📝 Rascunho também nas janelas de tarefa, lançamento, hábito e meta: saia sem salvar e recupere depois",
+      "↩ O histórico de ações agora fica guardado por 30 dias (antes sumia ao fechar a aba)",
+      "😀 Rotina: qualquer emoji e qualquer unidade nos hábitos"
+    ],
     "2.20.0": [
-    "🧩 Monte o seu Início como quiser: em “✏️ Organizar Início” você arrasta os quadros (com o mouse ou o dedo), muda o tamanho, oculta, tira e põe de volta. Dá para desfazer e voltar ao padrão",
-    "＋ Quadros novos para o Início: contas a pagar e receber, próximos compromissos, bloco de notas, atalhos para telas e links, metas, funil de clientes, hábitos de hoje e modo foco",
-    "🏷️ Status dos itens do seu jeito: crie (ex.: Ideia, Gravando, Publicado), renomeie, mude a cor, a ordem ou apague, no ⚙️ ao lado do filtro da Biblioteca",
-    "🚦 Prioridades das tarefas personalizáveis: crie a sua (ex.: Urgente), mude nome, cor e ordem",
-    "💰 Financeiro: categorias e formas de pagamento suas (ex.: Cartão Nubank). Renomear muda também os lançamentos que já usam",
-    "🧰 Grupos próprios para organizar “Minhas ferramentas”",
-    "⚙️ Tudo isso também em Configurações → Personalizar, e sincroniza entre os seus computadores"
+      "🧩 Monte o seu Início como quiser: em “✏️ Organizar Início” você arrasta os quadros (com o mouse ou o dedo), muda o tamanho, oculta, tira e põe de volta. Dá para desfazer e voltar ao padrão",
+      "＋ Quadros novos para o Início: contas a pagar e receber, próximos compromissos, bloco de notas, atalhos para telas e links, metas, funil de clientes, hábitos de hoje e modo foco",
+      "🏷️ Status dos itens do seu jeito: crie (ex.: Ideia, Gravando, Publicado), renomeie, mude a cor, a ordem ou apague, no ⚙️ ao lado do filtro da Biblioteca",
+      "🚦 Prioridades das tarefas personalizáveis: crie a sua (ex.: Urgente), mude nome, cor e ordem",
+      "💰 Financeiro: categorias e formas de pagamento suas (ex.: Cartão Nubank). Renomear muda também os lançamentos que já usam",
+      "🧰 Grupos próprios para organizar “Minhas ferramentas”",
+      "⚙️ Tudo isso também em Configurações → Personalizar, e sincroniza entre os seus computadores"
     ],
     "2.19.0": [
-    "▥ Clientes com colunas do seu jeito, como no Trello: no Funil, crie colunas (“＋ Nova coluna”), troque nome, emoji e cor, arraste o título para mudar a ordem e apague as que não usa (os clientes dela vão para a coluna que você escolher). Dá para desfazer",
-    "＋ Botão “Cliente aqui” no pé de cada coluna, que já cria o cliente naquela etapa",
-    "🗑️ Lixeira direto no cartão do cliente, e a lixeira da ficha agora sempre manda o cliente para a Lixeira (com Desfazer)"
+      "▥ Clientes com colunas do seu jeito, como no Trello: no Funil, crie colunas (“＋ Nova coluna”), troque nome, emoji e cor, arraste o título para mudar a ordem e apague as que não usa (os clientes dela vão para a coluna que você escolher). Dá para desfazer",
+      "＋ Botão “Cliente aqui” no pé de cada coluna, que já cria o cliente naquela etapa",
+      "🗑️ Lixeira direto no cartão do cliente, e a lixeira da ficha agora sempre manda o cliente para a Lixeira (com Desfazer)"
     ],
     "2.18.0": [
-    "🔎 Busca (Ctrl+K) por palavras, em qualquer ordem e sem ligar para pontuação: “dra marina” acha “Dra. Marina”. Agora acha também lançamentos, hábitos, metas e ferramentas, e tem os comandos Nova tarefa, Fazer backup, Usar no celular e Guardar o link copiado",
-    "🗓️ Escreva a data e a hora do jeito que fala: “Ligar para o contador amanhã às 9h”, “reunião sexta 14:30”, “pagar aluguel dia 10” ou “entregar 20/11”",
-    "🔗 Link guardado pelo Início ganha o título real da página, em vez de só o nome do site",
-    "🔥 Tarefas atrasadas: botão “Todas para hoje”; e tarefa repetida concluída com atraso agora gera a próxima a partir de hoje",
-    "💰 Calendário mostra as contas a pagar e a receber; o cartão do cliente mostra quanto falta receber; e “Adicionar recebimento” já vem como recebido, com o último valor",
-    "📎 Botão de anexar no topo da ficha, e o MyLoot avisa quando o arquivo já estava anexado",
-    "💾 O Início lembra de fazer backup quando o último tem mais de 14 dias",
-    "🛡️ Mais proteção para os seus dados: a sincronização entre computadores para se muita coisa sumir de uma vez, o arquivo de dados danificado volta sozinho da cópia automática (com aviso), e o MyLoot ficou mais rápido com muitos itens"
+      "🔎 Busca (Ctrl+K) por palavras, em qualquer ordem e sem ligar para pontuação: “dra marina” acha “Dra. Marina”. Agora acha também lançamentos, hábitos, metas e ferramentas, e tem os comandos Nova tarefa, Fazer backup, Usar no celular e Guardar o link copiado",
+      "🗓️ Escreva a data e a hora do jeito que fala: “Ligar para o contador amanhã às 9h”, “reunião sexta 14:30”, “pagar aluguel dia 10” ou “entregar 20/11”",
+      "🔗 Link guardado pelo Início ganha o título real da página, em vez de só o nome do site",
+      "🔥 Tarefas atrasadas: botão “Todas para hoje”; e tarefa repetida concluída com atraso agora gera a próxima a partir de hoje",
+      "💰 Calendário mostra as contas a pagar e a receber; o cartão do cliente mostra quanto falta receber; e “Adicionar recebimento” já vem como recebido, com o último valor",
+      "📎 Botão de anexar no topo da ficha, e o MyLoot avisa quando o arquivo já estava anexado",
+      "💾 O Início lembra de fazer backup quando o último tem mais de 14 dias",
+      "🛡️ Mais proteção para os seus dados: a sincronização entre computadores para se muita coisa sumir de uma vez, o arquivo de dados danificado volta sozinho da cópia automática (com aviso), e o MyLoot ficou mais rápido com muitos itens"
     ],
     "2.17.1": [
-    "⬇️ Atualizar com um clique também para quem instalou pelo Git (ou pediu para a IA instalar): o aviso de versão nova agora traz o botão “Atualizar agora” em vez de pedir git pull",
-    "🔔 O aviso de versão nova no menu ficou laranja e piscando, com o nome “Atualizar para a…”, para não passar despercebido"
+      "⬇️ Atualizar com um clique também para quem instalou pelo Git (ou pediu para a IA instalar): o aviso de versão nova agora traz o botão “Atualizar agora” em vez de pedir git pull",
+      "🔔 O aviso de versão nova no menu ficou laranja e piscando, com o nome “Atualizar para a…”, para não passar despercebido"
     ],
     "2.17.0": [
-    "🔵 Gemini: além do Claude Code e do Codex, o MyLoot agora usa o Gemini CLI, que entra com a sua conta Google (a mesma do Antigravity) e tem uso gratuito",
-    "🔑 Chaves de API do Gemini e do ChatGPT: sem nenhuma IA instalada, cole uma chave do Gemini (grátis no Google AI Studio), do ChatGPT ou do Claude em Configurações → IA",
-    "🪐 Tem o Antigravity? O MyLoot avisa que o Gemini CLI usa a mesma conta e mostra como instalar"
+      "🔵 Gemini: além do Claude Code e do Codex, o MyLoot agora usa o Gemini CLI, que entra com a sua conta Google (a mesma do Antigravity) e tem uso gratuito",
+      "🔑 Chaves de API do Gemini e do ChatGPT: sem nenhuma IA instalada, cole uma chave do Gemini (grátis no Google AI Studio), do ChatGPT ou do Claude em Configurações → IA",
+      "🪐 Tem o Antigravity? O MyLoot avisa que o Gemini CLI usa a mesma conta e mostra como instalar"
     ],
     "2.16.0": [
-    "🔄 Sincronizar entre computadores: usa o MyLoot em mais de um PC? Ligue em Configurações → Google Drive e os dois ficam com os mesmos itens, tarefas, clientes, lançamentos e anexos, pela pasta do Google Drive (ou OneDrive, Dropbox). Se os dois mudarem o mesmo item, fica a mudança mais nova, campo a campo, e o que for apagado vai para a Lixeira do outro",
-    "🪪 Cada computador ganha a sua própria identidade na sincronização, mesmo que a pasta de dados tenha sido copiada ou restaurada de outro PC"
+      "🔄 Sincronizar entre computadores: usa o MyLoot em mais de um PC? Ligue em Configurações → Google Drive e os dois ficam com os mesmos itens, tarefas, clientes, lançamentos e anexos, pela pasta do Google Drive (ou OneDrive, Dropbox). Se os dois mudarem o mesmo item, fica a mudança mais nova, campo a campo, e o que for apagado vai para a Lixeira do outro",
+      "🪪 Cada computador ganha a sua própria identidade na sincronização, mesmo que a pasta de dados tenha sido copiada ou restaurada de outro PC"
     ],
     "2.15.2": [
       "🤖 Codex: se você tem o app do ChatGPT (ou do Codex) para computador, o MyLoot agora acha e usa o Codex que vem dentro dele, já logado na sua conta, sem instalar nada pelo terminal"

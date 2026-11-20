@@ -43,7 +43,7 @@ function defaults() {
     version: DB_VERSION,
     settings: { theme: 'dark', themeAuto: true, fontScale: 1, compact: false, sounds: true, musica: false, musicaVol: 0.2, musicaLoop: false, confetti: true, gamify: true, dailyGoal: 50,
       view: 'grid', boardBy: 'status', janela: 'app', aiModel: 'claude-opus-5-5', drive: { on: false, path: '' } },
-    categories: [], items: [], tasks: [], trash: [], clients: [], fin: [], habits: [], goals: [], tools: [], cliCols: [],
+    categories: [], items: [], tasks: [], trash: [], clients: [], fin: [], habits: [], goals: [], tools: [], cliCols: [], pastas: [],
     itemStatus: [], taskPrios: [], finCats: [], finFormas: [], toolGroups: [], homeWidgets: HOME_W.map((o) => Object.assign({}, o, { cfg: {} })),
     game: { xp: 0, log: {}, streak: { last: '', count: 0 }, achievements: {}, counters: {}, goalDays: 0 },
   };
@@ -135,7 +135,7 @@ function limparWidgets(out, raw) {
 }
 const OPCS = ['itemStatus', 'taskPrios', 'finCats', 'finFormas', 'toolGroups', 'itemTypes', 'taskLists', 'cliCampos'];
 function limparIds(out) {
-  for (const k of ['categories', 'items', 'tasks', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols', ...OPCS]) for (const o of out[k]) { if (o.id != null) o.id = sid(o.id); }
+  for (const k of ['categories', 'items', 'tasks', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols', 'pastas', ...OPCS]) for (const o of out[k]) { if (o.id != null) o.id = sid(o.id); }
   for (const t of out.tasks) t.prio = sid(t.prio) || 'media';
   for (const it of out.items) it.status = sid(it.status) || 'ver';
   for (const t of out.tasks) { if (t.lista) t.lista = sid(t.lista); }
@@ -160,7 +160,7 @@ function migrate(raw) {
   out.settings.drive = Object.assign({}, d.settings.drive, (raw.settings || {}).drive || {});
   out.game = Object.assign({}, d.game, raw.game || {});
   out.game.streak = Object.assign({}, d.game.streak, out.game.streak || {});
-  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols', 'homeWidgets', ...OPCS]) out[k] = Array.isArray(out[k]) ? out[k].filter((o) => o && typeof o === 'object' && !Array.isArray(o)) : [];
+  for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols', 'pastas', 'homeWidgets', ...OPCS]) out[k] = Array.isArray(out[k]) ? out[k].filter((o) => o && typeof o === 'object' && !Array.isArray(o)) : [];
   limparOpc(out, 'itemStatus', ITEM_ST);
   limparOpc(out, 'taskPrios', TASK_PR);
   limparOpc(out, 'finCats', FIN_CATS, (o) => ({ tipo: o.tipo === 'saida' ? 'saida' : 'entrada' }));
@@ -183,6 +183,9 @@ function migrate(raw) {
     c.tags = Array.isArray(c.tags) ? c.tags : []; c.created = c.created || Date.now(); c.updated = c.updated || c.created;
     c.status = String(c.status).slice(0, 100); // o id da coluna passa por sid() em limparIds
   });
+  // pastas da Biblioteca (em níveis): parent aponta para outra pasta; pasta que sumiu ou laço vira raiz
+  out.pastas = out.pastas.slice(0, 2000).map((o, i) => ({ id: sid(o.id || uid()), name: String(o.name || 'Pasta').replace(/[<>"'&]/g, '').slice(0, 60) || 'Pasta', parent: o.parent ? sid(String(o.parent).slice(0, 100)) : '', ord: Number.isFinite(+o.ord) ? +o.ord : i, fechada: !!o.fechada, updated: o.updated || 0 }));
+  { const ids = new Set(out.pastas.map((o) => o.id)); const sobe = (o) => { const v = new Set([o.id]); let p = o.parent; while (p) { if (!ids.has(p) || v.has(p)) return false; v.add(p); p = (out.pastas.find((x) => x.id === p) || {}).parent; } return true; }; out.pastas.forEach((o) => { if (!sobe(o)) o.parent = ''; }); }
   // colunas do funil de clientes: a pessoa cria, renomeia, reordena e apaga (quadro estilo Trello)
   if (!out.cliCols.length) out.cliCols = CLI_COLS.map((o) => Object.assign({}, o));
   out.cliCols = out.cliCols.slice(0, 40).map((o, i) => ({
@@ -205,6 +208,7 @@ function migrate(raw) {
     it.date = it.date || '';
     it.fav = !!it.fav;
     it.client = it.client || '';
+    it.pasta = it.pasta ? sid(String(it.pasta).slice(0, 100)) : '';
     it.created = it.created || Date.now();
     it.updated = it.updated || it.created;
   });

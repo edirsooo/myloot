@@ -52,6 +52,7 @@
   M.openItem = (id) => {
     const it = M.db.items.find((i) => i.id === id);
     if (!it) return;
+    if (M.fichaRestaurar && M.fichaRestaurar(id)) return; // já estava aberta (minimizada): volta para ela
     M.cur = it;
     SFX.play('open');
     let base = M.rasc.abrir(it); // traz de volta o rascunho guardado (se houver) e tira a foto da versão salva
@@ -69,7 +70,7 @@
       M.render();
       // item aberto de dentro da ficha do cliente: volta para a ficha
       if (M.cliAberto && M.client && M.client(M.cliAberto)) setTimeout(() => { if (!M.modalOpen()) M.openClient(M.cliAberto); }, 0);
-    } });
+    }, ficha: it });
 
     M.versaoGuardar('item', it); // como a ficha estava ao abrir
     function draw() {
@@ -84,6 +85,7 @@
           <button class="icon-btn" id="eFav" title="Favorito" aria-label="Favorito" aria-pressed="${it.fav ? 'true' : 'false'}">${it.fav ? '⭐' : '☆'}</button>
           ${it._new ? '' : `<button class="icon-btn" id="eArq" title="${it.arq ? 'Desarquivar: volta para a lista do dia a dia' : 'Arquivar: sai da lista do dia a dia, mas continua guardado'}" aria-label="${it.arq ? 'Desarquivar' : 'Arquivar'}">${it.arq ? '📤' : '🗃️'}</button>`}
           <button class="icon-btn" id="eDel" title="Mandar para a Lixeira" aria-label="Mandar para a Lixeira">🗑️</button>
+          <button class="icon-btn" id="eMin" title="Minimizar: a ficha fica na barra de baixo e você abre outra. Dá para trabalhar em várias ao mesmo tempo." aria-label="Minimizar a ficha">➖</button>
           <button class="icon-btn" id="eX" title="Fechar (Esc)" aria-label="Fechar">✕</button>
         </div>
         <div class="modal-b">
@@ -93,11 +95,12 @@
           <div class="fld"><label for="eDesc">Descrição ${M.hint('Um resumo curto. Aparece no cartão.')}${M.micBtn('#eDesc')}</label><textarea id="eDesc" style="min-height:56px;font-family:var(--f)" placeholder="Sobre o que é?">${esc(it.desc)}</textarea></div>
           <div class="fld"><label for="eContent">${it.type === 'link' ? 'Endereço (URL)' : 'Conteúdo'} ${M.hint(it.type === 'prompt' ? 'Copiar este prompt dá XP.' : 'O texto principal. Use o botão Copiar para levar para outro lugar.')}${it.type === 'link' ? '' : M.micBtn('#eContent')}</label>
             <div class="copybox"><textarea id="eContent" placeholder="${it.type === 'link' ? 'https://…' : it.type === 'comando' ? 'Cole o comando aqui' : 'Escreva ou cole aqui'}">${esc(it.content)}</textarea>
-            <button class="btn sm" id="eCopy">📋 Copiar</button></div>
+            <button class="btn sm" id="eCopy">📋 Copiar</button><button type="button" class="btn sm ghost" id="eExp" title="Aumentar a caixa de escrita (a janela fica larga e a caixa alta)" aria-pressed="false">⤢ Expandir</button></div>
             <div id="eAi" style="margin-top:8px"></div>
             ${it.type === 'link' && /^https?:\/\//i.test(it.content.trim()) ? `<a class="btn sm ghost" style="margin-top:8px" href="${esc(it.content.trim())}" target="_blank" rel="noopener">↗ Abrir link</a>` : ''}
           </div>
           <div class="row">
+            ${(M.db.pastas || []).length ? `<div class="fld"><label for="ePasta">Pasta</label><select id="ePasta"><option value="">— fora de pastas —</option>${M.pastaOpcoes(M.pastaDoItem(it))}</select></div>` : ''}
             <div class="fld"><label for="eCat">Categoria</label><select id="eCat"><option value="">— nenhuma —</option>${M.db.categories.map((c) => `<option value="${c.id}" ${c.id === it.cat ? 'selected' : ''}>${esc(c.icon)} ${esc(c.name)}</option>`).join('')}</select></div>
             <div class="fld"><label for="eSt">Status</label><select id="eSt">${M.STATUS.map((s) => `<option value="${esc(s.id)}" ${s.id === M.statusDe(it.status).id ? 'selected' : ''}>${esc(s.em)} ${esc(s.name)}</option>`).join('')}</select></div>
             <div class="fld"><label for="eDate">Data</label><input type="date" id="eDate" value="${it.date}"></div>
@@ -164,6 +167,7 @@
       // texto que ficou em "Novo passo" ou "Novo link" sem Enter nem ＋ entra no item antes de salvar ou de fechar (não some)
       const pend = () => { addPasso(true); addLink(true); };
       $('#eX', m).onclick = () => { pend(); M.closeModal(); };
+      $('#eMin', m).onclick = () => { pend(); M.fichaMinimizar(); };
       $('#svOk', m).onclick = () => {
         pend();
         if (!it.title.trim() && !it.desc && !it.content && !it.attachments.length && !it.checklist.length && !it.links.length) return M.falta($('#eTitle', m), '✍️ Escreva pelo menos um título');
@@ -188,15 +192,23 @@
         draw();
       };
       $('#eCopy', m).onclick = () => M.copyItem(it);
+      // expandir: janela larga e caixa de escrita alta, para quem escreve muito (o texto não muda, só o tamanho da caixa)
+      $('#eExp', m).onclick = () => {
+        const on = !m.classList.contains('wide'); m.classList.toggle('wide', on); m.classList.toggle('exp', on);
+        const b = $('#eExp', m); b.textContent = on ? '⤡ Recolher' : '⤢ Expandir'; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        M.db.settings.escritaGrande = on; M.save(); SFX.play('click'); $('#eContent', m).focus();
+      };
+      if (M.db.settings.escritaGrande) { m.classList.add('wide', 'exp'); const b = $('#eExp', m); b.textContent = '⤡ Recolher'; b.setAttribute('aria-pressed', 'true'); }
       if ($('#eCopiaIA', m)) $('#eCopiaIA', m).onclick = () => { navigator.clipboard.writeText(M.PROMPT_MARCA).catch(() => {}); SFX.play('copy'); M.toast('📋 Comando copiado. Cole na sua IA junto com o documento.'); };
       $('#eTypes', m).onclick = (e) => { const x = e.target.closest('.slot'); if (!x) return; it.type = x.dataset.t; touch(); SFX.play('click'); draw(); };
       $('#eTitle', m).oninput = (e) => {
-        it.title = e.target.value; touch();
+        it.title = e.target.value; touch(); if (M.fichasPinta) M.fichasPinta();
         if (it._new && !it._xp && it.title.trim().length > 2) { it._xp = true; M.award('item'); }
       };
       $('#eDesc', m).oninput = (e) => { it.desc = e.target.value; touch(); };
       $('#eContent', m).oninput = (e) => { it.content = e.target.value; touch(); };
       $('#eCat', m).onchange = (e) => { it.cat = e.target.value; touch(); };
+      if ($('#ePasta', m)) $('#ePasta', m).onchange = (e) => { it.pasta = e.target.value; touch(); SFX.play('click'); };
       $('#eSt', m).onchange = (e) => { it.status = e.target.value; touch(); SFX.play('click'); };
       $('#eDate', m).onchange = (e) => { it.date = e.target.value; touch(); };
       if ($('#eCli', m)) $('#eCli', m).onchange = (e) => { it.client = e.target.value; touch(); SFX.play('click'); };

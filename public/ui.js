@@ -74,7 +74,7 @@
     arruma() {
       if (!M.db) return;
       let mudou = false;
-      const aberto = (o) => (M.cur && M.cur.id === o.id) || M.cliAberto === o.id;
+      const aberto = (o) => (M.cur && M.cur.id === o.id) || M.cliAberto === o.id || (M.fichaEstaAberta && M.fichaEstaAberta(o.id));
       for (const o of [...M.db.items, ...(M.db.clients || [])]) if (o._salvo && !aberto(o) && Date.now() - (o.updated || 0) > 120000) { M.rasc.guardar(o); mudou = true; }
       if (mudou) M.save();
     },
@@ -92,13 +92,55 @@
     ov.onmousedown = (e) => { if (e.target === ov) M.fecharPeloUsuario(); };
     onClose = opt.onClose || null;
     sujo = false; foto0 = null;
+    atualId = opt.ficha ? opt.ficha.id : null; if (opt.ficha) fichas.set(opt.ficha.id, { it: opt.ficha, el: null, onClose: null });
     const m = ov.firstElementChild, h = m.querySelector('.modal-h h2');
     if (h) { h.id = h.id || 'modalTit'; m.setAttribute('aria-labelledby', h.id); }
     // teclado e leitor de tela: o foco entra na janela (se a tela não pôs o cursor num campo, fica na própria janela)
     setTimeout(() => { if (ov.firstElementChild === m && !m.contains(document.activeElement)) m.focus({ preventScroll: true }); }, 80);
+    if (opt.ficha) M.fichasPinta();
     return m;
   };
   let abridor = null;
+
+  // ----- várias fichas abertas ao mesmo tempo -----
+  // "Minimizar" tira a ficha da frente e deixa um atalho na barra de baixo, com tudo como estava (texto, rascunho, caixas abertas).
+  // Dá para abrir outra ficha, copiar de uma para a outra e voltar pela barra.
+  const fichas = new Map(); // id -> { it, el (a janela guardada, ou null se é a que está na frente), onClose }
+  let atualId = null;
+  const dock = document.createElement('div'); dock.id = 'dock'; dock.hidden = true; dock.setAttribute('role', 'toolbar'); dock.setAttribute('aria-label', 'Fichas abertas');
+  document.body.appendChild(dock);
+  M.fichaEstaAberta = (id) => fichas.has(id);
+  M.fichasPinta = () => {
+    const L = [...fichas.values()];
+    dock.hidden = !L.some((f) => f.el); // sem ficha guardada, não tem barra
+    if (dock.hidden) { dock.innerHTML = ''; return; }
+    dock.innerHTML = L.map((f) => { const t = M.type(f.it.type), nome = f.it.title || 'Sem título', on = !f.el && atualId === f.it.id; return `<div class="dock-i ${on ? 'on' : ''}" data-d="${esc(f.it.id)}" style="--c:${esc(t.color)}" tabindex="0" role="button" aria-label="${on ? 'Ficha aberta' : 'Voltar para a ficha'}: ${esc(nome)}" title="${esc(nome)}"><span aria-hidden="true">${t.em}</span><b>${esc(nome.slice(0, 28))}</b><button type="button" class="xbtn" data-dx="${esc(f.it.id)}" title="Fechar esta ficha" aria-label="Fechar a ficha ${esc(nome)}">✕</button></div>`; }).join('');
+  };
+  M.fichaMinimizar = () => {
+    const ov = $('#overlay'), e = atualId && fichas.get(atualId), m = ov.querySelector('.modal');
+    if (!e || !m || !ov.classList.contains('on')) return false;
+    e.el = m; e.onClose = onClose; onClose = null;
+    ov.removeChild(m); ov.classList.remove('on'); ov.innerHTML = ''; sujo = false; foto0 = null; atualId = null; abridor = null; M.cur = null;
+    M.fichasPinta(); return true;
+  };
+  M.fichaRestaurar = (id) => {
+    const e = fichas.get(id); if (!e || !e.el) return false;
+    const ov = $('#overlay');
+    if (ov.classList.contains('on')) { if (atualId) M.fichaMinimizar(); else return false; } // há outra janela (não ficha) na frente: não mexe
+    document.body.classList.remove('menu');
+    ov.innerHTML = ''; ov.appendChild(e.el); ov.classList.add('on'); ov.onmousedown = (ev) => { if (ev.target === ov) M.fecharPeloUsuario(); };
+    onClose = e.onClose; e.el = null; e.onClose = null; atualId = id; M.cur = e.it; sujo = false; foto0 = null;
+    M.fichasPinta(); SFX.play('open');
+    return true;
+  };
+  dock.onclick = (ev) => {
+    const x = ev.target.closest('[data-dx]'), c = ev.target.closest('[data-d]'); if (!c) return;
+    const id = (x || c).dataset.dx || c.dataset.d;
+    if (!fichas.has(id)) return;
+    if (!(atualId === id)) { if (!M.fichaRestaurar(id)) return; }
+    if (x) setTimeout(() => M.fecharPeloUsuario(), 0); // ✕ do atalho: abre a ficha e fecha do jeito normal (guarda rascunho, se houver)
+  };
+  dock.onkeydown = (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.dock-i')) { ev.preventDefault(); ev.target.click(); } };
   // Tab e Shift+Tab ficam dentro da janela aberta
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Tab') return;
@@ -220,6 +262,7 @@
     const ov = $('#overlay');
     if (!ov.classList.contains('on')) return;
     ov.classList.remove('on'); ov.innerHTML = ''; sujo = false; foto0 = null;
+    if (atualId) { fichas.delete(atualId); atualId = null; M.fichasPinta(); }
     const ab = abridor; abridor = null;
     if (ab && ab.isConnected && ab.focus) setTimeout(() => { if (!M.modalOpen()) ab.focus({ preventScroll: true }); }, 0);
     const f = onClose; onClose = null;

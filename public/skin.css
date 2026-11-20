@@ -225,3 +225,37 @@ svg.ic{flex:none;vertical-align:-3px}
 .g-full{flex:1;min-height:0;margin:0 16px;border-radius:12px;background:var(--bg2);border:2px solid var(--edge)}
 .g-modal .g-leg{padding:10px 18px 14px}
 @media (max-width:1250px){.home-wrap{grid-template-columns:1fr}.g-side{position:static}}
+
+
+/* ----- pastas da Biblioteca ----- */
+.pastas{display:flex;flex-direction:column;gap:6px}
+.pastas-barra{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.pasta-h{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;background:var(--panel);border:2px solid var(--edge);cursor:pointer;user-select:none}
+.pasta-h:hover{border-color:var(--edge2)}
+.pasta-h.alvo{border-color:var(--accent);background:var(--accent-soft)}
+.pasta-h.sem{cursor:default;background:transparent;border-style:dashed}
+.pasta-h b{font-weight:700;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pasta-h .n{font:700 11px var(--mono);padding:1px 7px;border-radius:999px;background:#0003;color:var(--dim)}
+.pasta-seta{width:14px;color:var(--dim)}
+.pasta-ic{font-size:18px}
+.pasta-acoes{margin-left:auto;display:flex;gap:2px;opacity:.55}
+.pasta-h:hover .pasta-acoes,.pasta-h:focus-within .pasta-acoes{opacity:1}
+.pasta-corpo{margin:6px 0 4px 18px;padding-left:12px;border-left:2px solid var(--edge);display:flex;flex-direction:column;gap:6px}
+.pasta-raiz>.pasta-corpo{margin-left:0;padding-left:0;border-left:0}
+.pasta-vazia{color:var(--faint);font-size:12.5px;padding:6px 4px}
+@media (max-width:700px){.pasta-corpo{margin-left:8px;padding-left:8px}.pasta-acoes{opacity:1}}
+.g-lib{height:min(68vh,640px)}
+
+/* ----- caixa de escrita expandida ----- */
+.modal.wide{width:min(1180px,100%)}
+.modal.exp .copybox textarea{min-height:min(62vh,640px);font-size:14px;line-height:1.55}
+.copybox #eExp{top:44px}
+
+/* ----- fichas minimizadas (barra de baixo) ----- */
+#dock{position:fixed;left:244px;bottom:12px;z-index:130;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100vw - 260px)}
+#dock[hidden]{display:none}
+.dock-i{display:flex;align-items:center;gap:7px;max-width:240px;padding:7px 8px 7px 11px;border-radius:11px;background:var(--bg2);border:2px solid var(--edge2);border-left:5px solid var(--c,#888);cursor:pointer;box-shadow:0 6px 18px #0006;font-size:13px}
+.dock-i:hover{border-color:var(--accent)}
+.dock-i.on{background:var(--accent-soft);border-color:var(--accent)}
+.dock-i b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dock-i .xbtn{flex:none}

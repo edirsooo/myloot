@@ -81,10 +81,15 @@
     const L = M.filtered(), v = M.db.settings.view;
     $('#libcount').textContent = L.length + ' de ' + M.db.items.filter((i) => !!i.arq === !!M.ui.arq).length;
     pintaSel();
-    if (!L.length && v !== 'board') { box.innerHTML = emptyHTML(); return; }
+    if (!L.length && v !== 'board' && !(v === 'pastas' && !filtrando())) { box.innerHTML = emptyHTML(); return; }
     const max = M.ui.libMax || POR_VEZ, V = L.length > max ? L.slice(0, max) : L;
     const mais = L.length > max ? `<div class="lib-mais"><button class="btn ghost" data-libmais>Mostrar mais ${Math.min(POR_VEZ, L.length - max)} (de ${L.length - max} que faltam)</button></div>` : '';
-    box.innerHTML = (v === 'table' ? tableHTML(V) : v === 'board' ? boardHTML(V) : `<div class="${v === 'list' ? 'list' : 'grid'}">${V.map((it) => cardHTML(it, v)).join('')}</div>`) + mais;
+    if (v === 'map') { // mapa de conexões (como o grafo do Obsidian), só com o que passou pelos filtros
+      box.innerHTML = '<div class="g-box g-lib" id="libMapa"></div><div class="g-leg" style="margin-top:8px">' + M.TYPES.map((t) => `<span><i style="background:${t.color}"></i>${esc(t.name.replace(' / PDF', ''))}</span>`).join('') + '</div><p class="pg-dica">Cada bolinha é um item. Linhas: mesma etiqueta, categoria ou pasta, ou citação do título. Clique para abrir, arraste, use a rodinha para o zoom.</p>';
+      M.graph(box.querySelector('#libMapa'), { full: true, only: new Set(L.map((i) => i.id)) });
+      return;
+    }
+    box.innerHTML = (v === 'table' ? tableHTML(V) : v === 'board' ? boardHTML(V) : v === 'pastas' ? M.pastasHTML(V, cardHTML) : `<div class="${v === 'list' ? 'list' : 'grid'}">${V.map((it) => cardHTML(it, v)).join('')}</div>`) + mais;
   };
 
   M.pages = M.pages || {};
@@ -103,7 +108,7 @@
       ${M.opcBtn('itemTypes')}</div>
         <div class="lib-ver">${s.view === 'board' ? `<select id="fby" title="Colunas do quadro"><option value="status" ${s.boardBy === 'status' ? 'selected' : ''}>Colunas: status</option><option value="cat" ${s.boardBy === 'cat' ? 'selected' : ''}>Colunas: categoria</option><option value="type" ${s.boardBy === 'type' ? 'selected' : ''}>Colunas: tipo</option></select>` : ''}
         <select id="fso" title="Ordem dos itens" aria-label="Ordem dos itens">${[['updated:-1', '🕘 Mexidos por último'], ['created:-1', '🆕 Mais novos'], ['created:1', '📜 Mais antigos'], ['title:1', '🔤 Nome (A–Z)'], ['ord:1', '✋ Minha ordem']].map(([v, n]) => `<option value="${v}" ${v === u.sort.k + ':' + u.sort.d ? 'selected' : ''}>${n}</option>`).join('')}</select>
-        <div class="seg" id="views" title="Jeito de ver">${[['grid', '▦ Grade'], ['list', '☰ Lista'], ['table', '▤ Tabela'], ['board', '▥ Quadro']].map(([k, n]) => `<button data-v="${k}" class="${s.view === k ? 'on' : ''}">${n}</button>`).join('')}</div></div></div>
+        <div class="seg" id="views" title="Jeito de ver">${[['grid', '▦ Grade'], ['list', '☰ Lista'], ['pastas', '📁 Pastas'], ['table', '▤ Tabela'], ['board', '▥ Quadro'], ['map', '🕸️ Mapa']].map(([k, n]) => `<button data-v="${k}" class="${s.view === k ? 'on' : ''}">${n}</button>`).join('')}</div></div></div>
       <div class="toolbar barra" data-lab="Filtrar">
         <input class="search" id="fq" type="search" placeholder="Filtrar esta lista…" value="${esc(u.q)}">
         <select id="fcat"><option value="">Todas as categorias</option>${M.db.categories.map((c) => `<option value="${c.id}" ${u.cat === c.id ? 'selected' : ''}>${esc(c.icon)} ${esc(c.name)}</option>`).join('')}</select>
@@ -141,6 +146,7 @@
 
     const res = $('#libres');
     res.onclick = (e) => {
+      if (s.view === 'pastas' && M.pastasClique(e)) return;
       if (e.target.closest('[data-limpa]')) { Object.assign(u, { q: '', type: '', cat: '', status: '', tag: '', fav: false, ref: false, arq: false }); return M.render(); }
       if (e.target.closest('[data-novo]')) return M.novoComModelo();
       if (e.target.closest('[data-libmais]')) { u.libMax = (u.libMax || POR_VEZ) + POR_VEZ; return M.renderResults(); }
@@ -154,17 +160,31 @@
       if (c && u.selModo) { const id = c.dataset.id; if (sel.has(id)) sel.delete(id); else sel.add(id); SFX.play('click'); return rr(); }
       if (c) M.openItem(c.dataset.id);
     };
+    res.onkeydown = (e) => { if (s.view === 'pastas') M.pastasTecla(e); };
     res.oncontextmenu = (e) => { const c = e.target.closest('[data-id]'); if (c) M.itemMenu(e, M.db.items.find((i) => i.id === c.dataset.id)); };
 
     // arrastar cartões entre colunas do quadro
     let dragId = null;
-    res.ondragstart = (e) => { const c = e.target.closest('.card'); if (!c) return; dragId = c.dataset.id; c.classList.add('dragging'); e.dataTransfer.setData('text/x-myloot', dragId); e.dataTransfer.effectAllowed = 'move'; };
-    res.ondragend = () => { dragId = null; $$('.dragging').forEach((x) => x.classList.remove('dragging')); $$('.col.over').forEach((x) => x.classList.remove('over')); };
-    const manual = () => u.sort.k === 'ord' && s.view !== 'board' && s.view !== 'table';
+    res.ondragstart = (e) => {
+      const ph = e.target.closest('.pasta-h[data-pasta]');
+      if (ph && ph.dataset.pasta) { M.pastasArrasto.pasta = ph.dataset.pasta; e.dataTransfer.setData('text/x-myloot-pasta', ph.dataset.pasta); e.dataTransfer.effectAllowed = 'move'; return; }
+      const c = e.target.closest('.card'); if (!c) return; dragId = c.dataset.id; c.classList.add('dragging'); e.dataTransfer.setData('text/x-myloot', dragId); e.dataTransfer.effectAllowed = 'move'; };
+    res.ondragend = () => { dragId = null; M.pastasArrasto.pasta = null; $$('.pasta-h.alvo').forEach((x) => x.classList.remove('alvo')); $$('.dragging').forEach((x) => x.classList.remove('dragging')); $$('.col.over').forEach((x) => x.classList.remove('over')); };
+    const manual = () => u.sort.k === 'ord' && s.view !== 'board' && s.view !== 'table' && s.view !== 'pastas';
     res.ondragover = (e) => {
+      if (s.view === 'pastas' && (dragId || M.pastasArrasto.pasta)) { const h = e.target.closest('.pasta-h[data-pasta]') || (e.target.closest('.pasta-raiz') || {}).firstElementChild; if (h) { e.preventDefault(); $$('.pasta-h.alvo').forEach((x) => x !== h && x.classList.remove('alvo')); h.classList.add('alvo'); } return; }
       if (manual() && dragId) { const c = e.target.closest('.card[data-id]'); if (c) { e.preventDefault(); $$('.card.alvo').forEach((x) => x !== c && x.classList.remove('alvo')); c.classList.add('alvo'); } return; }
       const col = e.target.closest('.col'); if (col && dragId) { e.preventDefault(); $$('.col.over').forEach((x) => { if (x !== col) x.classList.remove('over'); }); col.classList.add('over'); } };
     res.ondrop = (e) => {
+      if (s.view === 'pastas' && (dragId || M.pastasArrasto.pasta)) {
+        const h = e.target.closest('.pasta-h[data-pasta]') || (e.target.closest('.pasta-raiz') || {}).firstElementChild; $$('.pasta-h.alvo').forEach((x) => x.classList.remove('alvo'));
+        if (!h) return; e.preventDefault(); e.stopPropagation();
+        const alvo = h.dataset.pasta, pa = M.pastasArrasto.pasta; M.pastasArrasto.pasta = null;
+        if (pa) { M.pastaMover(pa, alvo); return; }
+        const ids = M.ui.selModo && sel.has(dragId) ? [...sel] : [dragId]; sel.clear();
+        const n = M.itemParaPasta(ids, alvo); if (n) M.toast(alvo ? `📁 ${n} ${n === 1 ? 'item movido' : 'itens movidos'} para “${(M.pasta(alvo) || {}).name}”` : `📦 ${n} ${n === 1 ? 'item saiu' : 'itens saíram'} da pasta`);
+        return;
+      }
       if (manual() && dragId) { const c = e.target.closest('.card[data-id]'); $$('.card.alvo').forEach((x) => x.classList.remove('alvo')); if (!c || c.dataset.id === dragId) return; e.preventDefault(); e.stopPropagation(); const r = c.getBoundingClientRect(); M.ordemMover(dragId, c.dataset.id, s.view === 'list' ? e.clientY > r.top + r.height / 2 : e.clientX > r.left + r.width / 2); return; }
       const col = e.target.closest('.col'); if (!col || !dragId) return;
       e.preventDefault(); e.stopPropagation();
@@ -184,6 +204,7 @@
       <button class="btn ghost sm" data-s="todos">${n === L.length && n ? 'Desmarcar todos' : 'Marcar todos (' + L.length + ')'}</button>
       <select data-sv="cat" ${n ? '' : 'disabled'} aria-label="Mover os selecionados para uma categoria"><option value="-">📂 Mover para…</option><option value="">📦 Sem categoria</option>${M.db.categories.map((c) => `<option value="${c.id}">${esc(c.icon)} ${esc(c.name)}</option>`).join('')}</select>
       <select data-sv="status" ${n ? '' : 'disabled'} aria-label="Mudar o status dos selecionados"><option value="-">🏷️ Status…</option>${M.STATUS.map((x) => `<option value="${esc(x.id)}">${esc(x.em)} ${esc(x.name)}</option>`).join('')}</select>
+      <select data-sv="pasta" ${n ? '' : 'disabled'} aria-label="Mover os selecionados para uma pasta"><option value="-">📁 Pasta…</option><option value="">📦 Fora de pastas</option>${M.pastaOpcoes('')}</select>
       <button class="btn ghost sm" data-s="tag" ${n ? '' : 'disabled'}>＃ Etiquetar</button>
       <button class="btn ghost sm" data-s="arq" ${n ? '' : 'disabled'}>${M.ui.arq ? '📤 Desarquivar' : '📦 Arquivar'}</button>
       <button class="btn danger sm" data-s="lixo" ${n ? '' : 'disabled'}>🗑️ Lixeira</button>
@@ -196,6 +217,7 @@
     if (!n || v === '-') return;
     const fim = (msg) => { sel.clear(); M.save(); SFX.play('drop'); M.render(); M.toast(msg); };
     if (a === 'cat') { its.forEach((i) => { i.cat = v; i.updated = t; }); return fim(`📂 ${n} ${n === 1 ? 'item movido' : 'itens movidos'}`); }
+    if (a === 'pasta') { its.forEach((i) => { i.pasta = v; i.updated = t; }); return fim(`📁 ${n} ${n === 1 ? 'item movido' : 'itens movidos'}`); }
     if (a === 'status') { its.forEach((i) => { i.status = v; i.updated = t; }); return fim(`🏷️ Status de ${n} ${n === 1 ? 'item' : 'itens'} alterado`); }
     if (a === 'arq') { its.forEach((i) => { if (u.arq) { delete i.arq; delete i.arqEm; } else { i.arq = true; i.arqEm = t; } i.updated = t; }); return fim(u.arq ? `📤 ${n} desarquivado${n === 1 ? '' : 's'}` : `📦 ${n} arquivado${n === 1 ? '' : 's'}`); }
     if (a === 'lixo') { its.forEach((i) => M.paraLixeira('item', i)); SFX.play('trash'); return fim(`🗑️ ${n} ${n === 1 ? 'item' : 'itens'} para a lixeira`); }
@@ -272,6 +294,7 @@
       { em: '📤', t: 'Enviar para o Trello', fn: () => M.sendItem(it, 'trello') },
       { em: it.arq ? '📤' : '📦', t: it.arq ? 'Desarquivar' : 'Arquivar', fn: () => M.arquivarItem(it) },
       { em: '🧬', t: 'Duplicar', fn: () => { const c = M.newItem(JSON.parse(JSON.stringify(it))); c.id = M.uid(); c.title = (it.title || 'Sem título') + ' (cópia)'; c.checklist.forEach((x) => (x.id = M.uid())); M.db.items.push(c); M.save(); SFX.play('pop'); M.render(); M.toast('🧬 Duplicado'); } },
+      ...(M.db.pastas && M.db.pastas.length ? ['-', { sub: 'Mover para pasta' }, ...M.pastaMenuItens((p) => { M.itemParaPasta(it.id, p); }, M.pastaDoItem(it))] : []),
       ...(cats.length ? ['-', { sub: 'Mover para categoria' }, ...cats] : []),
       '-',
       { em: '🗑️', t: 'Mandar para a lixeira', fn: () => M.trashItem(it) },

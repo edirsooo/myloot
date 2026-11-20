@@ -9,7 +9,7 @@
   M.graphData = () => {
     const items = M.db.items;
     let soma = items.length; for (const it of items) soma += (it.updated || 0) % 1e9;
-    const assin = soma + '|' + (M.db.categories || []).length;
+    const assin = soma + '|' + (M.db.categories || []).length + '|' + (M.db.pastas || []).map((p) => p.id + p.name + (p.updated || 0)).join(',');
     if (memo && memo.assin === assin && memo.items === items) return memo.r;
     const nodes = items.map((it) => ({ id: it.id, it, deg: 0 }));
     const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -32,6 +32,13 @@
       const nome = (M.db.categories || []).find((x) => x.id === c);
       list.sort((a, b) => a.created - b.created);
       for (let i = 1; i < list.length; i++) link(list[i - 1].id, list[i].id, 'categoria ' + (nome ? nome.name : c));
+    });
+    // mesma pasta: também em corrente
+    const pastaMap = new Map();
+    items.forEach((it) => { const p = M.pastaDoItem ? M.pastaDoItem(it) : ''; if (!p) return; if (!pastaMap.has(p)) pastaMap.set(p, []); pastaMap.get(p).push(it); });
+    pastaMap.forEach((list, p) => {
+      list.sort((a, b) => a.created - b.created);
+      for (let i = 1; i < list.length; i++) link(list[i - 1].id, list[i].id, 'pasta ' + (M.pasta(p) || {}).name);
     });
     // menções: [[Título]] ou o título de outro item escrito no texto
     const titled = items.filter((it) => (it.title || '').trim().length >= 5).map((it) => ({ id: it.id, t: it.title.trim().toLowerCase() }));
@@ -60,7 +67,8 @@
     const zb = document.createElement('div'); zb.className = 'g-zoom';
     zb.innerHTML = '<button type="button" data-z="in" title="Aproximar" aria-label="Aproximar o mapa">＋</button><button type="button" data-z="out" title="Afastar" aria-label="Afastar o mapa">−</button><button type="button" data-z="fit" title="Mostrar o mapa inteiro" aria-label="Centralizar o mapa">Centralizar</button>';
     host.classList.add('g-host'); host.append(cv, tip, zb);
-    const { nodes, edges } = M.graphData();
+    let { nodes, edges } = M.graphData();
+    if (opt.only) { nodes = nodes.filter((n) => opt.only.has(n.id)); edges = edges.filter((e) => opt.only.has(e.a.id) && opt.only.has(e.b.id)); }
     const nb = new Map(nodes.map((n) => [n, new Set()]));
     edges.forEach((e) => { nb.get(e.a).add(e.b); nb.get(e.b).add(e.a); });
     const R = (n) => 5 + Math.sqrt(n.deg) * 2.4;
