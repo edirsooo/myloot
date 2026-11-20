@@ -1,13 +1,17 @@
 {
-  "versao": "2.22.0",
+  "versao": "2.22.1",
   "data": "2026-11-20",
   "novidades": [
-    "📁 Pastas na Biblioteca: crie pastas dentro de pastas, em quantos níveis quiser, recolha e expanda cada uma (ou todas de uma vez) e arraste itens e pastas para organizar. A Categoria continua igual",
-    "🕸️ Mapa na Biblioteca: veja os itens como no grafo do Obsidian, ligados por etiqueta, categoria, pasta ou quando um cita o título do outro (escreva [[Nome do item]]). Respeita os filtros",
-    "⤢ Expandir a caixa de Conteúdo: para quem escreve muito, a ficha fica larga e a caixa de escrita alta. O MyLoot lembra da sua escolha",
-    "➖ Várias fichas abertas: minimize uma ficha e ela fica na barra de baixo, do jeitinho que estava. Abra outra, copie de uma para a outra e volte com um clique"
+    "🖼️ Prévia dos anexos no cartão da Biblioteca: imagem, vídeo, a primeira página do PDF ou o começo do texto (.txt e .md) aparecem antes de abrir a ficha. Na Lista e em Pastas vira uma miniatura. Dá para desligar no botão “🖼️ Prévias”",
+    "⤢ Ficha minimizada que volta agora segue a sua escolha atual de Expandir"
   ],
   "historico": {
+    "2.22.0": [
+      "📁 Pastas na Biblioteca: crie pastas dentro de pastas, em quantos níveis quiser, recolha e expanda cada uma (ou todas de uma vez) e arraste itens e pastas para organizar. A Categoria continua igual",
+      "🕸️ Mapa na Biblioteca: veja os itens como no grafo do Obsidian, ligados por etiqueta, categoria, pasta ou quando um cita o título do outro (escreva [[Nome do item]]). Respeita os filtros",
+      "⤢ Expandir a caixa de Conteúdo: para quem escreve muito, a ficha fica larga e a caixa de escrita alta. O MyLoot lembra da sua escolha",
+      "➖ Várias fichas abertas: minimize uma ficha e ela fica na barra de baixo, do jeitinho que estava. Abra outra, copie de uma para a outra e volte com um clique"
+    ],
     "2.21.0": [
       "🧱 Tipos de item do seu jeito: mude nome, emoji, cor e ordem, ou esconda os que não usa (⚙️ nas abas da Biblioteca)",
       "✋ “Minha ordem” na Biblioteca: escolha a ordem e arraste os cartões para onde quiser (no celular, pelo ⋯)",

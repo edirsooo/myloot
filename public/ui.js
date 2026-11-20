@@ -131,6 +131,7 @@
     ov.innerHTML = ''; ov.appendChild(e.el); ov.classList.add('on'); ov.onmousedown = (ev) => { if (ev.target === ov) M.fecharPeloUsuario(); };
     onClose = e.onClose; e.el = null; e.onClose = null; atualId = id; M.cur = e.it; sujo = false; foto0 = null;
     M.fichasPinta(); SFX.play('open');
+    { const el = ov.firstElementChild; if (el.onfichavolta) el.onfichavolta(); } // a tela da ficha acerta o que mudou enquanto estava minimizada
     return true;
   };
   dock.onclick = (ev) => {

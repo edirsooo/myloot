@@ -198,7 +198,9 @@
         const b = $('#eExp', m); b.textContent = on ? '⤡ Recolher' : '⤢ Expandir'; b.setAttribute('aria-pressed', on ? 'true' : 'false');
         M.db.settings.escritaGrande = on; M.save(); SFX.play('click'); $('#eContent', m).focus();
       };
-      if (M.db.settings.escritaGrande) { m.classList.add('wide', 'exp'); const b = $('#eExp', m); b.textContent = '⤡ Recolher'; b.setAttribute('aria-pressed', 'true'); }
+      const expAplica = () => { const on = !!M.db.settings.escritaGrande, b = $('#eExp', m); m.classList.toggle('wide', on); m.classList.toggle('exp', on); if (b) { b.textContent = on ? '⤡ Recolher' : '⤢ Expandir'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); } };
+      expAplica();
+      m.onfichavolta = expAplica; // ficha minimizada que volta: segue a escolha atual de Expandir
       if ($('#eCopiaIA', m)) $('#eCopiaIA', m).onclick = () => { navigator.clipboard.writeText(M.PROMPT_MARCA).catch(() => {}); SFX.play('copy'); M.toast('📋 Comando copiado. Cole na sua IA junto com o documento.'); };
       $('#eTypes', m).onclick = (e) => { const x = e.target.closest('.slot'); if (!x) return; it.type = x.dataset.t; touch(); SFX.play('click'); draw(); };
       $('#eTitle', m).oninput = (e) => {

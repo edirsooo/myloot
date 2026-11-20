@@ -30,6 +30,34 @@
     return L;
   };
 
+  // ----- prévia do anexo no cartão (vê de longe, sem abrir a ficha) -----
+  const AP = { img: /\.(png|jpe?g|gif|webp)$/i, vid: /\.(mp4|webm)$/i, pdf: /\.pdf$/i, txt: /\.(txt|md)$/i, aud: /\.(mp3|wav|ogg|opus|m4a)$/i };
+  const anxPrincipal = (it) => { const A = it.attachments || []; for (const k of ['img', 'vid', 'pdf', 'txt', 'aud']) { const a = A.find((x) => AP[k].test(x.name || '')); if (a) return a; } return A[0]; };
+  function anxPrevHTML(it, view) {
+    if (M.db.settings.previaAnexo === false || !(it.attachments || []).length) return '';
+    const a = anxPrincipal(it), n = a.name || '', url = '/anexos/' + encodeURIComponent(a.file || ''), mini = view === 'list';
+    const mais = it.attachments.length > 1 ? `<span class="ap-mais">+${it.attachments.length - 1}</span>` : '';
+    let h;
+    if (AP.img.test(n)) h = `<img src="${url}" loading="lazy" alt="" draggable="false">`;
+    else if (AP.vid.test(n)) h = `<video src="${url}#t=0.5" preload="metadata" muted playsinline tabindex="-1"></video><span class="ap-play" aria-hidden="true">▶</span>`;
+    else if (AP.pdf.test(n) && !mini) h = `<iframe src="${url}#toolbar=0&navpanes=0&scrollbar=0&view=FitH" loading="lazy" tabindex="-1" title="Prévia de ${esc(n)}" aria-hidden="true"></iframe>`;
+    else if (AP.txt.test(n) && !mini) h = `<pre class="ap-txt" data-aptxt="${esc(a.file || '')}">${esc(txtCache.get(a.file) || '…')}</pre>`;
+    else h = `<span class="ap-ic" aria-hidden="true">${AP.aud.test(n) ? '🎧' : AP.pdf.test(n) ? '📕' : AP.txt.test(n) ? '📄' : AP.vid.test(n) ? '🎬' : '📎'}</span>`;
+    return `<div class="aprev${mini ? ' mini' : ''}" title="${esc(n)}">${h}${mini ? '' : `<span class="ap-nome">${esc(n)}</span>`}${mais}</div>`;
+  }
+  // texto dos anexos .txt/.md: busca só o comecinho, uma vez, e guarda
+  const txtCache = new Map();
+  M.anxTxtPreenche = (box) => {
+    (box || document).querySelectorAll('pre[data-aptxt]').forEach((el) => {
+      const f = el.dataset.aptxt; if (!f || txtCache.has(f)) return;
+      txtCache.set(f, '…');
+      fetch('/anexos/' + encodeURIComponent(f), { headers: { Range: 'bytes=0-2047' } }).then((r) => (r.ok ? r.text() : '')).then((t) => {
+        t = String(t || '').replace(/\uFFFD+$/, '').slice(0, 600) || '(arquivo vazio)'; txtCache.set(f, t);
+        document.querySelectorAll(`pre[data-aptxt="${CSS.escape(f)}"]`).forEach((x) => { x.textContent = t; });
+      }).catch(() => txtCache.delete(f));
+    });
+  };
+
   function cardHTML(it, view) {
     const t = M.type(it.type), cat = M.cat(it.cat), p = progress(it);
     const st = M.statusDe(it.status), st0 = M.STATUS[0];
@@ -42,9 +70,9 @@
       : `<button class="favbtn ${it.fav ? 'on' : ''}" data-fav="${it.id}" title="Favorito" aria-label="${it.fav ? 'Tirar dos favoritos' : 'Favoritar'}: ${nomeIt}">⭐</button><button class="maisbtn" data-mais="${it.id}" title="Mais ações" aria-label="Mais ações de ${nomeIt}">⋯</button>`;
     const at = `tabindex="0" role="button" aria-label="${M.ui.selModo ? 'Selecionar' : 'Abrir'} ${nomeIt}" data-id="${it.id}"`, cls = `card${sel.has(it.id) ? ' sel' : ''}${it.arq ? ' arq' : ''}`;
     if (view === 'list') {
-      return `<div class="${cls}" style="--c:${hex(t.color)}" draggable="true" ${at}><div class="top"><span class="badge">${t.em} ${t.name}</span></div><div class="mid"><h3>${esc(it.title || 'Sem título')}</h3></div><div class="meta">${meta}</div>${fav}</div>`;
+      return `<div class="${cls}" style="--c:${hex(t.color)}" draggable="true" ${at}><div class="top"><span class="badge">${t.em} ${t.name}</span></div>${anxPrevHTML(it, 'list')}<div class="mid"><h3>${esc(it.title || 'Sem título')}</h3></div><div class="meta">${meta}</div>${fav}</div>`;
     }
-    return `<div class="${cls}" style="--c:${hex(cat ? cat.color : t.color)}" draggable="true" ${at}><div class="top"><span class="badge" style="--c:${t.color}">${t.em} ${t.name}</span>${fav}</div><h3>${esc(it.title || 'Sem título')}</h3>${preview ? `<p>${esc(preview)}</p>` : ''}${p >= 0 ? `<div class="prog"><i style="width:${p}%"></i></div>` : ''}${col}<div class="meta">${meta}</div><span class="abrir">Abrir →</span></div>`;
+    return `<div class="${cls}" style="--c:${hex(cat ? cat.color : t.color)}" draggable="true" ${at}><div class="top"><span class="badge" style="--c:${t.color}">${t.em} ${t.name}</span>${fav}</div>${anxPrevHTML(it, view)}<h3>${esc(it.title || 'Sem título')}</h3>${preview ? `<p>${esc(preview)}</p>` : ''}${p >= 0 ? `<div class="prog"><i style="width:${p}%"></i></div>` : ''}${col}<div class="meta">${meta}</div><span class="abrir">Abrir →</span></div>`;
   }
 
   // filtros ligados agora (para dizer "o filtro escondeu" em vez de "não tem nada")
@@ -90,6 +118,7 @@
       return;
     }
     box.innerHTML = (v === 'table' ? tableHTML(V) : v === 'board' ? boardHTML(V) : v === 'pastas' ? M.pastasHTML(V, cardHTML) : `<div class="${v === 'list' ? 'list' : 'grid'}">${V.map((it) => cardHTML(it, v)).join('')}</div>`) + mais;
+    M.anxTxtPreenche(box);
   };
 
   M.pages = M.pages || {};
@@ -108,6 +137,7 @@
       ${M.opcBtn('itemTypes')}</div>
         <div class="lib-ver">${s.view === 'board' ? `<select id="fby" title="Colunas do quadro"><option value="status" ${s.boardBy === 'status' ? 'selected' : ''}>Colunas: status</option><option value="cat" ${s.boardBy === 'cat' ? 'selected' : ''}>Colunas: categoria</option><option value="type" ${s.boardBy === 'type' ? 'selected' : ''}>Colunas: tipo</option></select>` : ''}
         <select id="fso" title="Ordem dos itens" aria-label="Ordem dos itens">${[['updated:-1', '🕘 Mexidos por último'], ['created:-1', '🆕 Mais novos'], ['created:1', '📜 Mais antigos'], ['title:1', '🔤 Nome (A–Z)'], ['ord:1', '✋ Minha ordem']].map(([v, n]) => `<option value="${v}" ${v === u.sort.k + ':' + u.sort.d ? 'selected' : ''}>${n}</option>`).join('')}</select>
+        <button type="button" class="btn ghost sm" id="fprev" aria-pressed="${s.previaAnexo !== false}" title="Mostrar no cartão uma prévia do anexo (imagem, vídeo, PDF ou texto)">${s.previaAnexo !== false ? '🖼️ Prévias: sim' : '🖼️ Prévias: não'}</button>
         <div class="seg" id="views" title="Jeito de ver">${[['grid', '▦ Grade'], ['list', '☰ Lista'], ['pastas', '📁 Pastas'], ['table', '▤ Tabela'], ['board', '▥ Quadro'], ['map', '🕸️ Mapa']].map(([k, n]) => `<button data-v="${k}" class="${s.view === k ? 'on' : ''}">${n}</button>`).join('')}</div></div></div>
       <div class="toolbar barra" data-lab="Filtrar">
         <input class="search" id="fq" type="search" placeholder="Filtrar esta lista…" value="${esc(u.q)}">
@@ -142,6 +172,7 @@
     $('#selBar').onchange = (e) => { if (e.target.dataset.sv) acaoSel(e.target.dataset.sv, e.target.value); };
     if ($('#fby')) $('#fby').onchange = (e) => { s.boardBy = e.target.value; M.save(); rr(); };
     $('#fso').onchange = (e) => { const [k, d] = e.target.value.split(':'); u.sort = { k, d: +d }; M.db.settings.libOrdem = u.sort; M.save(); if (k === 'ord') M.toast('✋ Arraste os cartões para mudar a ordem (no celular: ⋯ → Subir ou Descer)'); M.render(); };
+    $('#fprev').onclick = () => { s.previaAnexo = s.previaAnexo === false; M.save(); SFX.play('click'); M.render(); };
     $('#views').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; s.view = b.dataset.v; M.save(); SFX.play('click'); M.render(); };
 
     const res = $('#libres');
