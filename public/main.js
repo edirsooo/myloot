@@ -2,7 +2,7 @@
 (function () {
   const { esc, $, $$ } = M;
   const PAGES = [
-    ['home', '🏠', 'Início'], ['lib', '📦', 'Biblioteca'], ['tasks', '✅', 'Tarefas'], ['rot', '🎯', 'Rotina'], ['cal', '🗓️', 'Calendário'], ['clients', '👥', 'Clientes'], ['fin', '💰', 'Financeiro'], ['tools', '🧰', 'Ferramentas'],
+    ['home', '🏠', 'Início'], ['lib', '📦', 'Biblioteca'], ['tasks', '✅', 'Tarefas'], ['rot', '🎯', 'Rotina'], ['cal', '🗓️', 'Calendário'], ['clients', '👥', 'Clientes'], ['fin', '💰', 'Financeiro'], ['trello', '📋', 'Trello'], ['tools', '🧰', 'Ferramentas'],
     ['ach', '🏆', 'Conquistas'], ['trash', '🗑️', 'Lixeira'], ['cfg', '⚙️', 'Configurações'],
   ];
 

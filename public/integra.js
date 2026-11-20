@@ -46,7 +46,8 @@
       <div class="cfg-row"><span class="l">📋 Trello ${M.hint('1) Em trello.com/power-ups/admin crie um Power-Up e gere a chave da API (API key). 2) Na mesma página, clique em “Token” e autorize. 3) Cole a chave e o token aqui e escolha a lista onde os cartões vão cair.')}</span>${dot(s.trello.ok)}</div>
       <div class="row" style="align-items:center"><input type="password" id="tKey" aria-label="Chave da API do Trello" placeholder="${s.trello.temChave ? 'Chave guardada ✔' : 'API key'}" autocomplete="off" style="flex:1"><input type="password" id="tTok" aria-label="Token do Trello" placeholder="${s.trello.temChave ? 'Token guardado ✔' : 'Token'}" autocomplete="off" style="flex:2"><button class="btn ghost" id="tLoad" style="flex:none">Buscar listas</button></div>
       <div class="row" style="align-items:center;margin-top:6px"><select id="tList" aria-label="Lista de destino no Trello" style="flex:3"><option value="">${s.trello.alvoNome ? esc(s.trello.alvoNome) : '— escolha a lista de destino —'}</option></select><button class="btn" id="tSave" style="flex:none">Guardar</button><button class="btn ghost" id="tDel" style="flex:none">Remover</button></div>
-      <small style="color:var(--dim);display:block;margin-top:8px">Depois de conectar, clique com o botão direito num item (ou use <span style="font-weight:700">📤 Enviar para…</span> dentro dele). As chaves ficam só neste computador, em data/segredos.json, fora do backup, do Drive e do GitHub.</small>`;
+      <div class="row" style="margin-top:8px"><button type="button" class="btn ghost sm" id="tTela" style="flex:none">📋 Passo a passo e usar o Trello aqui dentro</button></div>
+      <small style="color:var(--dim);display:block;margin-top:8px">Na tela 📋 Trello você vê e mexe nos seus quadros sem sair do MyLoot (a lista de destino acima é só para o “Enviar para o Trello”). Depois de conectar, clique com o botão direito num item (ou use <span style="font-weight:700">📤 Enviar para…</span> dentro dele). As chaves ficam só neste computador, em data/segredos.json, fora do backup, do Drive e do GitHub.</small>`;
     const err = (e) => M.toast('⚠️ ' + e.message);
     $('#nLoad').onclick = async () => {
       try {
@@ -73,6 +74,7 @@
       const sel = $('#tList'); if (!sel.value) return M.toast('Escolha a lista primeiro (Buscar listas).');
       try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ trello: { key: $('#tKey').value.trim(), token: $('#tTok').value.trim(), alvo: sel.value, alvoNome: sel.selectedOptions[0].textContent } }) }); SFX.play('coin'); M.toast('✅ Trello conectado'); M.intBind(); } catch (e) { err(e); }
     };
+    $('#tTela').onclick = () => M.go('trello');
     $('#tDel').onclick = async () => { try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ trello: null }) }); M.toast('Trello desconectado'); M.intBind(); } catch (e) { err(e); } };
   };
 })();

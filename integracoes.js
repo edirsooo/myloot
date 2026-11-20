@@ -110,4 +110,69 @@ async function trelloEnviar(cfg, it) {
   return { url: card.shortUrl || card.url };
 }
 
-module.exports = { notionPaginas, notionEnviar, trelloListas, trelloEnviar };
+// ---------------- Trello dentro do MyLoot: ver e mexer nos quadros da própria pessoa ----------------
+const TID = /^[0-9a-fA-F]{24}$/;
+const tId = (x) => { x = String(x || ''); if (!TID.test(x)) throw new Error('Quadro, lista ou cartão inválido.'); return x; };
+const txt = (x, n) => String(x == null ? '' : x).slice(0, n || 16384);
+async function tr(cfg, method, pth, params) {
+  if (!cfg || !cfg.key || !cfg.token) throw new Error('Conecte o seu Trello primeiro.');
+  const r = await req(method, 'api.trello.com', '/1' + pth + '?' + q(Object.assign({}, params || {}, { key: cfg.key, token: cfg.token })), {});
+  if (r.st === 404) throw new Error('Não achei isso no Trello (talvez tenha sido apagado ou arquivado). Atualize a tela.');
+  if (r.st !== 200) throw tErr(r);
+  return r.j;
+}
+async function trelloEu(cfg) { const j = await tr(cfg, 'GET', '/members/me', { fields: 'fullName,username' }); return { nome: j.fullName || j.username || '', usuario: j.username || '' }; }
+async function trelloQuadros(cfg) {
+  const j = await tr(cfg, 'GET', '/members/me/boards', { filter: 'open', fields: 'name,prefs,starred,dateLastActivity,url' });
+  return j.map((b) => ({ id: b.id, nome: b.name, fav: !!b.starred, url: b.url, ult: b.dateLastActivity || '', cor: (b.prefs || {}).backgroundColor || '', img: (((b.prefs || {}).backgroundImageScaled || []).find((x) => x.width >= 400) || {}).url || (b.prefs || {}).backgroundImage || '' }));
+}
+async function trelloQuadro(cfg, id) {
+  const j = await tr(cfg, 'GET', '/boards/' + tId(id), {
+    fields: 'name,url,prefs', lists: 'open', list_fields: 'name,pos', cards: 'open',
+    card_fields: 'name,desc,idList,pos,due,dueComplete,idLabels,idMembers,badges,shortUrl,cover', labels: 'all', label_fields: 'name,color', members: 'all', member_fields: 'fullName,initials',
+  });
+  const pr = j.prefs || {};
+  return {
+    quadro: { id: j.id, nome: j.name, url: j.url, cor: pr.backgroundColor || '', img: ((pr.backgroundImageScaled || []).find((x) => x.width >= 1000) || {}).url || pr.backgroundImage || '' },
+    listas: (j.lists || []).map((l) => ({ id: l.id, nome: l.name, pos: l.pos })).sort((a, b) => a.pos - b.pos),
+    cartoes: (j.cards || []).map((c) => ({ id: c.id, nome: c.name, desc: !!c.desc, lista: c.idList, pos: c.pos, prazo: c.due || '', feito: !!c.dueComplete, etiquetas: c.idLabels || [], membros: c.idMembers || [], url: c.shortUrl,
+      capa: (c.cover || {}).color || '', check: [(c.badges || {}).checkItemsChecked || 0, (c.badges || {}).checkItems || 0], coment: (c.badges || {}).comments || 0, anexos: (c.badges || {}).attachments || 0 })),
+    etiquetas: (j.labels || []).map((l) => ({ id: l.id, nome: l.name || '', cor: l.color || '' })),
+    membros: (j.members || []).map((m) => ({ id: m.id, nome: m.fullName || '', ini: m.initials || '' })),
+  };
+}
+async function trelloCartao(cfg, id) {
+  const j = await tr(cfg, 'GET', '/cards/' + tId(id), { fields: 'name,desc,due,dueComplete,idList,idLabels,idMembers,shortUrl,idBoard', checklists: 'all', attachments: 'true', attachment_fields: 'name,url,isUpload,date', actions: 'commentCard', actions_limit: '40' });
+  return {
+    id: j.id, nome: j.name, desc: j.desc || '', prazo: j.due || '', feito: !!j.dueComplete, lista: j.idList, quadro: j.idBoard, etiquetas: j.idLabels || [], membros: j.idMembers || [], url: j.shortUrl,
+    checklists: (j.checklists || []).map((c) => ({ id: c.id, nome: c.name, itens: (c.checkItems || []).sort((a, b) => a.pos - b.pos).map((i) => ({ id: i.id, nome: i.name, ok: i.state === 'complete' })) })),
+    anexos: (j.attachments || []).map((a) => ({ id: a.id, nome: a.name, url: a.url, upload: !!a.isUpload })),
+    comentarios: (j.actions || []).map((a) => ({ id: a.id, texto: (a.data || {}).text || '', quem: (a.memberCreator || {}).fullName || '', quando: a.date })),
+  };
+}
+// ações que mudam o Trello: só estas, com ids conferidos
+async function trelloAcao(cfg, b) {
+  const op = String(b.op || '');
+  if (op === 'cartaoMover') return tr(cfg, 'PUT', '/cards/' + tId(b.id), Object.assign({ idList: tId(b.lista) }, b.pos != null ? { pos: String(b.pos) } : {}));
+  if (op === 'cartaoSalvar') {
+    const p = {};
+    if (b.nome != null) { if (!String(b.nome).trim()) throw new Error('O cartão precisa de um nome.'); p.name = txt(b.nome); }
+    if (b.desc != null) p.desc = txt(b.desc);
+    if (b.prazo != null) p.due = b.prazo ? new Date(b.prazo).toISOString() : 'null';
+    if (b.feito != null) p.dueComplete = String(!!b.feito);
+    if (Array.isArray(b.etiquetas)) p.idLabels = b.etiquetas.map(tId).join(',');
+    if (b.lista) p.idList = tId(b.lista);
+    return tr(cfg, 'PUT', '/cards/' + tId(b.id), p);
+  }
+  if (op === 'cartaoArquivar') return tr(cfg, 'PUT', '/cards/' + tId(b.id), { closed: 'true' });
+  if (op === 'cartaoNovo') { if (!String(b.nome || '').trim()) throw new Error('Escreva o nome do cartão.'); return tr(cfg, 'POST', '/cards', { idList: tId(b.lista), name: txt(b.nome), pos: 'bottom' }); }
+  if (op === 'comentar') { if (!String(b.texto || '').trim()) throw new Error('Escreva o comentário.'); return tr(cfg, 'POST', '/cards/' + tId(b.id) + '/actions/comments', { text: txt(b.texto) }); }
+  if (op === 'checkItem') return tr(cfg, 'PUT', '/cards/' + tId(b.id) + '/checkItem/' + tId(b.item), { state: b.ok ? 'complete' : 'incomplete' });
+  if (op === 'checkNovo') { if (!String(b.nome || '').trim()) throw new Error('Escreva o item.'); return tr(cfg, 'POST', '/checklists/' + tId(b.checklist) + '/checkItems', { name: txt(b.nome) }); }
+  if (op === 'listaNova') { if (!String(b.nome || '').trim()) throw new Error('Escreva o nome da lista.'); return tr(cfg, 'POST', '/lists', { idBoard: tId(b.quadro), name: txt(b.nome, 512), pos: 'bottom' }); }
+  if (op === 'listaRenomear') { if (!String(b.nome || '').trim()) throw new Error('Escreva o nome da lista.'); return tr(cfg, 'PUT', '/lists/' + tId(b.id), { name: txt(b.nome, 512) }); }
+  if (op === 'listaArquivar') return tr(cfg, 'PUT', '/lists/' + tId(b.id) + '/closed', { value: 'true' });
+  throw new Error('Ação desconhecida.');
+}
+
+module.exports = { notionPaginas, notionEnviar, trelloListas, trelloEnviar, trelloEu, trelloQuadros, trelloQuadro, trelloCartao, trelloAcao };

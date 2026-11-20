@@ -1245,6 +1245,18 @@ async function app(req, res) {
         }
         catch (e) { return send(res, 502, { erro: e.message }); }
       }
+      // ----- Trello dentro do MyLoot (a chave e o token ficam aqui no servidor; o app só pede o que mostrar ou mudar) -----
+      if (p.startsWith('/api/trello/')) {
+        const cfg = readSecrets().trello || {};
+        try {
+          if (p === '/api/trello/eu' && req.method === 'GET') return send(res, 200, await INT.trelloEu(cfg));
+          if (p === '/api/trello/quadros' && req.method === 'GET') return send(res, 200, { quadros: await INT.trelloQuadros(cfg) });
+          if (p === '/api/trello/quadro' && req.method === 'GET') return send(res, 200, await INT.trelloQuadro(cfg, u.searchParams.get('id')));
+          if (p === '/api/trello/cartao' && req.method === 'GET') return send(res, 200, await INT.trelloCartao(cfg, u.searchParams.get('id')));
+          if (p === '/api/trello/acao' && req.method === 'POST') { const b = JSON.parse((await readBody(req, 2e5)).toString('utf8') || '{}'); const r = await INT.trelloAcao(cfg, b); return send(res, 200, { ok: true, id: (r && r.id) || '' }); }
+          return send(res, 404, { erro: 'rota' });
+        } catch (e) { return send(res, 502, { erro: e.message }); }
+      }
       // ----- integrações (Notion e Trello) -----
       if (p === '/api/int/status') {
         const x = readSecrets(), n = x.notion || {}, t = x.trello || {};

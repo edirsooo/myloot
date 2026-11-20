@@ -274,3 +274,50 @@ svg.ic{flex:none;vertical-align:-3px}
 .board .aprev,body.compact .aprev{height:110px}
 .aprev img.ap-pdf{object-fit:cover;object-position:top;background:#fff}
 .prev-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px}.prev-bar b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+
+/* ----- Trello dentro do MyLoot ----- */
+.tr-con{max-width:760px}
+.tr-con h2{margin:0 0 4px}
+.tr-passos{margin:14px 0;padding-left:22px;display:flex;flex-direction:column;gap:14px;line-height:1.5}
+.tr-passos a{color:var(--accent)}
+.tr-topo select{max-width:320px}
+.tr-quadro{border-radius:14px;padding:12px;background:var(--trbg,var(--bg2));border:2px solid var(--edge);min-height:60vh}
+.tr-cols{display:flex;gap:12px;align-items:flex-start;overflow-x:auto;padding-bottom:10px;min-height:55vh}
+.tr-col{flex:0 0 272px;background:#101217ee;border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 250px)}
+body.light .tr-col{background:#f1f2f4ee}
+.tr-col.over{outline:2px solid var(--accent)}
+.tr-col-h{display:flex;align-items:center;gap:6px;padding:4px 6px}
+.tr-col-h b{font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr-col-h .n{font:700 11px var(--mono);color:var(--faint)}
+.tr-cards{display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:8px;padding:1px}
+.tr-card{background:var(--panel);border:1px solid var(--edge);border-radius:9px;padding:8px 10px;cursor:pointer;box-shadow:0 1px 0 #0005;overflow:hidden}
+body.light .tr-card{background:#fff}
+.tr-card:hover{border-color:var(--accent)}
+.tr-card.dragging{opacity:.4}
+.tr-capa{height:28px;margin:-8px -10px 8px}
+.tr-ets{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.tr-et{display:inline-block;min-width:40px;height:16px;padding:0 8px;border-radius:4px;font:700 11px/16px var(--f);color:#1d2125;border:0}
+.tr-nome{font-size:14px;line-height:1.35;word-break:break-word}
+.tr-rod{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:7px;font-size:12px;color:var(--dim)}
+.tr-b.atr{background:#f87168;color:#1d2125;padding:0 5px;border-radius:4px}
+.tr-b.logo{background:#e2b203;color:#1d2125;padding:0 5px;border-radius:4px}
+.tr-b.ok{background:#4bce97;color:#1d2125;padding:0 5px;border-radius:4px}
+.tr-mbs{margin-left:auto;display:flex;gap:2px}
+.tr-mb{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--text);font:700 10px/24px var(--f);text-align:center}
+.tr-add{all:unset;cursor:pointer;padding:7px 8px;border-radius:8px;color:var(--dim);font-size:13.5px}
+.tr-add:hover,.tr-add:focus-visible{background:#ffffff14;color:var(--text)}
+.tr-col-nova{background:#ffffff3d;flex-basis:272px}
+.tr-col-nova>.tr-add{color:#fff}.tr-col-nova>.tr-add:hover{background:#ffffff26}
+.tr-novo{display:flex;flex-direction:column;gap:6px}
+.tr-novo textarea,.tr-novo input{width:100%;box-sizing:border-box}
+.tr-marca{height:36px;border-radius:9px;border:2px dashed var(--accent);background:var(--accent-soft)}
+.tr-ets-ed{display:flex;flex-wrap:wrap;gap:6px}
+.tr-ets-ed .tr-et{height:26px;line-height:26px;cursor:pointer;opacity:.4}
+.tr-ets-ed .tr-et.on{opacity:1;outline:2px solid var(--text)}
+.tr-ck{display:flex;gap:8px;align-items:flex-start;padding:4px 2px;cursor:pointer}
+.tr-ck input:checked+span{text-decoration:line-through;color:var(--faint)}
+.tr-anx{display:block;padding:4px 0;color:var(--accent)}
+.tr-com{padding:8px 10px;border-radius:9px;background:var(--bg2);margin-top:8px;font-size:13px}
+.tr-com small{color:var(--faint)}
+.tr-com div{white-space:pre-wrap;margin-top:3px}
+@media (max-width:700px){.tr-col{flex-basis:84vw;max-height:none}.tr-quadro{padding:8px;margin:0 -6px}.tr-topo select{max-width:100%;flex:1 1 100%}}
