@@ -1,13 +1,21 @@
 {
-  "versao": "2.23.0",
-  "data": "2026-11-20",
+  "versao": "2.23.1",
+  "data": "2026-11-21",
   "novidades": [
-    "📋 Trello dentro do MyLoot: nova tela Trello no menu com os seus quadros, listas e cartões do jeitinho do app. Arraste cartões entre listas, crie cartões e listas, renomeie e arquive",
-    "🗂️ Abra um cartão para mudar nome, lista, prazo, etiquetas e descrição, marcar itens do checklist e comentar, sem sair do MyLoot",
-    "📥 “Guardar no MyLoot”: o cartão do Trello vira uma nota na Biblioteca, com checklist e link para o cartão",
-    "🔑 Passo a passo para cada pessoa conectar o próprio Trello, com o botão “Gerar token”. A chave fica só no seu computador"
+    "🧭 Novo quadro no Início: “Para que serve cada tela”, com Biblioteca, Tarefas, Rotina, Calendário e Clientes explicados em uma linha. Toque para ir; “Entendi” esconde",
+    "📱 Celular: o botão ← do topo agora sempre leva a algum lugar (sem tela anterior, volta ao Início) e some quando não há para onde voltar",
+    "📱 Celular: o ? do tutorial ficou mais limpo, sem o círculo grande, e o contorno laranja não fica mais preso depois de tocar num botão",
+    "⌨️ Celular: ao entrar em Tarefas o teclado não abre mais sozinho cobrindo a tela",
+    "📕 Biblioteca: a prévia dos PDFs mostra o título da capa (antes as capas escuras pareciam todas iguais) e nunca mais aparece imagem quebrada enquanto a prévia é feita",
+    "🕸️ Mapa de conexões: não fica mais em branco no iPhone depois de usar o app por um tempo"
   ],
   "historico": {
+    "2.23.0": [
+      "📋 Trello dentro do MyLoot: nova tela Trello no menu com os seus quadros, listas e cartões do jeitinho do app. Arraste cartões entre listas, crie cartões e listas, renomeie e arquive",
+      "🗂️ Abra um cartão para mudar nome, lista, prazo, etiquetas e descrição, marcar itens do checklist e comentar, sem sair do MyLoot",
+      "📥 “Guardar no MyLoot”: o cartão do Trello vira uma nota na Biblioteca, com checklist e link para o cartão",
+      "🔑 Passo a passo para cada pessoa conectar o próprio Trello, com o botão “Gerar token”. A chave fica só no seu computador"
+    ],
     "2.22.2": [
       "📕 PDF no cartão agora é uma miniatura da 1ª página, criada uma vez só e guardada: a Biblioteca fica leve mesmo com muitos PDFs",
       "👁️ O botão Ver dos anexos abre e fecha: clique de novo (ou em “Fechar prévia”) e a prévia volta a ficar pequena"

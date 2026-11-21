@@ -59,6 +59,7 @@
   };
 
   // ----- desenho com física simples (sem bibliotecas) -----
+  const mapas = new Set(); // mapas desenhados agora (para soltar os que saíram da tela)
   M.graph = (host, opt) => {
     opt = opt || {};
     const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
@@ -88,6 +89,13 @@
       kick(lembrados ? 0.05 : 0.3); sujo = true;
     };
     const ro = new ResizeObserver(resize); ro.observe(host);
+    // voltou para o app (iPhone apaga o desenho dos canvas em segundo plano): refaz a área e redesenha
+    const volta = () => { if (document.visibilityState === 'visible' && host.isConnected) resize(); };
+    document.addEventListener('visibilitychange', volta); addEventListener('pageshow', volta);
+    // a tela foi redesenhada e este mapa saiu: libera a memória do canvas na hora (o iPhone tem limite e, sem isso, o mapa novo ficava em branco)
+    const solta = () => { cancelAnimationFrame(raf); ro.disconnect(); guardar(); document.removeEventListener('visibilitychange', volta); removeEventListener('pageshow', volta); cv.width = cv.height = 0; };
+    mapas.forEach((m) => { if (!m.host.isConnected) { m.solta(); mapas.delete(m); } });
+    mapas.add({ host, solta });
 
     function step() {
       const k = alpha;
@@ -141,7 +149,7 @@
     }
 
     function loop() {
-      if (!host.isConnected) { ro.disconnect(); guardar(); return; }
+      if (!host.isConnected) { solta(); mapas.forEach((m) => { if (m.host === host) mapas.delete(m); }); return; }
       if (alpha > 0.02 || drag) { for (let i = 0; i < 2; i++) step(); if (!fitted && alpha < 0.35) { fit(); fitted = 1; } if (fitted === 1 && alpha < 0.03) { fit(); fitted = 2; guardar(); } sujo = true; }
       if (sujo) { draw(); sujo = false; }
       raf = requestAnimationFrame(loop);

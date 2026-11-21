@@ -60,6 +60,7 @@
       // intent 'print': desenha mesmo com a janela em segundo plano (o modo de tela espera o próximo quadro); 20 s no máximo por PDF
       await Promise.race([pg.render({ canvasContext: cx, canvas: cv, viewport: vp, intent: 'print' }).promise, new Promise((_, no) => setTimeout(() => no(new Error('demorou')), 20000))]);
       const blob = await new Promise((r) => cv.toBlob(r, 'image/jpeg', 0.82));
+      cv.width = cv.height = 0; // libera a memória do desenho (o iPhone tem limite para canvas)
       const r = await fetch('/api/miniatura?file=' + encodeURIComponent(f), { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'X-MyLoot': '1' }, body: blob });
       if (!r.ok) throw new Error('não gravou');
     } finally { try { tarefa.destroy(); } catch (_) {} } // libera o PDF da memória (falhar aqui não estraga a miniatura)
@@ -68,19 +69,24 @@
     if (miniRodando) return; miniRodando = true;
     while (miniFila.length) {
       const f = miniFila.shift();
-      try { await geraMini(f); miniFeita.set(f, Date.now()); } catch (_) { miniFalhou.add(f); }
+      // 30 s no máximo por PDF, do começo ao fim (no celular o pdf.js pode travar antes mesmo de desenhar)
+      try { await Promise.race([geraMini(f), new Promise((_, no) => setTimeout(() => no(new Error('demorou')), 30000))]); miniFeita.set(f, Date.now()); } catch (_) { miniFalhou.add(f); }
       document.querySelectorAll(`img[data-pdfmini="${CSS.escape(f)}"]`).forEach((im) => {
-        if (miniFalhou.has(f)) { const ic = document.createElement('span'); ic.className = 'ap-ic'; ic.textContent = '📕'; im.replaceWith(ic); }
-        else im.src = '/miniaturas/' + encodeURIComponent(f) + '.jpg?v=' + miniFeita.get(f);
+        if (miniFalhou.has(f)) virouIcone(im);
+        else { im.onload = () => { const b = im.closest('.aprev'); if (b) b.classList.remove('ap-espera'); }; im.src = '/miniaturas/' + encodeURIComponent(f) + '.jpg?v=' + miniFeita.get(f); }
       });
     }
     miniRodando = false;
   }
-  // a imagem ainda não existe (404): entra na fila, uma de cada vez
+  // sem miniatura: o cartão mostra o livrinho 📕 (nunca a imagem quebrada do navegador)
+  const virouIcone = (im) => { const b = im.closest('.aprev'); if (b) b.classList.remove('ap-espera'); const ic = document.createElement('span'); ic.className = 'ap-ic'; ic.setAttribute('aria-hidden', 'true'); ic.textContent = '📕'; im.replaceWith(ic); };
+  // a imagem ainda não existe (404): entra na fila, uma de cada vez; enquanto isso, o cartão mostra o 📕 com "gerando prévia"
   document.addEventListener('error', (e) => {
     const im = e.target; if (!im || !im.matches || !im.matches('img[data-pdfmini]')) return;
-    const f = im.dataset.pdfmini; if (!f || miniFalhou.has(f)) return;
-    if (miniFeita.has(f)) { miniFalhou.add(f); return; } // já gerou e mesmo assim não abre: desiste
+    const f = im.dataset.pdfmini;
+    if (!f || miniFalhou.has(f)) return virouIcone(im);
+    if (miniFeita.has(f)) { miniFalhou.add(f); return virouIcone(im); } // já gerou e mesmo assim não abre: desiste
+    const b = im.closest('.aprev'); if (b) b.classList.add('ap-espera');
     if (!miniFila.includes(f)) { miniFila.push(f); rodaFila(); }
   }, true);
 

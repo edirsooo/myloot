@@ -249,7 +249,9 @@
     $$('#tRpD .chip-b').forEach((b) => b.classList.toggle('on', novosDias.includes(+b.dataset.i)));
     ligaDias($('#tRpD'), novosDias);
     $('#tRp').onchange = () => { $('#tRpD').hidden = $('#tRp').value !== 'dias'; };
-    $('#tTipo').onclick = (e) => { const b = e.target.closest('[data-k]'); if (!b) return; u.novoTipo = b.dataset.k; SFX.play('click'); pintaTipo(); $('#tIn').focus(); };
+    // no celular o teclado não abre sozinho (cobria a tela inteira ao entrar em Tarefas): só com mouse o campo já vem pronto
+    const comMouse = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    $('#tTipo').onclick = (e) => { const b = e.target.closest('[data-k]'); if (!b) return; u.novoTipo = b.dataset.k; SFX.play('click'); pintaTipo(); if (comMouse) $('#tIn').focus(); };
     pintaTipo();
     $('#tAdd').onclick = add;
     $('#tIn').onkeydown = (e) => { if (e.key === 'Enter') add(); };
@@ -261,7 +263,7 @@
     $('#tDt').onchange = pintaDias;
     if ($('#tMais')) $('#tMais').onclick = () => { u.tasksFeitas = nF + FEITAS_MAIS; SFX.play('click'); M.render(); };
     if ($('#tMenos')) $('#tMenos').onclick = () => { u.tasksFeitas = 0; SFX.play('click'); M.render(); };
-    $('#tIn').focus();
+    if (comMouse) $('#tIn').focus();
     $('#tLs').onclick = (e) => { const x = e.target.closest('[data-l],[data-lnova]'); if (!x) return; if (x.dataset.lnova) return M.opcEditar('taskLists', null, { criou: (l) => { u.tLista = l.id; } }); u.tLista = x.dataset.l; SFX.play('click'); M.render(); };
     if ($('#tAg')) $('#tAg').onclick = (e) => { const b = e.target.closest('[data-g]'); if (!b) return; u.tAgrupa = b.dataset.g; SFX.play('click'); M.render(); };
     v.onclick = (e) => {

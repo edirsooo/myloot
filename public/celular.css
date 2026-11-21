@@ -1169,3 +1169,11 @@ body.light .qc-copy h2 b{text-shadow:0 3px 0 #cfc6ee}
 #tOpPr{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:6px;align-items:center}#tOpPr .lbl{grid-column:1/-1}
 
 @media (max-width:700px){#dock{bottom:calc(84px + env(safe-area-inset-bottom));left:8px;max-width:calc(100vw - 16px)}body:has(#overlay.on) #dock{bottom:calc(98px + env(safe-area-inset-bottom))}.modal.wide{width:100%}}
+
+/* v2.23.1 (teste no celular): foco só aparece para quem usa o teclado; topo mais limpo no celular */
+html.toque :focus-visible{outline:none}
+@media (max-width:700px){
+  #navVolta:disabled{display:none}
+  .tour-btn,.tour-btn:hover{border:0;background:none;padding:0;justify-content:center}
+  .tour-btn i,.tour-btn:hover i{width:24px;height:24px;font-size:13px;background:var(--accent);color:var(--on-accent)}
+}

@@ -20,7 +20,8 @@
   matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if (M.db && M.db.settings.themeAuto) M.applySettings(); });
   // ----- trocar de tela, com voltar e avançar (botões do topo, do navegador e Alt + setas) -----
   let hN = 0, hMax = 0; // posição atual e última posição do histórico desta aba
-  const pintaNav = () => { const v = $('#navVolta'), a = $('#navAvanca'); if (v) v.disabled = hN <= 0; if (a) a.disabled = hN >= hMax; };
+  // o voltar só apaga no Início sem tela anterior (no celular ele some); fora do Início ele sempre leva a algum lugar
+  const pintaNav = () => { const v = $('#navVolta'), a = $('#navAvanca'); if (v) v.disabled = hN <= 0 && (!M.ui || M.ui.page === 'home'); if (a) a.disabled = hN >= hMax; };
   const fichaAberta = () => ({ cli: M.cliAberto || null, item: M.cur ? M.cur.id : null });
   const trocar = (p) => {
     // ficha aberta fica como estava (rascunho, se mudou) e sai da frente da tela nova
@@ -43,7 +44,16 @@
     if (s.cli && M.client && M.client(s.cli)) M.openClient(s.cli);
     else if (s.item && M.db.items.some((i) => i.id === s.item)) M.openItem(s.item);
   });
-  $('#navVolta').onclick = () => history.back();
+  // abriu direto numa tela (sem anterior nesta aba): o voltar leva ao Início, sem criar histórico
+  $('#navVolta').onclick = () => {
+    if (hN > 0) return history.back();
+    if (M.ui.page === 'home') return;
+    try { history.replaceState({ p: 'home', n: 0 }, '', '#home'); } catch (_) {}
+    trocar('home');
+  };
+  // contorno de foco só para quem navega pelo teclado: depois de um toque ou clique ele não fica preso na tela
+  addEventListener('pointerdown', () => document.documentElement.classList.add('toque'), true);
+  addEventListener('keydown', (e) => { if (e.key === 'Tab') document.documentElement.classList.remove('toque'); }, true);
   $('#navAvanca').onclick = () => history.forward();
 
   M.render = () => {
@@ -156,7 +166,7 @@
     const hash = location.hash.slice(1);
     if (M.pages[hash]) M.ui.page = hash;
     try { history.replaceState({ p: M.ui.page, n: 0 }, ''); } catch (_) {}
-    M.render();
+    M.render(); pintaNav();
     if (hash.startsWith('item=')) M.openItem(hash.slice(5));
     M.focusPaint();
     await M.recuperarNaoSalvo(); // mudanças que não chegaram a ser salvas da última vez

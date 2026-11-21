@@ -58,6 +58,19 @@
           ${s.gamify ? `<div class="ring" style="--p:${c.pct}" title="Meta de hoje: ${c.dayXp} / ${s.dailyGoal} XP"><span>${c.pct}%<small>META</small></span></div>` : ''}
         </div>`;
       } },
+    // v2.23.1: quem testou no celular não entendeu para que serve cada tela; este quadro explica e some com "Entendi"
+    guia: { em: '🧭', nome: 'Para que serve cada tela', desc: 'Um mapa rápido do MyLoot: o que fica em cada lugar. Toque numa linha para ir até a tela.', un: 1, tam: 'g',
+      html(w) {
+        const L = [['lib', '📦', 'Biblioteca', 'Guarde o que você usa de novo: prompts, PDFs, links, notas e modelos prontos.'],
+          ['tasks', '✅', 'Tarefas', 'O que você precisa fazer. Tarefa é algo para fazer; Compromisso tem dia e hora marcados.'],
+          ['rot', '🎯', 'Rotina', 'Hábitos que você marca todo dia (beber água, ler) e metas com número (ex.: 12 livros no ano).'],
+          ['cal', '🗓️', 'Calendário', 'Tudo o que tem data, junto num mês só.'],
+          ['clients', '👥', 'Clientes e Financeiro', 'Para quem atende clientes: a ficha, as tarefas e o dinheiro de cada um.']];
+        return `<div class="panel w-guia"><h4>${tit(w, '🧭 Para que serve cada tela')}</h4>
+          <div class="w-guia-l">${L.map(([id, em, n, d]) => `<button type="button" class="w-guia-i" data-go="${id}"><span class="em" aria-hidden="true">${em}</span><span class="tx"><b>${n}</b><small>${d}</small></span><span class="vai" aria-hidden="true">→</span></button>`).join('')}</div>
+          <p class="w-guia-p">Para criar qualquer coisa, use o <b>＋ Novo</b>. O <b>?</b> ao lado do nome de cada tela mostra o passo a passo dela.</p>
+          <button type="button" class="btn ghost sm" data-guia-ok>✔ Entendi, pode esconder</button></div>`;
+      } },
     captura: { em: '📥', nome: 'Guardar rápido', desc: 'O que você quer guardar? Tarefa, nota, prompt ou link, escrevendo ou falando.', un: 1, tam: 'g', topo: 1,
       aj: [['modos', 'modos', 'Tipos que aparecem']],
       html(w) {
@@ -143,11 +156,21 @@
   };
   M.HOME_W = W;
   M.organizarInicio = () => { org = true; M.go('home'); };
-  const PADRAO = [['w-saudacao', 'saudacao', 'g', ''], ['w-mapa', 'mapa', 'p', 'duplo'], ['w-captura', 'captura', 'g', ''], ['w-hoje', 'hoje', 'm', ''],
+  const PADRAO = [['w-saudacao', 'saudacao', 'g', ''], ['w-guia', 'guia', 'g', ''], ['w-mapa', 'mapa', 'p', 'duplo'], ['w-captura', 'captura', 'g', ''], ['w-hoje', 'hoje', 'm', ''],
     ['w-missoes', 'missoes', 'm', ''], ['w-andamento', 'andamento', 'p', ''], ['w-favoritos', 'favoritos', 'p', ''], ['w-recentes', 'recentes', 'p', '']]
     .map(([id, tipo, tam, alto], i) => ({ id, tipo, tam, alto, ord: i, oculto: false, soPc: false, soCel: false, titulo: '', cfg: {}, updated: 0 }));
   const lista = () => {
-    if (!Array.isArray(M.db.homeWidgets)) M.db.homeWidgets = PADRAO.map((o) => Object.assign({}, o, { cfg: {} }));
+    if (!Array.isArray(M.db.homeWidgets)) { M.db.homeWidgets = PADRAO.map((o) => Object.assign({}, o, { cfg: {} })); M.db.settings.guiaPosto = 1; }
+    // quem já tinha o Início montado ganha o guia uma vez, logo depois da saudação (se tirar, não volta sozinho)
+    if (!M.db.settings.guiaPosto) {
+      M.db.settings.guiaPosto = 1;
+      if (!M.db.homeWidgets.some((w) => w.tipo === 'guia')) {
+        const sd = M.db.homeWidgets.find((w) => w.tipo === 'saudacao');
+        M.db.homeWidgets.push({ id: 'w-guia', tipo: 'guia', tam: 'g', alto: '', ord: sd ? (sd.ord || 0) + 0.5 : -1, oculto: false, soPc: false, soCel: false, titulo: '', cfg: {}, updated: Date.now() });
+        reordena(M.db.homeWidgets.filter((w) => W[w.tipo]).sort((a, b) => (a.ord || 0) - (b.ord || 0)));
+      }
+      M.save();
+    }
     return M.db.homeWidgets.filter((w) => W[w.tipo]).sort((a, b) => (a.ord || 0) - (b.ord || 0));
   };
   const reordena = (L) => L.forEach((w, i) => { if (w.ord !== i) { w.ord = i; w.updated = Date.now(); } });
@@ -245,6 +268,8 @@
       const go = e.target.closest('[data-go]'); if (go) return M.go(go.dataset.go);
       if (e.target.closest('[data-bk]')) { M.ui.cfgSec = '💾 Dados e backup'; return M.go('cfg'); }
       if (e.target.closest('[data-foco]')) return M.focusToggle();
+      const gok = e.target.closest('[data-guia-ok]');
+      if (gok) { const w = M.db.homeWidgets.find((x) => x.id === gok.closest('[data-w]').dataset.w); if (w) { mexe(w, { oculto: true }); SFX.play('pop'); M.toast('🧭 Guia escondido. Para ver de novo: ✏️ Organizar Início'); M.render(); } return; }
       const fi = e.target.closest('[data-fin]'); if (fi && M.finEditar) { const f = (M.db.fin || []).find((x) => x.id === fi.dataset.fin); if (f) return M.finEditar(f); }
       const ag = e.target.closest('[data-tk]'); if (ag) return M.abrirTarefa(ag.dataset.tk);
       const row = e.target.closest('.rowi'); if (row) return M.openItem(row.dataset.id);
