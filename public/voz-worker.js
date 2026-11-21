@@ -1,5 +1,5 @@
 // Motor de voz do MyLoot: o Whisper (modelo "base") roda aqui dentro do navegador, num trabalhador separado
-// para a janela não travar. É o mesmo motor da transcrição do SortHub (Transformers.js).
+// para a janela não travar. Motor: Transformers.js.
 // Nada do áudio sai do computador: só a biblioteca e os pesos do modelo são baixados, uma vez, e ficam no cache.
 const VERSAO = '3.7.1';
 const CDN = `https://cdn.jsdelivr.net/npm/@huggingface/transformers@${VERSAO}/dist/`;
