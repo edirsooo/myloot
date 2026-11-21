@@ -1245,6 +1245,18 @@ async function app(req, res) {
         }
         catch (e) { return send(res, 502, { erro: e.message }); }
       }
+      // ----- Notion dentro do MyLoot (o segredo fica aqui no servidor) -----
+      if (p.startsWith('/api/notion/')) {
+        const tok = (readSecrets().notion || {}).token || '';
+        try {
+          if (p === '/api/notion/eu' && req.method === 'GET') return send(res, 200, await INT.notionEu(tok));
+          if (p === '/api/notion/lista' && req.method === 'GET') return send(res, 200, await INT.notionLista(tok));
+          if (p === '/api/notion/base' && req.method === 'GET') return send(res, 200, await INT.notionBase(tok, u.searchParams.get('id')));
+          if (p === '/api/notion/pagina' && req.method === 'GET') return send(res, 200, await INT.notionPagina(tok, u.searchParams.get('id')));
+          if (p === '/api/notion/acao' && req.method === 'POST') { const b = JSON.parse((await readBody(req, 2e5)).toString('utf8') || '{}'); return send(res, 200, Object.assign({ ok: true }, await INT.notionAcao(tok, b))); }
+          return send(res, 404, { erro: 'rota' });
+        } catch (e) { return send(res, 502, { erro: e.message }); }
+      }
       // ----- Trello dentro do MyLoot (a chave e o token ficam aqui no servidor; o app só pede o que mostrar ou mudar) -----
       if (p.startsWith('/api/trello/')) {
         const cfg = readSecrets().trello || {};

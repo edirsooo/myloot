@@ -128,7 +128,8 @@ async function trelloQuadros(cfg) {
 }
 async function trelloQuadro(cfg, id) {
   const j = await tr(cfg, 'GET', '/boards/' + tId(id), {
-    fields: 'name,url,prefs', lists: 'open', list_fields: 'name,pos', cards: 'open',
+    fields: 'name,url,prefs', lists: 'open', list_fields: 'name,pos', cards: 'visible', // visible: só cartões abertos de listas abertas (open trazia os de listas arquivadas)
+   
     card_fields: 'name,desc,idList,pos,due,dueComplete,idLabels,idMembers,badges,shortUrl,cover', labels: 'all', label_fields: 'name,color', members: 'all', member_fields: 'fullName,initials',
   });
   const pr = j.prefs || {};
@@ -136,7 +137,7 @@ async function trelloQuadro(cfg, id) {
     quadro: { id: j.id, nome: j.name, url: j.url, cor: pr.backgroundColor || '', img: ((pr.backgroundImageScaled || []).find((x) => x.width >= 1000) || {}).url || pr.backgroundImage || '' },
     listas: (j.lists || []).map((l) => ({ id: l.id, nome: l.name, pos: l.pos })).sort((a, b) => a.pos - b.pos),
     cartoes: (j.cards || []).map((c) => ({ id: c.id, nome: c.name, desc: !!c.desc, lista: c.idList, pos: c.pos, prazo: c.due || '', feito: !!c.dueComplete, etiquetas: c.idLabels || [], membros: c.idMembers || [], url: c.shortUrl,
-      capa: (c.cover || {}).color || '', check: [(c.badges || {}).checkItemsChecked || 0, (c.badges || {}).checkItems || 0], coment: (c.badges || {}).comments || 0, anexos: (c.badges || {}).attachments || 0 })),
+      capa: (c.cover || {}).color || '', capaCheia: (c.cover || {}).size === 'full', check: [(c.badges || {}).checkItemsChecked || 0, (c.badges || {}).checkItems || 0], coment: (c.badges || {}).comments || 0, anexos: (c.badges || {}).attachments || 0 })),
     etiquetas: (j.labels || []).map((l) => ({ id: l.id, nome: l.name || '', cor: l.color || '' })),
     membros: (j.members || []).map((m) => ({ id: m.id, nome: m.fullName || '', ini: m.initials || '' })),
   };
@@ -162,6 +163,7 @@ async function trelloAcao(cfg, b) {
     if (b.feito != null) p.dueComplete = String(!!b.feito);
     if (Array.isArray(b.etiquetas)) p.idLabels = b.etiquetas.map(tId).join(',');
     if (b.lista) p.idList = tId(b.lista);
+    if (b.pos === 'top' || b.pos === 'bottom') p.pos = b.pos; // trocou de lista pela ficha: vai para o fim da lista nova
     return tr(cfg, 'PUT', '/cards/' + tId(b.id), p);
   }
   if (op === 'cartaoArquivar') return tr(cfg, 'PUT', '/cards/' + tId(b.id), { closed: 'true' });
@@ -175,4 +177,133 @@ async function trelloAcao(cfg, b) {
   throw new Error('Ação desconhecida.');
 }
 
-module.exports = { notionPaginas, notionEnviar, trelloListas, trelloEnviar, trelloEu, trelloQuadros, trelloQuadro, trelloCartao, trelloAcao };
+// ---------------- Notion dentro do MyLoot: ver e mexer nas bases e páginas que a pessoa ligou à integração ----------------
+const NID = /^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}$/;
+const nId = (x) => { x = String(x || ''); if (!NID.test(x)) throw new Error('Base, página ou bloco inválido.'); return x; };
+async function nt(tok, method, pth, body) {
+  if (!tok) throw new Error('Conecte o seu Notion primeiro.');
+  const r = await req(method, 'api.notion.com', '/v1' + pth, nh(tok), body);
+  if (r.st === 404) throw new Error('Não achei isso no Notion. No Notion, abra a página ou base → ••• → Conexões → adicione a integração.');
+  if (r.st !== 200) throw nErr(r);
+  return r.j;
+}
+const plano = (a) => (a || []).map((t) => t.plain_text || '').join('');
+const icone = (o) => (o && o.icon && o.icon.type === 'emoji' ? o.icon.emoji : '');
+const nomeDe = (o) => (o.object === 'database' ? plano(o.title) : titulo(o)) || 'Sem título';
+// valor de uma propriedade em formato simples (o app só precisa mostrar e editar os tipos comuns)
+function valor(p) {
+  if (!p) return null;
+  switch (p.type) {
+    case 'title': case 'rich_text': return plano(p[p.type]);
+    case 'select': case 'status': return p[p.type] ? { nome: p[p.type].name, cor: p[p.type].color } : null;
+    case 'multi_select': return (p.multi_select || []).map((o) => ({ nome: o.name, cor: o.color }));
+    case 'date': return p.date ? { ini: p.date.start, fim: p.date.end || '' } : null;
+    case 'checkbox': return !!p.checkbox;
+    case 'number': return p.number;
+    case 'url': case 'email': case 'phone_number': return p[p.type] || '';
+    case 'people': return (p.people || []).map((u) => u.name || '').filter(Boolean).join(', ');
+    case 'relation': return (p.relation || []).length;
+    case 'files': return (p.files || []).length;
+    case 'formula': { const f = p.formula || {}; return f.type === 'date' ? (f.date ? f.date.start : '') : f[f.type]; }
+    case 'created_time': case 'last_edited_time': return p[p.type];
+    case 'unique_id': return p.unique_id ? (p.unique_id.prefix ? p.unique_id.prefix + '-' : '') + p.unique_id.number : '';
+    default: return null;
+  }
+}
+const linha = (pg) => {
+  const props = {}; let tit = '';
+  for (const [k, v] of Object.entries(pg.properties || {})) { props[k] = valor(v); if (v.type === 'title') tit = plano(v.title); }
+  return { id: pg.id, url: pg.url, titulo: tit || 'Sem título', icone: icone(pg), props, editado: pg.last_edited_time };
+};
+async function notionEu(tok) { const j = await nt(tok, 'GET', '/users/me'); return { nome: j.name || '', espaco: (j.bot && j.bot.workspace_name) || '' }; }
+// tudo o que a integração enxerga: bases (databases) e páginas soltas (as linhas das bases ficam de fora)
+async function notionLista(tok) {
+  const out = { bases: [], paginas: [] }; let cursor;
+  for (let i = 0; i < 3; i++) {
+    const j = await nt(tok, 'POST', '/search', Object.assign({ page_size: 100, sort: { direction: 'descending', timestamp: 'last_edited_time' } }, cursor ? { start_cursor: cursor } : {}));
+    j.results.forEach((o) => {
+      if (o.archived || o.in_trash) return;
+      const x = { id: o.id, nome: nomeDe(o), icone: icone(o), url: o.url, editado: o.last_edited_time };
+      if (o.object === 'database') out.bases.push(x);
+      else if (!o.parent || o.parent.type !== 'database_id') out.paginas.push(x);
+    });
+    if (!j.has_more) break; cursor = j.next_cursor;
+  }
+  return out;
+}
+async function notionBase(tok, id) {
+  const db = await nt(tok, 'GET', '/databases/' + nId(id));
+  const props = Object.entries(db.properties || {}).map(([nome, p]) => ({ nome, tipo: p.type, opcoes: ((p[p.type] || {}).options || []).map((o) => ({ nome: o.name, cor: o.color })) }));
+  const linhas = []; let cursor;
+  for (let i = 0; i < 5; i++) { // até 500 linhas
+    const j = await nt(tok, 'POST', '/databases/' + id + '/query', Object.assign({ page_size: 100 }, cursor ? { start_cursor: cursor } : {}));
+    j.results.forEach((pg) => { if (!pg.archived && !pg.in_trash) linhas.push(linha(pg)); });
+    if (!j.has_more) break; cursor = j.next_cursor;
+  }
+  return { base: { id: db.id, nome: plano(db.title) || 'Sem título', icone: icone(db), url: db.url }, props, linhas, mais: linhas.length >= 500 };
+}
+function bloco(b) {
+  const t = b.type, d = b[t] || {};
+  const o = { id: b.id, tipo: t, texto: plano(d.rich_text), filhos: !!b.has_children };
+  if (t === 'to_do') o.ok = !!d.checked;
+  if (t === 'code') o.lingua = d.language || '';
+  if (t === 'callout') o.icone = icone(d);
+  if (t === 'child_page' || t === 'child_database') o.texto = d.title || '';
+  if (t === 'image' || t === 'video' || t === 'file' || t === 'pdf') { o.url = d.type === 'external' ? (d.external || {}).url : (d.file || {}).url; o.texto = plano(d.caption); }
+  if (t === 'bookmark' || t === 'link_preview' || t === 'embed') o.url = d.url || '';
+  return o;
+}
+async function notionPagina(tok, id) {
+  const pg = await nt(tok, 'GET', '/pages/' + nId(id));
+  const blocos = []; let cursor;
+  for (let i = 0; i < 3; i++) {
+    const j = await nt(tok, 'GET', '/blocks/' + id + '/children?page_size=100' + (cursor ? '&start_cursor=' + encodeURIComponent(cursor) : ''));
+    j.results.forEach((b) => blocos.push(bloco(b)));
+    if (!j.has_more) break; cursor = j.next_cursor;
+  }
+  const tipos = {}; for (const [k, v] of Object.entries(pg.properties || {})) tipos[k] = v.type;
+  return Object.assign(linha(pg), { base: pg.parent && pg.parent.type === 'database_id' ? pg.parent.database_id : '', tipos, blocos });
+}
+// valor do app → formato do Notion, só para os tipos que dá para editar
+function propNotion(tipo, v) {
+  const s = (x, n) => String(x == null ? '' : x).slice(0, n || 2000);
+  switch (tipo) {
+    case 'title': if (!s(v).trim()) throw new Error('A página precisa de um título.'); return { title: rt(s(v)) };
+    case 'rich_text': return { rich_text: s(v) ? rt(s(v)) : [] };
+    case 'select': return { select: v ? { name: s(v, 100) } : null };
+    case 'status': if (!v) throw new Error('Escolha um status.'); return { status: { name: s(v, 100) } };
+    case 'multi_select': return { multi_select: (Array.isArray(v) ? v : []).slice(0, 100).map((n) => ({ name: s(n, 100) })) };
+    case 'date': return { date: v && v.ini ? { start: s(v.ini, 40), end: v.fim ? s(v.fim, 40) : null } : null };
+    case 'checkbox': return { checkbox: !!v };
+    case 'number': { if (v === '' || v == null) return { number: null }; const n = Number(v); if (!Number.isFinite(n)) throw new Error('Número inválido.'); return { number: n }; }
+    case 'url': return { url: s(v) || null };
+    case 'email': return { email: s(v, 200) || null };
+    case 'phone_number': return { phone_number: s(v, 60) || null };
+    default: throw new Error('Este tipo de campo não dá para mudar pelo MyLoot.');
+  }
+}
+async function notionAcao(tok, b) {
+  const op = String(b.op || '');
+  const props = (P) => { const o = {}; (Array.isArray(P) ? P : []).slice(0, 30).forEach((p) => { o[String(p.nome).slice(0, 200)] = propNotion(String(p.tipo), p.v); }); return o; };
+  if (op === 'linhaNova') {
+    if (!String(b.titulo || '').trim()) throw new Error('Escreva o título.');
+    const P = props(b.props); P[String(b.campoTitulo || 'Name')] = propNotion('title', b.titulo);
+    const j = await nt(tok, 'POST', '/pages', { parent: { database_id: nId(b.base) }, properties: P }); return { id: j.id, url: j.url };
+  }
+  if (op === 'paginaNova') {
+    if (!String(b.titulo || '').trim()) throw new Error('Escreva o título.');
+    const j = await nt(tok, 'POST', '/pages', { parent: { page_id: nId(b.pai) }, properties: { title: propNotion('title', b.titulo) } }); return { id: j.id, url: j.url };
+  }
+  if (op === 'props') { await nt(tok, 'PATCH', '/pages/' + nId(b.id), { properties: props(b.props) }); return { id: b.id }; }
+  if (op === 'lixeira') { await nt(tok, 'PATCH', '/pages/' + nId(b.id), { archived: true }); return { id: b.id }; }
+  if (op === 'todo') { await nt(tok, 'PATCH', '/blocks/' + nId(b.id), { to_do: { checked: !!b.ok } }); return { id: b.id }; }
+  if (op === 'blocoNovo') {
+    const t = String(b.texto || '').trim(); if (!t) throw new Error('Escreva o texto.');
+    const tipo = b.tipo === 'to_do' ? 'to_do' : 'paragraph', dado = { rich_text: rt(t.slice(0, 1900)) }; if (tipo === 'to_do') dado.checked = false;
+    const j = await nt(tok, 'PATCH', '/blocks/' + nId(b.pagina) + '/children', { children: [{ object: 'block', type: tipo, [tipo]: dado }] });
+    return { id: (j.results && j.results[0] && j.results[0].id) || '' };
+  }
+  throw new Error('Ação desconhecida.');
+}
+
+module.exports = { notionPaginas, notionEnviar, trelloListas, trelloEnviar, trelloEu, trelloQuadros, trelloQuadro, trelloCartao, trelloAcao, notionEu, notionLista, notionBase, notionPagina, notionAcao };

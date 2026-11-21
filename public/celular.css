@@ -260,8 +260,8 @@ body.remoto .so-pc,body.remoto [data-a=open],body.remoto [data-a=show],body.remo
 @media (max-width:700px){.tour-btn span{display:none}.tour-btn{padding:0 5px}}
 
 /* campos de data e hora: ícone claro com fundo de destaque (antes ficava preto no fundo escuro) */
-input[type=date],input[type=time]{color-scheme:dark;cursor:pointer;width:auto}
-body.light input[type=date],body.light input[type=time]{color-scheme:light}
+input[type=date],input[type=time],input[type=datetime-local]{color-scheme:dark;cursor:pointer;width:auto}
+body.light input[type=date],body.light input[type=time],body.light input[type=datetime-local]{color-scheme:light}
 input[type=date]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:1;padding:4px;margin-left:6px;border-radius:7px;background-color:var(--accent-soft);border:1px solid var(--accent)}
 input[type=date]::-webkit-calendar-picker-indicator:hover,input[type=time]::-webkit-calendar-picker-indicator:hover{background-color:var(--accent)}
 .fld input[type=date],.fld input[type=time]{width:100%}

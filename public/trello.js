@@ -48,8 +48,9 @@
     };
   }
 
+  let deNovo = false;
   async function carregar(forcar) {
-    if (carregando) return; carregando = true; erro = '';
+    if (carregando) { deNovo = true; return; } carregando = true; erro = '';
     try {
       if (!quadros || forcar) quadros = (await api('quadros')).quadros.sort((a, b) => (b.fav - a.fav) || String(b.ult).localeCompare(String(a.ult)));
       let q = qAtual();
@@ -57,6 +58,7 @@
       dados = q ? await api('quadro?id=' + encodeURIComponent(q)) : null;
     } catch (e) { erro = e.message; }
     carregando = false;
+    if (deNovo) { deNovo = false; return carregar(); } // a pessoa trocou de quadro no meio do caminho
     if (M.ui.page === 'trello') M.render();
   }
 
@@ -70,8 +72,9 @@
       c.coment ? `<span class="tr-b" title="Comentários">💬 ${c.coment}</span>` : '',
       c.anexos ? `<span class="tr-b" title="Anexos">📎 ${c.anexos}</span>` : '',
     ].join('');
-    return `<div class="tr-card" draggable="true" data-c="${esc(c.id)}" tabindex="0" role="button" aria-label="Abrir o cartão ${esc(c.nome)}">
-      ${c.capa ? `<div class="tr-capa" style="background:${cor(c.capa)}"></div>` : ''}
+    const cheia = c.capa && c.capaCheia; // capa "cheia" no Trello: o cartão inteiro fica na cor, com o nome por cima
+    return `<div class="tr-card${cheia ? ' cheio' : ''}" draggable="true" data-c="${esc(c.id)}" tabindex="0" role="button" aria-label="Abrir o cartão ${esc(c.nome)}"${cheia ? ` style="--capa:${cor(c.capa)}"` : ''}>
+      ${c.capa && !cheia ? `<div class="tr-capa" style="background:${cor(c.capa)}"></div>` : ''}
       ${et.length ? `<div class="tr-ets">${et.map((l) => `<span class="tr-et" style="background:${cor(l.cor)}" title="${esc(l.nome || l.cor)}">${esc(l.nome)}</span>`).join('')}</div>` : ''}
       <div class="tr-nome">${esc(c.nome)}</div>
       ${bad || mb.length ? `<div class="tr-rod">${bad}<span class="tr-mbs">${mb.map((m) => `<span class="tr-mb" title="${esc(m.nome)}">${esc(m.ini)}</span>`).join('')}</span></div>` : ''}
@@ -107,8 +110,8 @@
         <button class="btn ghost sm" id="trCfg" title="Trocar a conta ou desconectar">⚙️</button>
       </div>
       ${erro ? `<div class="carrega-erro" role="alert">⚠️ ${esc(erro)}</div>` : ''}
-      ${!d ? '<div class="empty"><div class="big">📋</div><h3>Nenhum quadro aberto na sua conta</h3><p>Crie um quadro no Trello e clique em Atualizar.</p></div>' : `
-      <div class="tr-quadro" style="${fundo ? '--trbg:' + fundo : ''}">
+      ${!d ? (carregando ? '<div class="empty"><div class="big">⏳</div><h3>Abrindo o quadro…</h3></div>' : '<div class="empty"><div class="big">📋</div><h3>Nenhum quadro aberto na sua conta</h3><p>Crie um quadro no Trello e clique em Atualizar.</p></div>') : `
+      <div class="tr-quadro" style="${fundo ? esc('--trbg:' + fundo) : ''}">
         <div class="tr-cols" id="trCols">${d.listas.map((l) => {
           const cs = d.cartoes.filter((c) => c.lista === l.id && (!qb || M.norm(c.nome).includes(qb))).sort((a, b) => a.pos - b.pos);
           return `<div class="tr-col" data-l="${esc(l.id)}"><div class="tr-col-h"><b>${esc(l.nome)}</b><span class="n">${cs.length}</span><button type="button" class="xbtn" data-lmais="${esc(l.id)}" title="Renomear ou arquivar a lista" aria-label="Opções da lista ${esc(l.nome)}">⋯</button></div>
@@ -323,6 +326,7 @@
       guarda();
       if (!c.nome.trim()) return M.falta($('#tcNome', m), '✍️ O cartão precisa de um nome');
       const b = { op: 'cartaoSalvar', id: c.id, nome: c.nome, desc: c.desc, prazo: c.prazo, feito: c.feito, etiquetas: c.etiquetas, lista: c.lista };
+      if (c.lista !== base.lista) b.pos = 'bottom';
       try {
         await acao(b);
         Object.assign(base, { nome: c.nome, desc: !!c.desc.trim(), prazo: c.prazo, feito: c.feito, etiquetas: c.etiquetas.slice() });

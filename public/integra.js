@@ -41,6 +41,7 @@
     box.innerHTML = `
       <div class="cfg-row"><span class="l">📒 Notion ${M.hint('1) Em notion.so/profile/integrations crie uma integração interna e copie o “Internal Integration Secret”. 2) No Notion, abra a página onde os itens vão cair → ••• → Conexões → adicione a integração. 3) Cole o segredo aqui e escolha a página.')}</span>${dot(s.notion.ok)}</div>
       <div class="row" style="align-items:center"><input type="password" id="nTok" aria-label="Segredo da integração do Notion" placeholder="${s.notion.temToken ? 'Segredo guardado ✔ (cole outro para trocar)' : 'Cole o segredo da integração (ntn_…)'}" autocomplete="off" style="flex:3"><button class="btn ghost" id="nLoad" style="flex:none">Buscar páginas</button></div>
+      <div class="row" style="margin:6px 0"><button type="button" class="btn ghost sm" id="nTela" style="flex:none">📓 Passo a passo e usar o Notion aqui dentro</button></div>
       <div class="row" style="align-items:center;margin-top:6px"><select id="nPage" aria-label="Página de destino no Notion" style="flex:3"><option value="">${s.notion.alvoNome ? esc(s.notion.alvoNome) : '— escolha a página de destino —'}</option></select><button class="btn" id="nSave" style="flex:none">Guardar</button><button class="btn ghost" id="nDel" style="flex:none">Remover</button></div>
       <div style="height:14px"></div>
       <div class="cfg-row"><span class="l">📋 Trello ${M.hint('1) Em trello.com/power-ups/admin crie um Power-Up e gere a chave da API (API key). 2) Na mesma página, clique em “Token” e autorize. 3) Cole a chave e o token aqui e escolha a lista onde os cartões vão cair.')}</span>${dot(s.trello.ok)}</div>
@@ -75,6 +76,7 @@
       try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ trello: { key: $('#tKey').value.trim(), token: $('#tTok').value.trim(), alvo: sel.value, alvoNome: sel.selectedOptions[0].textContent } }) }); SFX.play('coin'); M.toast('✅ Trello conectado'); M.intBind(); } catch (e) { err(e); }
     };
     $('#tTela').onclick = () => M.go('trello');
+    $('#nTela').onclick = () => M.go('notion');
     $('#tDel').onclick = async () => { try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ trello: null }) }); M.toast('Trello desconectado'); M.intBind(); } catch (e) { err(e); } };
   };
 })();

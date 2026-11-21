@@ -13,3 +13,15 @@ _painéis/
 
 # anotações internas de desenvolvimento (ficam só no PC)
 NOTAS.md
+
+# chaves, segredos, cópias e registros fora de data/ (por garantia)
+.env
+.env.*
+*.pem
+*.key
+segredos*.json
+backup/
+backups/
+logs/
+*.log
+_paineis/

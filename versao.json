@@ -1,15 +1,22 @@
 {
-  "versao": "2.23.1",
+  "versao": "2.24.0",
   "data": "2026-11-21",
   "novidades": [
-    "🧭 Novo quadro no Início: “Para que serve cada tela”, com Biblioteca, Tarefas, Rotina, Calendário e Clientes explicados em uma linha. Toque para ir; “Entendi” esconde",
-    "📱 Celular: o botão ← do topo agora sempre leva a algum lugar (sem tela anterior, volta ao Início) e some quando não há para onde voltar",
-    "📱 Celular: o ? do tutorial ficou mais limpo, sem o círculo grande, e o contorno laranja não fica mais preso depois de tocar num botão",
-    "⌨️ Celular: ao entrar em Tarefas o teclado não abre mais sozinho cobrindo a tela",
-    "📕 Biblioteca: a prévia dos PDFs mostra o título da capa (antes as capas escuras pareciam todas iguais) e nunca mais aparece imagem quebrada enquanto a prévia é feita",
-    "🕸️ Mapa de conexões: não fica mais em branco no iPhone depois de usar o app por um tempo"
+    "📓 Notion dentro do MyLoot: nova tela Notion no menu. Veja as suas bases como quadro (arraste entre os status) ou tabela, abra as páginas, marque tarefas, acrescente texto e crie linhas e subpáginas",
+    "🗂️ Abra uma linha do Notion para mudar título, status, etiquetas, data, caixinhas e links, sem sair do MyLoot. “Guardar no MyLoot” traz a página para a Biblioteca",
+    "🔑 Passo a passo para cada pessoa conectar o próprio Notion. O segredo fica só no seu computador. Use o Trello, o Notion ou os dois",
+    "📋 Trello arrumado: os cartões não ficam mais espremidos nas listas longas, capas coloridas aparecem como no Trello e o quadro abre mais leve (sem os cartões de listas arquivadas)",
+    "🗂️ Ficha do cartão do Trello: checklist legível, campo de prazo no tema escuro e, ao trocar de lista, o cartão vai para o fim da lista nova"
   ],
   "historico": {
+    "2.23.1": [
+      "🧭 Novo quadro no Início: “Para que serve cada tela”, com Biblioteca, Tarefas, Rotina, Calendário e Clientes explicados em uma linha. Toque para ir; “Entendi” esconde",
+      "📱 Celular: o botão ← do topo agora sempre leva a algum lugar (sem tela anterior, volta ao Início) e some quando não há para onde voltar",
+      "📱 Celular: o ? do tutorial ficou mais limpo, sem o círculo grande, e o contorno laranja não fica mais preso depois de tocar num botão",
+      "⌨️ Celular: ao entrar em Tarefas o teclado não abre mais sozinho cobrindo a tela",
+      "📕 Biblioteca: a prévia dos PDFs mostra o título da capa (antes as capas escuras pareciam todas iguais) e nunca mais aparece imagem quebrada enquanto a prévia é feita",
+      "🕸️ Mapa de conexões: não fica mais em branco no iPhone depois de usar o app por um tempo"
+    ],
     "2.23.0": [
       "📋 Trello dentro do MyLoot: nova tela Trello no menu com os seus quadros, listas e cartões do jeitinho do app. Arraste cartões entre listas, crie cartões e listas, renomeie e arquive",
       "🗂️ Abra um cartão para mudar nome, lista, prazo, etiquetas e descrição, marcar itens do checklist e comentar, sem sair do MyLoot",
