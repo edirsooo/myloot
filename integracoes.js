@@ -114,9 +114,9 @@ async function trelloEnviar(cfg, it) {
 const TID = /^[0-9a-fA-F]{24}$/;
 const tId = (x) => { x = String(x || ''); if (!TID.test(x)) throw new Error('Quadro, lista ou cartão inválido.'); return x; };
 const txt = (x, n) => String(x == null ? '' : x).slice(0, n || 16384);
-async function tr(cfg, method, pth, params) {
+async function tr(cfg, method, pth, params, body) {
   if (!cfg || !cfg.key || !cfg.token) throw new Error('Conecte o seu Trello primeiro.');
-  const r = await req(method, 'api.trello.com', '/1' + pth + '?' + q(Object.assign({}, params || {}, { key: cfg.key, token: cfg.token })), {});
+  const r = await req(method, 'api.trello.com', '/1' + pth + '?' + q(Object.assign({}, params || {}, { key: cfg.key, token: cfg.token })), {}, body);
   if (r.st === 404) throw new Error('Não achei isso no Trello (talvez tenha sido apagado ou arquivado). Atualize a tela.');
   if (r.st !== 200) throw tErr(r);
   return r.j;
@@ -130,21 +130,50 @@ async function trelloQuadro(cfg, id) {
   const j = await tr(cfg, 'GET', '/boards/' + tId(id), {
     fields: 'name,url,prefs', lists: 'open', list_fields: 'name,pos', cards: 'visible', // visible: só cartões abertos de listas abertas (open trazia os de listas arquivadas)
    
-    card_fields: 'name,desc,idList,pos,due,dueComplete,idLabels,idMembers,badges,shortUrl,cover', labels: 'all', label_fields: 'name,color', members: 'all', member_fields: 'fullName,initials',
+    card_fields: 'name,desc,idList,pos,due,dueComplete,idLabels,idMembers,badges,shortUrl,cover,dateLastActivity', card_attachments: 'cover', card_attachment_fields: 'previews', labels: 'all', label_fields: 'name,color', members: 'all', member_fields: 'fullName,initials',
   });
   const pr = j.prefs || {};
   return {
     quadro: { id: j.id, nome: j.name, url: j.url, cor: pr.backgroundColor || '', img: ((pr.backgroundImageScaled || []).find((x) => x.width >= 1000) || {}).url || pr.backgroundImage || '' },
     listas: (j.lists || []).map((l) => ({ id: l.id, nome: l.name, pos: l.pos })).sort((a, b) => a.pos - b.pos),
-    cartoes: (j.cards || []).map((c) => ({ id: c.id, nome: c.name, desc: !!c.desc, lista: c.idList, pos: c.pos, prazo: c.due || '', feito: !!c.dueComplete, etiquetas: c.idLabels || [], membros: c.idMembers || [], url: c.shortUrl,
+    cartoes: (j.cards || []).map((c) => ({ capaImg: capaDe(c), ativ: c.dateLastActivity || '', id: c.id, nome: c.name, desc: !!c.desc, lista: c.idList, pos: c.pos, prazo: c.due || '', feito: !!c.dueComplete, etiquetas: c.idLabels || [], membros: c.idMembers || [], url: c.shortUrl,
       capa: (c.cover || {}).color || '', capaCheia: (c.cover || {}).size === 'full', check: [(c.badges || {}).checkItemsChecked || 0, (c.badges || {}).checkItems || 0], coment: (c.badges || {}).comments || 0, anexos: (c.badges || {}).attachments || 0 })),
     etiquetas: (j.labels || []).map((l) => ({ id: l.id, nome: l.name || '', cor: l.color || '' })),
     membros: (j.members || []).map((m) => ({ id: m.id, nome: m.fullName || '', ini: m.initials || '' })),
   };
 }
+// capa com imagem: o endereço fica guardado aqui no servidor (o app pede só pelo id do cartão) e o arquivo é buscado com o login do Trello
+const capas = new Map(), capaCache = new Map();
+function capaDe(c) {
+  const idA = (c.cover || {}).idAttachment, a = idA && (c.attachments || []).find((x) => x.id === idA);
+  const P = ((a && a.previews) || []).filter((p) => p.scaled && p.url), p = P.find((x) => x.width >= 300) || P[P.length - 1];
+  if (!p) { capas.delete(c.id); return null; }
+  capas.set(c.id, p.url);
+  return { v: idA, w: p.width, h: p.height };
+}
+async function trelloCapa(cfg, id) {
+  let url = capas.get(tId(id));
+  if (!url) { const c = await tr(cfg, 'GET', '/cards/' + id, { fields: 'cover', attachments: 'cover', attachment_fields: 'previews' }); capaDe(c); url = capas.get(id); }
+  if (!url) throw new Error('Este cartão não tem capa.');
+  if (capaCache.has(url)) return capaCache.get(url);
+  const u = new URL(url); if (!/(^|\.)trello\.com$/.test(u.hostname)) throw new Error('Capa fora do Trello.');
+  const r = await new Promise((ok, no) => {
+    const rq = https.get({ hostname: u.hostname, path: u.pathname + u.search, timeout: 20000, headers: { Authorization: `OAuth oauth_consumer_key="${cfg.key}", oauth_token="${cfg.token}"` } }, (rs) => {
+      const parts = []; let n = 0;
+      rs.on('data', (c) => { n += c.length; if (n > 5e6) rq.destroy(new Error('Capa grande demais.')); else parts.push(c); });
+      rs.on('end', () => (rs.statusCode === 200 ? ok({ buf: Buffer.concat(parts), tipo: rs.headers['content-type'] || 'image/jpeg' }) : no(new Error('O Trello não entregou a capa (' + rs.statusCode + ').'))));
+    });
+    rq.on('timeout', () => rq.destroy(new Error('Demorou demais.'))); rq.on('error', no);
+  });
+  if (!/^image\//.test(r.tipo)) throw new Error('A capa não é uma imagem.');
+  if (capaCache.size > 300) capaCache.delete(capaCache.keys().next().value);
+  capaCache.set(url, r);
+  return r;
+}
 async function trelloCartao(cfg, id) {
-  const j = await tr(cfg, 'GET', '/cards/' + tId(id), { fields: 'name,desc,due,dueComplete,idList,idLabels,idMembers,shortUrl,idBoard', checklists: 'all', attachments: 'true', attachment_fields: 'name,url,isUpload,date', actions: 'commentCard', actions_limit: '40' });
+  const j = await tr(cfg, 'GET', '/cards/' + tId(id), { fields: 'name,desc,due,dueComplete,idList,idLabels,idMembers,shortUrl,idBoard,cover,dateLastActivity', checklists: 'all', attachments: 'true', attachment_fields: 'name,url,isUpload,date', actions: 'commentCard', actions_limit: '40' });
   return {
+    capa: (j.cover || {}).color || '', capaCheia: (j.cover || {}).size === 'full', capaImg: !!(j.cover || {}).idAttachment, ativ: j.dateLastActivity || '',
     id: j.id, nome: j.name, desc: j.desc || '', prazo: j.due || '', feito: !!j.dueComplete, lista: j.idList, quadro: j.idBoard, etiquetas: j.idLabels || [], membros: j.idMembers || [], url: j.shortUrl,
     checklists: (j.checklists || []).map((c) => ({ id: c.id, nome: c.name, itens: (c.checkItems || []).sort((a, b) => a.pos - b.pos).map((i) => ({ id: i.id, nome: i.name, ok: i.state === 'complete' })) })),
     anexos: (j.attachments || []).map((a) => ({ id: a.id, nome: a.name, url: a.url, upload: !!a.isUpload })),
@@ -163,10 +192,23 @@ async function trelloAcao(cfg, b) {
     if (b.feito != null) p.dueComplete = String(!!b.feito);
     if (Array.isArray(b.etiquetas)) p.idLabels = b.etiquetas.map(tId).join(',');
     if (b.lista) p.idList = tId(b.lista);
-    if (b.pos === 'top' || b.pos === 'bottom') p.pos = b.pos; // trocou de lista pela ficha: vai para o fim da lista nova
+    if (b.pos === 'top' || b.pos === 'bottom') p.pos = b.pos;
+    if (Array.isArray(b.membros)) p.idMembers = b.membros.map(tId).join(',');
+    if (b.capa !== undefined) { // '' tira a capa; cor do Trello põe a faixa ou o cartão inteiro
+      const CORES = ['green', 'yellow', 'orange', 'red', 'purple', 'blue', 'sky', 'lime', 'pink', 'black'];
+      if (b.capa && !CORES.includes(b.capa)) throw new Error('Cor de capa inválida.');
+      await tr(cfg, 'PUT', '/cards/' + tId(b.id), {}, { cover: b.capa ? { color: b.capa, size: b.capaCheia ? 'full' : 'normal' } : { color: null, idAttachment: null, idUploadedBackground: null } });
+    }
+    if (!Object.keys(p).length) return { id: b.id }; // trocou de lista pela ficha: vai para o fim da lista nova
     return tr(cfg, 'PUT', '/cards/' + tId(b.id), p);
   }
   if (op === 'cartaoArquivar') return tr(cfg, 'PUT', '/cards/' + tId(b.id), { closed: 'true' });
+  if (op === 'cartaoRestaurar') return tr(cfg, 'PUT', '/cards/' + tId(b.id), { closed: 'false' });
+  if (op === 'listaRestaurar') return tr(cfg, 'PUT', '/lists/' + tId(b.id) + '/closed', { value: 'false' });
+  if (op === 'listaMover') { const n = Number(b.pos); if (!Number.isFinite(n) || n <= 0) throw new Error('Posição inválida.'); return tr(cfg, 'PUT', '/lists/' + tId(b.id), { pos: String(n) }); }
+  if (op === 'checklistNova') { if (!String(b.nome || '').trim()) throw new Error('Escreva o nome do checklist.'); return tr(cfg, 'POST', '/checklists', { idCard: tId(b.id), name: txt(b.nome, 512) }); }
+  if (op === 'checkItemApagar') return tr(cfg, 'DELETE', '/cards/' + tId(b.id) + '/checkItem/' + tId(b.item));
+  if (op === 'anexoLink') { const u = String(b.url || '').trim(); if (!/^https?:\/\/\S+$/i.test(u)) throw new Error('Cole um link que comece com http.'); return tr(cfg, 'POST', '/cards/' + tId(b.id) + '/attachments', Object.assign({ url: u.slice(0, 2000) }, b.nome ? { name: txt(b.nome, 256) } : {})); }
   if (op === 'cartaoNovo') { if (!String(b.nome || '').trim()) throw new Error('Escreva o nome do cartão.'); return tr(cfg, 'POST', '/cards', { idList: tId(b.lista), name: txt(b.nome), pos: 'bottom' }); }
   if (op === 'comentar') { if (!String(b.texto || '').trim()) throw new Error('Escreva o comentário.'); return tr(cfg, 'POST', '/cards/' + tId(b.id) + '/actions/comments', { text: txt(b.texto) }); }
   if (op === 'checkItem') return tr(cfg, 'PUT', '/cards/' + tId(b.id) + '/checkItem/' + tId(b.item), { state: b.ok ? 'complete' : 'incomplete' });
@@ -306,4 +348,4 @@ async function notionAcao(tok, b) {
   throw new Error('Ação desconhecida.');
 }
 
-module.exports = { notionPaginas, notionEnviar, trelloListas, trelloEnviar, trelloEu, trelloQuadros, trelloQuadro, trelloCartao, trelloAcao, notionEu, notionLista, notionBase, notionPagina, notionAcao };
+module.exports = { notionPaginas, notionEnviar, trelloListas, trelloEnviar, trelloEu, trelloQuadros, trelloQuadro, trelloCartao, trelloAcao, trelloCapa, notionEu, notionLista, notionBase, notionPagina, notionAcao };

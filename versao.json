@@ -1,14 +1,21 @@
 {
-  "versao": "2.24.0",
+  "versao": "2.25.0",
   "data": "2026-11-21",
   "novidades": [
-    "📓 Notion dentro do MyLoot: nova tela Notion no menu. Veja as suas bases como quadro (arraste entre os status) ou tabela, abra as páginas, marque tarefas, acrescente texto e crie linhas e subpáginas",
-    "🗂️ Abra uma linha do Notion para mudar título, status, etiquetas, data, caixinhas e links, sem sair do MyLoot. “Guardar no MyLoot” traz a página para a Biblioteca",
-    "🔑 Passo a passo para cada pessoa conectar o próprio Notion. O segredo fica só no seu computador. Use o Trello, o Notion ou os dois",
-    "📋 Trello arrumado: os cartões não ficam mais espremidos nas listas longas, capas coloridas aparecem como no Trello e o quadro abre mais leve (sem os cartões de listas arquivadas)",
-    "🗂️ Ficha do cartão do Trello: checklist legível, campo de prazo no tema escuro e, ao trocar de lista, o cartão vai para o fim da lista nova"
+    "📋 Trello no padrão do Trello: listas com a mesma largura (o título quebra em linhas), cartões compactos e capas com imagem aparecendo, como no quadro original",
+    "🔄 Sincronização sozinha: o que muda no Trello aparece no MyLoot a cada 30 segundos, sem a tela pular. O que você muda aqui vai na hora para o Trello",
+    "🛠️ Mais controle: mudar a ordem das listas, mandar o cartão para o começo ou o fim, marcar como concluído pelo menu e desfazer um arquivamento",
+    "🗂️ Ficha do cartão mais completa: membros, cor da capa, novo checklist, apagar item e anexar link. Só o que você mudou é enviado, e o MyLoot avisa se o cartão mudou no Trello enquanto você editava",
+    "⚡ Filtro instantâneo e, se a internet cair ao salvar, o que você escreveu continua na ficha"
   ],
   "historico": {
+    "2.24.0": [
+      "📓 Notion dentro do MyLoot: nova tela Notion no menu. Veja as suas bases como quadro (arraste entre os status) ou tabela, abra as páginas, marque tarefas, acrescente texto e crie linhas e subpáginas",
+      "🗂️ Abra uma linha do Notion para mudar título, status, etiquetas, data, caixinhas e links, sem sair do MyLoot. “Guardar no MyLoot” traz a página para a Biblioteca",
+      "🔑 Passo a passo para cada pessoa conectar o próprio Notion. O segredo fica só no seu computador. Use o Trello, o Notion ou os dois",
+      "📋 Trello arrumado: os cartões não ficam mais espremidos nas listas longas, capas coloridas aparecem como no Trello e o quadro abre mais leve (sem os cartões de listas arquivadas)",
+      "🗂️ Ficha do cartão do Trello: checklist legível, campo de prazo no tema escuro e, ao trocar de lista, o cartão vai para o fim da lista nova"
+    ],
     "2.23.1": [
       "🧭 Novo quadro no Início: “Para que serve cada tela”, com Biblioteca, Tarefas, Rotina, Calendário e Clientes explicados em uma linha. Toque para ir; “Entendi” esconde",
       "📱 Celular: o botão ← do topo agora sempre leva a algum lugar (sem tela anterior, volta ao Início) e some quando não há para onde voltar",

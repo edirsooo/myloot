@@ -391,3 +391,50 @@ button.nt-opc.on{opacity:1;outline:2px solid var(--text)}
 .nt-props .fld{flex:1 1 200px}
 .nt-ro{padding:6px 0}
 @media (max-width:700px){.nt-vista{flex-wrap:wrap}.nt-tab .nt-t{min-width:140px}}
+
+/* ----- Trello v2.25.0: medidas do próprio Trello (lista de 272 px, título que quebra, cartão compacto, capas) ----- */
+.tr-topo{margin-bottom:8px}
+.tr-quadro{padding:10px 10px 4px;min-height:0;height:calc(100vh - 190px);display:flex}
+.tr-cols{flex:1;min-height:0;height:100%;gap:10px;align-items:flex-start;padding-bottom:8px}
+.tr-col{flex:0 0 272px;width:272px;min-width:0;box-sizing:border-box;max-height:100%;padding:8px 6px 6px;gap:6px}
+.tr-col-h{align-items:flex-start;padding:4px 4px 2px 8px;gap:8px}
+.tr-col-h b{font:600 14px/20px var(--f);white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.tr-col-h .n{flex:none;line-height:20px}
+.tr-col-h .xbtn{flex:none;margin-top:-2px}
+.tr-cards{gap:7px;padding:1px 2px 2px;scrollbar-width:thin}
+.tr-card{padding:0;border-radius:8px;font:400 14px/20px var(--f)}
+.tr-cc{padding:7px 10px 5px}
+.tr-nome{font-size:14px;line-height:20px;overflow-wrap:anywhere}
+.tr-ok{display:inline-grid;place-items:center;width:15px;height:15px;margin-right:6px;border-radius:50%;background:#4bce97;color:#1d2125;font:800 9px/1 var(--f);vertical-align:1px}
+.tr-ets{gap:4px;margin-bottom:4px}
+.tr-et{min-width:36px;max-width:100%;height:16px;font:700 11px/16px var(--f);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box}
+.tr-rod{gap:2px 9px;margin-top:4px;font-size:12px;line-height:20px;min-height:24px}
+.tr-b{white-space:nowrap}
+.tr-b.pz{padding:0 5px;border-radius:4px}
+.tr-mbs{gap:3px}
+.tr-mb{flex:none;display:inline-block}
+.tr-capa{height:32px;margin:0}
+.tr-img{width:100%;max-height:260px;background:#00000059;display:flex;justify-content:center;overflow:hidden}
+.tr-img img{height:100%;width:100%;object-fit:contain;display:block;pointer-events:none}
+.tr-card.cheio .tr-cc{padding:22px 10px 8px}
+.tr-card.cheio .tr-nome{font-weight:600;padding:0}
+.tr-card[hidden]{display:none}
+.tr-add{padding:6px 8px;font-size:14px}
+.tr-marca{height:32px;border-radius:8px;flex:none}
+.tr-col-nova{padding:6px}
+/* ficha: membros, capa e itens de checklist */
+.tr-mbt{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 3px;border-radius:999px;border:1px solid var(--edge);font-size:13px;cursor:pointer;opacity:.55}
+.tr-mbt.on{opacity:1;border-color:var(--accent);background:var(--accent-soft)}
+.tr-mbt:focus-visible,.tr-cp:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tr-capas{align-items:center}
+.tr-cp{all:unset;box-sizing:border-box;width:34px;height:24px;border-radius:5px;cursor:pointer;opacity:.6}
+.tr-cp.sem{width:auto;padding:0 10px;border:1px solid var(--edge);font-size:12.5px;line-height:22px}
+.tr-cp.on{opacity:1;outline:2px solid var(--text);outline-offset:1px}
+.tr-cheia{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--dim);margin-left:6px;cursor:pointer}
+.tr-ckl{display:flex;align-items:flex-start;gap:4px}
+.tr-ckl .tr-ck{flex:1;min-width:0}
+.tr-ckl .xbtn{flex:none;opacity:.35}
+.tr-ckl:hover .xbtn,.tr-ckl .xbtn:focus-visible{opacity:1}
+@media (max-width:700px){.tr-quadro{height:calc(100dvh - 300px);min-height:380px}.tr-col{flex-basis:82vw;width:82vw;max-height:100%}}
+.fld label.tr-cheia{font:400 13px var(--f);text-transform:none;color:var(--dim);margin:0 0 0 6px}
+.tr-quadro{height:calc(100vh - 172px)}

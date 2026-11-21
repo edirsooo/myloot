@@ -1264,6 +1264,7 @@ async function app(req, res) {
           if (p === '/api/trello/eu' && req.method === 'GET') return send(res, 200, await INT.trelloEu(cfg));
           if (p === '/api/trello/quadros' && req.method === 'GET') return send(res, 200, { quadros: await INT.trelloQuadros(cfg) });
           if (p === '/api/trello/quadro' && req.method === 'GET') return send(res, 200, await INT.trelloQuadro(cfg, u.searchParams.get('id')));
+          if (p === '/api/trello/capa' && req.method === 'GET') { const r = await INT.trelloCapa(cfg, u.searchParams.get('id')); res.writeHead(200, { 'Content-Type': r.tipo, 'Content-Length': r.buf.length, 'Cache-Control': 'private, max-age=604800', 'X-Content-Type-Options': 'nosniff' }); return res.end(r.buf); }
           if (p === '/api/trello/cartao' && req.method === 'GET') return send(res, 200, await INT.trelloCartao(cfg, u.searchParams.get('id')));
           if (p === '/api/trello/acao' && req.method === 'POST') { const b = JSON.parse((await readBody(req, 2e5)).toString('utf8') || '{}'); const r = await INT.trelloAcao(cfg, b); return send(res, 200, { ok: true, id: (r && r.id) || '' }); }
           return send(res, 404, { erro: 'rota' });
