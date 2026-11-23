@@ -438,3 +438,10 @@ button.nt-opc.on{opacity:1;outline:2px solid var(--text)}
 @media (max-width:700px){.tr-quadro{height:calc(100dvh - 300px);min-height:380px}.tr-col{flex-basis:82vw;width:82vw;max-height:100%}}
 .fld label.tr-cheia{font:400 13px var(--f);text-transform:none;color:var(--dim);margin:0 0 0 6px}
 .tr-quadro{height:calc(100vh - 172px)}
+
+/* ----- Ferramentas: etiqueta "é grátis?" bem à vista ----- */
+.tool-fr{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;align-self:flex-start;margin:2px 0 6px;padding:3px 9px;border-radius:8px;font:700 12px/1.5 var(--f);border:1px solid var(--edge);background:var(--bg2)}
+.tool-fr small{font:400 12px/1.4 var(--f);color:var(--dim)}
+.tool-fr.sim,.tool-fr.local{border-color:#4bce97;background:color-mix(in srgb,#4bce97 16%,transparent)}
+.tool-fr.pouco{border-color:#e2b203;background:color-mix(in srgb,#e2b203 14%,transparent)}
+.tool-fr.nao{border-color:#f87168;background:color-mix(in srgb,#f87168 14%,transparent)}
