@@ -1,44 +1,88 @@
 {
   "id": "guias-prestes-v1",
   "pasta": "guias",
-  "categoria": { "id": "c-guias", "name": "Guias de IA", "icon": "🧭", "color": "#ff7e00" },
+  "categoria": {
+    "id": "c-guias",
+    "name": "Guias de IA",
+    "icon": "🧭",
+    "color": "#ff7e00"
+  },
   "itens": [
     {
       "tipo": "estudo",
       "titulo": "Estúdio de Reels — custos e metas",
       "descricao": "Quanto custa produzir um vídeo com IA e como pensar as metas do estúdio.",
-      "etiquetas": ["guia", "reels", "custos"],
+      "etiquetas": [
+        "guia",
+        "reels",
+        "custos",
+        "videoaula"
+      ],
       "favorito": true,
-      "arquivos": ["01 - Estudio de Reels - custos e metas.pdf"]
+      "arquivos": [
+        "01 - Estudio de Reels - custos e metas.pdf",
+        "01 - Videoaula - Estudio de Reels - custos e metas.mp4"
+      ]
     },
     {
       "tipo": "estudo",
       "titulo": "Qual IA usar e como pensar com IA",
       "descricao": "Guia para escolher a IA certa para cada tarefa e usar melhor.",
-      "etiquetas": ["guia", "ia"],
+      "etiquetas": [
+        "guia",
+        "ia",
+        "videoaula"
+      ],
       "favorito": true,
-      "arquivos": ["02 - Guia - Qual IA usar e como pensar com IA.pdf"]
+      "arquivos": [
+        "02 - Guia - Qual IA usar e como pensar com IA.pdf",
+        "02 - Videoaula - Qual IA usar e como pensar com IA.mp4"
+      ]
     },
     {
       "tipo": "estudo",
       "titulo": "Editar vídeo com Claude Code e área segura",
       "descricao": "Guia de edição de vídeo com o Claude Code, com as áreas seguras de cada formato.",
-      "etiquetas": ["guia", "video", "claude-code"],
-      "arquivos": ["03 - Guia - Editar video com Claude Code e area segura.pdf"]
+      "etiquetas": [
+        "guia",
+        "video",
+        "claude-code",
+        "videoaula"
+      ],
+      "arquivos": [
+        "03 - Guia - Editar video com Claude Code e area segura.pdf",
+        "03 - Videoaula - Editar video com Claude Code.mp4"
+      ]
     },
     {
       "tipo": "estudo",
       "titulo": "Ferramentas — IAs de imagem e vídeo e alternativas grátis",
       "descricao": "Lista de ferramentas de IA para imagem e vídeo, com opções gratuitas.",
-      "etiquetas": ["guia", "ferramentas", "ia"],
-      "arquivos": ["04 - Ferramentas - IAs de imagem e video e alternativas gratis.pdf"]
+      "etiquetas": [
+        "guia",
+        "ferramentas",
+        "ia",
+        "videoaula"
+      ],
+      "arquivos": [
+        "04 - Ferramentas - IAs de imagem e video e alternativas gratis.pdf",
+        "04 - Videoaula - IAs de imagem e video e alternativas gratis.mp4"
+      ]
     },
     {
       "tipo": "estudo",
       "titulo": "Segundo cérebro com Obsidian",
       "descricao": "Como montar um segundo cérebro para guardar e ligar suas anotações.",
-      "etiquetas": ["guia", "obsidian", "organizacao"],
-      "arquivos": ["05 - Guia - Segundo cerebro com Obsidian.pdf"]
+      "etiquetas": [
+        "guia",
+        "obsidian",
+        "organizacao",
+        "videoaula"
+      ],
+      "arquivos": [
+        "05 - Guia - Segundo cerebro com Obsidian.pdf",
+        "05 - Videoaula - Segundo cerebro com Obsidian.mp4"
+      ]
     }
   ]
 }

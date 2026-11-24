@@ -908,11 +908,31 @@ setTimeout(lembretesSeguro, 5000);
 // ---------- pacotes de conteúdo (pasta exemplos/): entram uma vez só, sem duplicar ----------
 // pacote já instalado: se um arquivo dele mudou (ex.: PDF refeito), troca a cópia do anexo pela nova.
 // Só mexe em anexo com o mesmo nome do arquivo do pacote, nos itens que vieram do pacote.
+// Arquivo novo num item do pacote (ex.: a videoaula ao lado do PDF) entra uma vez só: db.packFiles guarda o que já foi
+// oferecido, então se a pessoa apagar o anexo ele não volta. Quem instalou antes dessa lista existir começa com os anexos
+// que já tem e os PDFs (o que vinha no pacote até então).
 function atualizarArquivosDoPacote(db, p, dir) {
   let mudou = false;
+  db.packFiles = Array.isArray(db.packFiles) ? db.packFiles : [];
   (p.itens || []).forEach((it, i) => {
     const item = db.items.find((x) => x.id === p.id + '-' + i);
     if (!item) return;
+    item.attachments = Array.isArray(item.attachments) ? item.attachments : [];
+    const chave = (a) => p.id + '-' + i + '|' + a;
+    if (!db.packFiles.some((k) => k.startsWith(p.id + '-' + i + '|'))) {
+      for (const a of it.arquivos || []) if (/\.pdf$/i.test(a) || item.attachments.some((x) => x.name === a)) db.packFiles.push(chave(a));
+      mudou = true;
+    }
+    for (const a of it.arquivos || []) {
+      const src = path.join(dir, path.basename(p.pasta || ''), path.basename(a));
+      if (db.packFiles.includes(chave(a)) || !fs.existsSync(src)) continue;
+      const file = uid() + '-' + safeName(a);
+      try {
+        fs.copyFileSync(src, path.join(ANX, file));
+        item.attachments.push({ id: uid(), name: a, file, size: fs.statSync(src).size, mime: MIME[path.extname(a).toLowerCase()] || '' });
+        db.packFiles.push(chave(a)); item.updated = Date.now(); mudou = true;
+      } catch (_) {}
+    }
     for (const a of it.arquivos || []) {
       const src = path.join(dir, path.basename(p.pasta || ''), path.basename(a));
       const anexo = item.attachments.find((x) => x.name === a);
@@ -941,9 +961,11 @@ function applyPacks(db) {
     if (!p.id) continue;
     if (p.categoria && !db.categories.find((c) => c.id === p.categoria.id)) db.categories.push(p.categoria);
     const now = Date.now();
+    db.packFiles = Array.isArray(db.packFiles) ? db.packFiles : [];
     (p.itens || []).forEach((it, i) => {
       const attachments = [];
       for (const a of it.arquivos || []) {
+        db.packFiles.push(p.id + '-' + i + '|' + a);
         const src = path.join(dir, path.basename(p.pasta || ''), path.basename(a));
         if (!fs.existsSync(src)) continue;
         const file = uid() + '-' + safeName(a);

@@ -1,15 +1,20 @@
 {
-  "versao": "2.26.0",
-  "data": "2026-11-22",
+  "versao": "2.27.0",
+  "data": "2026-11-23",
   "novidades": [
-    "🧰 Ferramentas: o banco passou de 42 para 80 recomendadas, com Higgsfield, Magnific, Artlist, Meta AI, HappyHorse, FLUX, Pika, PixVerse, HeyGen, CapCut e outras",
-    "🎙️ Dois grupos novos: Voz e música (ElevenLabs, Suno, Whisper) e Assistentes de IA (ChatGPT, Claude, Gemini, NotebookLM, Perplexity e mais)",
-    "🟢 Etiqueta “é grátis?” em destaque em cada cartão: Grátis, Grátis no PC, Grátis limitado ou Pago, com o detalhe ao lado",
-    "🆓 Filtro novo: veja só o que dá para usar sem pagar, ou só o que é grátis de verdade",
-    "🧲 Hubs como Higgsfield e Magnific aparecem tanto em vídeo quanto em imagem. Nos Extras entrou o MarkItDown, da Microsoft",
-    "📕 Guia 04 (PDF de ferramentas) atualizado com a lista nova"
+    "🎬 Videoaulas nos Guias de IA: cada um dos 5 guias agora tem a sua aula em vídeo (2 a 3 minutos), anexada ao lado do PDF. Abra o guia na Biblioteca e toque no vídeo",
+    "📚 As aulas explicam o guia com exemplos e comparações simples: custos do estúdio de Reels, qual IA usar, editar vídeo com o Claude Code, IAs de imagem e vídeo grátis e segundo cérebro com Obsidian",
+    "🧹 Se você apagar um vídeo ou PDF dos guias, ele não volta nas próximas atualizações"
   ],
   "historico": {
+    "2.26.0": [
+      "🧰 Ferramentas: o banco passou de 42 para 80 recomendadas, com Higgsfield, Magnific, Artlist, Meta AI, HappyHorse, FLUX, Pika, PixVerse, HeyGen, CapCut e outras",
+      "🎙️ Dois grupos novos: Voz e música (ElevenLabs, Suno, Whisper) e Assistentes de IA (ChatGPT, Claude, Gemini, NotebookLM, Perplexity e mais)",
+      "🟢 Etiqueta “é grátis?” em destaque em cada cartão: Grátis, Grátis no PC, Grátis limitado ou Pago, com o detalhe ao lado",
+      "🆓 Filtro novo: veja só o que dá para usar sem pagar, ou só o que é grátis de verdade",
+      "🧲 Hubs como Higgsfield e Magnific aparecem tanto em vídeo quanto em imagem. Nos Extras entrou o MarkItDown, da Microsoft",
+      "📕 Guia 04 (PDF de ferramentas) atualizado com a lista nova"
+    ],
     "2.25.0": [
       "📋 Trello no padrão do Trello: listas com a mesma largura (o título quebra em linhas), cartões compactos e capas com imagem aparecendo, como no quadro original",
       "🔄 Sincronização sozinha: o que muda no Trello aparece no MyLoot a cada 30 segundos, sem a tela pular. O que você muda aqui vai na hora para o Trello",
