@@ -165,7 +165,7 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 - **Exportar para o Obsidian:** baixa um ZIP com tudo em Markdown (itens, anexos, clientes e tarefas), pronto para abrir como cofre.
 - **Backup:** completo (`.zip` com os registros e os anexos, restaurável em outro computador), só dos registros (`.json` ou `.myloot` com senha, AES-256) e cópias automáticas de cada dia, restauráveis pela tela.
 - **Central de ferramentas:** 42 links de IAs de imagem e vídeo e de programas de código aberto, com busca e botão para guardar na sua Biblioteca.
-- **Já vem com 5 guias em PDF** sobre IA, edição de vídeo e organização.
+- **Já vem com 6 guias em PDF** sobre IA, edição de vídeo, organização e quanto dá para usar de graça em cada ferramenta.
 
 | Biblioteca | Ficha do item |
 |---|---|

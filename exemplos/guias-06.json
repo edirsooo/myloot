@@ -1,0 +1,27 @@
+{
+  "id": "guias-prestes-06",
+  "pasta": "guias",
+  "categoria": {
+    "id": "c-guias",
+    "name": "Guias de IA",
+    "icon": "🧭",
+    "color": "#ff7e00"
+  },
+  "itens": [
+    {
+      "tipo": "estudo",
+      "titulo": "Ferramentas de IA — quanto dá para usar de graça",
+      "descricao": "Todas as ferramentas da aba Ferramentas com os créditos do plano grátis de cada uma e quanto rende com várias contas (ex.: 5 Gmails + 10 e-mails).",
+      "etiquetas": [
+        "guia",
+        "ferramentas",
+        "ia",
+        "gratis"
+      ],
+      "favorito": true,
+      "arquivos": [
+        "06 - Ferramentas - Limites gratis e creditos por conta.pdf"
+      ]
+    }
+  ]
+}
