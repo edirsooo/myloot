@@ -241,11 +241,11 @@ kbd,code{font:700 .82em var(--mono);background:var(--panel2);border:1px solid va
   .menu a:not(.menu-baixar){padding:10px 8px;font-size:13.5px}
 }
 @media (max-width:900px){
-  .menu{display:none;position:fixed;inset:var(--topo) 0 0;background:rgba(7,11,24,.97);flex-direction:column;align-items:stretch;gap:6px;padding:20px var(--pad)}
+  .menu{display:none;position:fixed;inset:var(--topo) 0 0;overflow-y:auto;overscroll-behavior:contain;background:rgba(7,11,24,.97);flex-direction:column;align-items:stretch;gap:6px;padding:20px var(--pad)}
   .menu a{font-size:20px;min-height:54px;color:var(--text)}
   .menu .menu-baixar{display:flex;margin-top:12px;justify-content:center}
   .menu-aberto .menu{display:flex}
-  .menu-aberto .topo{background:var(--bg)}
+  .menu-aberto .topo{background:var(--bg);backdrop-filter:none} /* o desfoque do topo (página rolada) prendia o menu fixo dentro da faixa de 68px */
   .menu-bt{display:flex}
   .som-box{margin-left:auto}
   .menu-bt{margin-left:8px}
