@@ -17,7 +17,6 @@
     ferramentas_rec: 'Ferramentas recomendadas em cartões, com Abrir e Salvar',
     drive: 'Configuração do Google Drive para copiar a pasta do MyLoot',
     enviar: 'Menu de uma nota com Enviar para o Notion e Enviar para o Trello',
-    celular: 'Usar no celular: QR Code e código de 6 números',
     conquistas: 'Tela Conquistas com XP dos últimos 7 dias e as medalhas',
     mascote: 'Configurações de Diversão com a escolha entre os seis mascotes',
     musica: 'Player de música aberto no topo do app',

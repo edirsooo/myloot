@@ -13,6 +13,8 @@
   M.today = () => M.ymd(new Date());
   M.addDays = (s, n) => { const d = new Date(s + 'T12:00:00'); d.setDate(d.getDate() + n); return M.ymd(d); };
   M.fmtDate = (s) => { if (!s) return ''; const [y, m, d] = s.split('-'); return `${d}/${m}/${y.slice(2)}`; };
+  // endereço vindo de fora (Trello, Notion): só http(s) vira link ou imagem; o resto fica inerte
+  M.urlOk = (u) => (/^https?:\/\//i.test(String(u || '').trim()) ? String(u).trim() : '');
   M.esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   M.norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   M.$ = (s, r) => (r || document).querySelector(s);
@@ -133,7 +135,7 @@
     if (mudouFora && !ocupado() && M.render) {
       mudouFora = false;
       // redesenhar a tela não pode apagar o que a pessoa já digitou nos campos (ex.: a tarefa nova antes de clicar em Adicionar)
-      const guardados = M.$$('#view input[id], #view textarea[id], #view select[id]').filter((e) => e.type !== 'checkbox' && e.type !== 'file').map((e) => [e.id, e.value]);
+      const guardados = M.$$('#view input[id], #view textarea[id], #view select[id]').filter((e) => e.type !== 'checkbox' && e.type !== 'file' && !(e.dataset.nota && !e.dataset.sujo)).map((e) => [e.id, e.value]); // bloco de notas sem digitação aqui: vale o texto novo
       const foco = document.activeElement && document.activeElement.id;
       M.render();
       for (const [id, v] of guardados) { const e = document.getElementById(id); if (e && v && e.value !== v) e.value = v; }

@@ -47,13 +47,16 @@
   }
   // ----- miniatura dos PDFs: desenha a 1ª página uma vez (pdf.js), guarda no servidor e daí em diante é só uma imagem -----
   const miniFalhou = new Set(), miniFeita = new Map(), miniFila = [];
-  let miniRodando = false, pdfjs = null;
+  let miniRodando = false, pdfjs = null, miniAtual = '';
   M.pdfMiniFalhou = (f) => miniFalhou.has(f);
   M.pdfMiniV = (f) => (miniFeita.has(f) ? '?v=' + miniFeita.get(f) : '');
-  async function geraMini(f) {
+  // ctl.on = true quando a fila desiste (tempo esgotado): o trabalho para e não envia a imagem atrasada
+  async function geraMini(f, ctl) {
     if (!pdfjs) { pdfjs = await import('/vendor/pdfjs/pdf.min.mjs'); pdfjs.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.mjs'; }
-    const tarefa = pdfjs.getDocument({ url: '/anexos/' + encodeURIComponent(f), disableAutoFetch: true, isEvalSupported: false }), doc = await tarefa.promise;
+    if (ctl.on) throw new Error('cancelado');
+    const tarefa = ctl.tarefa = pdfjs.getDocument({ url: '/anexos/' + encodeURIComponent(f), disableAutoFetch: true, isEvalSupported: false });
     try {
+      const doc = await tarefa.promise; if (ctl.on) throw new Error('cancelado');
       const pg = await doc.getPage(1), v0 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: 520 / v0.width });
       const cv = document.createElement('canvas'); cv.width = Math.round(vp.width); cv.height = Math.round(Math.min(vp.height, vp.width * 1.6));
       const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
@@ -61,16 +64,21 @@
       await Promise.race([pg.render({ canvasContext: cx, canvas: cv, viewport: vp, intent: 'print' }).promise, new Promise((_, no) => setTimeout(() => no(new Error('demorou')), 20000))]);
       const blob = await new Promise((r) => cv.toBlob(r, 'image/jpeg', 0.82));
       cv.width = cv.height = 0; // libera a memória do desenho (o iPhone tem limite para canvas)
-      const r = await fetch('/api/miniatura?file=' + encodeURIComponent(f), { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'X-MyLoot': '1' }, body: blob });
+      if (ctl.on) throw new Error('cancelado');
+      ctl.ab = new AbortController();
+      const r = await fetch('/api/miniatura?file=' + encodeURIComponent(f), { signal: ctl.ab.signal, method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'X-MyLoot': '1' }, body: blob });
       if (!r.ok) throw new Error('não gravou');
-    } finally { try { tarefa.destroy(); } catch (_) {} } // libera o PDF da memória (falhar aqui não estraga a miniatura)
+    } finally { try { Promise.resolve(tarefa.destroy()).catch(() => {}); } catch (_) {} } // libera o PDF da memória (falhar aqui não estraga a miniatura)
   }
   async function rodaFila() {
     if (miniRodando) return; miniRodando = true;
     while (miniFila.length) {
-      const f = miniFila.shift();
+      const f = miniFila.shift(), ctl = { on: false }; miniAtual = f;
       // 30 s no máximo por PDF, do começo ao fim (no celular o pdf.js pode travar antes mesmo de desenhar)
-      try { await Promise.race([geraMini(f), new Promise((_, no) => setTimeout(() => no(new Error('demorou')), 30000))]); miniFeita.set(f, Date.now()); } catch (_) { miniFalhou.add(f); }
+      let t = 0;
+      try { await Promise.race([geraMini(f, ctl), new Promise((_, no) => { t = setTimeout(() => no(new Error('demorou')), 30000); })]); miniFeita.set(f, Date.now()); }
+      catch (_) { miniFalhou.add(f); ctl.on = true; try { if (ctl.ab) ctl.ab.abort(); if (ctl.tarefa) Promise.resolve(ctl.tarefa.destroy()).catch(() => {}); } catch (__) {} }
+      finally { clearTimeout(t); miniAtual = ''; }
       document.querySelectorAll(`img[data-pdfmini="${CSS.escape(f)}"]`).forEach((im) => {
         if (miniFalhou.has(f)) virouIcone(im);
         else { im.onload = () => { const b = im.closest('.aprev'); if (b) b.classList.remove('ap-espera'); }; im.src = '/miniaturas/' + encodeURIComponent(f) + '.jpg?v=' + miniFeita.get(f); }
@@ -87,7 +95,7 @@
     if (!f || miniFalhou.has(f)) return virouIcone(im);
     if (miniFeita.has(f)) { miniFalhou.add(f); return virouIcone(im); } // já gerou e mesmo assim não abre: desiste
     const b = im.closest('.aprev'); if (b) b.classList.add('ap-espera');
-    if (!miniFila.includes(f)) { miniFila.push(f); rodaFila(); }
+    if (!miniFila.includes(f) && miniAtual !== f) { miniFila.push(f); rodaFila(); } // o mesmo PDF em dois cartões gera uma vez só
   }, true);
 
   // texto dos anexos .txt/.md: busca só o comecinho, uma vez, e guarda
@@ -174,6 +182,7 @@
     const vivos = M.db.items.filter((i) => !!i.arq === !!u.arq), nArq = M.db.items.filter((i) => i.arq).length;
     if (u.arq && !nArq) u.arq = false;
     const count = (id) => vivos.filter((i) => i.type === id).length;
+    const nFilt = [u.cat, u.status, u.tag, u.fav, u.ref, u.arq, u.selModo].filter(Boolean).length; // no celular, o botão Filtros mostra quantos estão ligados
     v.innerHTML = `
       <p class="pg-sub">Seus materiais guardados: prompts, PDFs, instruções, links e notas. Clique num cartão para abrir.</p>
       <div class="lib-topo"><div class="hotbar" id="hotbar" data-lab="Tipo">
@@ -184,8 +193,9 @@
         <select id="fso" title="Ordem dos itens" aria-label="Ordem dos itens">${[['updated:-1', '🕘 Mexidos por último'], ['created:-1', '🆕 Mais novos'], ['created:1', '📜 Mais antigos'], ['title:1', '🔤 Nome (A–Z)'], ['ord:1', '✋ Minha ordem']].map(([v, n]) => `<option value="${v}" ${v === u.sort.k + ':' + u.sort.d ? 'selected' : ''}>${n}</option>`).join('')}</select>
         <button type="button" class="btn ghost sm" id="fprev" aria-pressed="${s.previaAnexo !== false}" title="Mostrar no cartão uma prévia do anexo (imagem, vídeo, PDF ou texto)">${s.previaAnexo !== false ? '🖼️ Prévias: sim' : '🖼️ Prévias: não'}</button>
         <div class="seg" id="views" title="Jeito de ver">${[['grid', '▦ Grade'], ['list', '☰ Lista'], ['pastas', '📁 Pastas'], ['table', '▤ Tabela'], ['board', '▥ Quadro'], ['map', '🕸️ Mapa']].map(([k, n]) => `<button data-v="${k}" class="${s.view === k ? 'on' : ''}">${n}</button>`).join('')}</div></div></div>
-      <div class="toolbar barra" data-lab="Filtrar">
+      <div class="toolbar barra ${u.filtAberto ? '' : 'fechado'}" data-lab="Filtrar">
         <input class="search" id="fq" type="search" placeholder="Filtrar esta lista…" value="${esc(u.q)}">
+        <button type="button" class="btn ghost sm" id="filtBt" aria-expanded="${!!u.filtAberto}" title="Mostrar ou esconder categoria, status, etiqueta e favoritos">⚙️ Filtros${nFilt ? ` <span class="n">${nFilt}</span>` : ''}</button>
         <select id="fcat"><option value="">Todas as categorias</option>${M.db.categories.map((c) => `<option value="${c.id}" ${u.cat === c.id ? 'selected' : ''}>${esc(c.icon)} ${esc(c.name)}</option>`).join('')}</select>
         <select id="fst"><option value="">Qualquer status</option>${M.STATUS.map((x) => `<option value="${esc(x.id)}" ${u.status === x.id ? 'selected' : ''}>${esc(x.em)} ${esc(x.name)}</option>`).join('')}</select>${M.opcBtn('itemStatus')}
         <select id="ftag"><option value="">Todas as etiquetas</option>${M.allTags().map((x) => `<option ${u.tag === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>
@@ -202,7 +212,11 @@
     M.renderResults();
 
     $('#hotbar').onclick = (e) => { const x = e.target.closest('.slot'); if (!x) return; u.type = x.dataset.type; u.libMax = 0; SFX.play('click'); M.render(); };
-    const rr = () => { u.libMax = 0; M.renderResults(); };
+    const rr = () => {
+      u.libMax = 0; M.renderResults();
+      const n = [u.cat, u.status, u.tag, u.fav, u.ref, u.arq, u.selModo].filter(Boolean).length;
+      if ($('#filtBt')) $('#filtBt').innerHTML = '⚙️ Filtros' + (n ? ` <span class="n">${n}</span>` : '');
+    };
     let tq = 0; // filtro por texto espera uma pausa curta na digitação
     $('#fq').oninput = (e) => { u.q = e.target.value; clearTimeout(tq); tq = setTimeout(rr, M.db.items.length > 300 ? 180 : 0); };
     $('#fcat').onchange = (e) => { u.cat = e.target.value; rr(); };
@@ -212,6 +226,7 @@
     if ($('#fref')) $('#fref').onchange = (e) => { u.ref = e.target.checked; rr(); };
     if ($('#farq')) $('#farq').onchange = (e) => { u.arq = e.target.checked; sel.clear(); M.render(); };
     $('#selBt').onclick = () => { u.selModo = !u.selModo; sel.clear(); SFX.play('click'); M.render(); };
+    $('#filtBt').onclick = (e) => { u.filtAberto = !u.filtAberto; e.currentTarget.closest('.toolbar').classList.toggle('fechado', !u.filtAberto); e.currentTarget.setAttribute('aria-expanded', !!u.filtAberto); SFX.play('click'); };
     if ($('#tagRen')) $('#tagRen').onclick = () => renomearEtiqueta(u.tag);
     $('#selBar').onclick = (e) => { const b = e.target.closest('[data-s]'); if (b) acaoSel(b.dataset.s); };
     $('#selBar').onchange = (e) => { if (e.target.dataset.sv) acaoSel(e.target.dataset.sv, e.target.value); };

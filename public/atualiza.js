@@ -21,7 +21,9 @@
     if (!manual && M.db.settings.updPulada === r.nova) return;
     const nums = (x) => String(x || '0').split('.').map((n) => parseInt(n, 10) || 0);
     const acima = (x, y) => { const a = nums(x), b = nums(y); for (let i = 0; i < 3; i++) if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0); return false; };
-    r.novidades = (r.novidades || []).concat(...Object.keys(r.historico || {}).filter((v) => acima(v, r.atual)).sort((x, y) => (acima(x, y) ? -1 : 1)).map((v) => r.historico[v]));
+    // novidades antigas de algo que já saiu (acesso pelo celular, 2.28) não aparecem para quem pula versões
+    const vale = (t) => !/QR Code|Tailscale|Usar no celular|pelo celular|no celular|do celular|celular e PC|PC e celular/i.test(t);
+    r.novidades = (r.novidades || []).concat(...Object.keys(r.historico || {}).filter((v) => acima(v, r.atual)).sort((x, y) => (acima(x, y) ? -1 : 1)).map((v) => r.historico[v].filter(vale)));
     // versão só com correções não tem lista própria: mostra os destaques da última versão com novidades
     let titLista = 'O que tem de novo:';
     if (!r.novidades.length) { const ult = Object.keys(r.historico || {}).sort((x, y) => (acima(x, y) ? -1 : 1))[0]; if (ult) { r.novidades = r.historico[ult]; titLista = 'Destaques do MyLoot:'; } }
@@ -67,7 +69,8 @@
     const num = (x) => String(x || '0').split('.').map((n) => parseInt(n, 10) || 0);
     const maior = (x, y) => { const a = num(x), b = num(y); for (let i = 0; i < 3; i++) if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0); return false; };
     const lista = (v.novidades || []).slice();
-    Object.keys(v.historico || {}).sort((x, y) => (maior(x, y) ? -1 : 1)).forEach((ver) => { if (!s.versaoVistaAntes || maior(ver, s.versaoVistaAntes)) lista.push(...v.historico[ver]); });
+    const vale2 = (t) => !/QR Code|Tailscale|Usar no celular|pelo celular|no celular|do celular|celular e PC|PC e celular/i.test(t); // o que já saiu não volta como novidade
+    Object.keys(v.historico || {}).sort((x, y) => (maior(x, y) ? -1 : 1)).forEach((ver) => { if (!s.versaoVistaAntes || maior(ver, s.versaoVistaAntes)) lista.push(...v.historico[ver].filter(vale2)); });
     v.novidades = lista;
     if (!jaUsava || !(v.novidades || []).length) return false;
     const abrir = () => {

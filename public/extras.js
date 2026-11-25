@@ -48,7 +48,7 @@
     <div class="bk-bloco">
       <div class="bk-t">💾 Backup completo <span class="tag">recomendado</span></div>
       <p class="bk-p">Um arquivo .zip com tudo: os registros e os arquivos anexados (PDFs, imagens, áudios). É o que serve para trocar de computador ou guardar num HD externo.</p>
-      <div class="row bk-btns"><a class="btn" id="cBakC" href="/api/backup/completo" download style="flex:none">💾 Backup completo (com anexos)</a>${M.hint('As chaves da IA, do Notion e do Trello e o acesso do celular não entram no backup. No outro computador, conecte de novo.')}</div>
+      <div class="row bk-btns"><a class="btn" id="cBakC" href="/api/backup/completo" download style="flex:none">💾 Backup completo (com anexos)</a>${M.hint('As chaves da IA, do Notion e do Trello não entram no backup. No outro computador, conecte de novo.')}</div>
       <small class="bk-info" id="cBakInfo"></small>
     </div>
     <div class="bk-bloco">
@@ -69,7 +69,7 @@
     <div class="bk-bloco">
       <div class="bk-t">🗂️ Exportar para usar fora do MyLoot</div>
       <p class="bk-p">Vem dentro do .zip: ${plural(n('items'), 'item', 'itens')} da Biblioteca (um arquivo .md por item, com os anexos), ${plural(n('clients'), 'cliente', 'clientes')}, ${plural(n('tasks'), 'tarefa', 'tarefas')}, ${plural(n('fin'), 'lançamento', 'lançamentos')} do Financeiro (planilha .csv), ${plural(n('habits'), 'hábito', 'hábitos')}, ${plural(n('goals'), 'meta', 'metas')} e ${plural(n('tools'), 'ferramenta sua', 'ferramentas suas')}. Não vem: Lixeira, pontos e configurações. Serve para ler no Obsidian ou em outro app. Para guardar e restaurar, use o backup completo.</p>
-      <div class="row bk-btns"><a class="btn ghost" id="cExp" href="/api/exportar-md" style="flex:none">🗂️ Exportar tudo em Markdown (.zip)</a>${M.hint('Extraia o .zip e abra a pasta no Obsidian como cofre. Dentro vem um LEIA-ME com a lista do que foi exportado.')}</div>
+      <div class="row bk-btns">${M.remoto ? '<small style="color:var(--faint)">💻 Só dá para exportar no computador onde o MyLoot está instalado.</small>' : '<a class="btn ghost" id="cExp" href="/api/exportar-md" style="flex:none">🗂️ Exportar tudo em Markdown (.zip)</a>'}${M.hint('Extraia o .zip e abra a pasta no Obsidian como cofre. Dentro vem um LEIA-ME com a lista do que foi exportado.')}</div>
     </div>`;
   };
 

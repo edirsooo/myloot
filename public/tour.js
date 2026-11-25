@@ -80,7 +80,6 @@
       { s: '#fRes .card', t: 'Abra, salve ou edite', d: 'Abra o site, clique em ⭐ Salvar para levar a ferramenta para as suas e edite quando quiser. O ⋯ do cartão duplica, arquiva, guarda o link na Biblioteca e remove.' },
     ],
     cfg: [
-      { s: '#celSec', t: 'Usar no celular', d: 'Ligue a chave, aponte a câmera do celular para o QR Code e use o MyLoot no mesmo Wi-Fi.' },
       { s: '#tourSec', t: 'Tutorial', d: 'Quer ver estas explicações de novo? É só clicar aqui.' },
       { t: 'Seus dados são seus', d: 'Mais abaixo você conecta a IA, o Notion, o Trello e o Drive, faz o backup completo (com os anexos), volta a uma cópia de outro dia e exporta tudo para o Obsidian.' },
     ],
@@ -193,8 +192,6 @@
 
   // tutoriais em vídeo (public/tutoriais/<chave>.mp4 horizontal e <chave>-v.mp4 vertical)
   const VIDEOS = [
-    ['celular', '📱', 'MyLoot no celular, em casa', 'QR Code, código e como virar aplicativo.', '0:38'],
-    ['tailscale', '🌍', 'Fora de casa com o Tailscale', 'Abra o MyLoot no 4G ou no trabalho, de graça.', '0:40'],
     ['backup', '💾', 'Backup: nunca perca nada', 'Baixar, proteger com senha, restaurar e exportar.', '0:32'],
     ['ia', '🤖', 'IA para melhorar seus textos', 'Claude ou Codex que você já tem, sem custo extra.', '0:33'],
     ['financeiro', '💰', 'Contas fixas e parcelas', 'Repita todo mês ou divida em parcelas.', '0:31'],

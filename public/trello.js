@@ -10,7 +10,10 @@
   const cor = (c) => COR[String(c || '').replace(/_(dark|light)$/, '')] || '#8590a2';
   const api = (p, o) => M.api('/api/trello/' + p, o);
   // toda mudança passa por aqui: enquanto houver uma em andamento, a sincronização espera (não traz dado velho por cima)
-  const acao = async (b) => { mexeu++; ocupado++; try { return await api('acao', { method: 'POST', body: JSON.stringify(b) }); } finally { ocupado--; mexeu++; } };
+  // enquanto algo vai para o Trello, a ficha aberta fica travada (inert): nada de dois envios cruzados nem texto sumindo no meio
+  let fichaPresa = false; // Salvar e fechar / Guardar no MyLoot em andamento: a ficha fica travada até terminar, mesmo que outro envio acabe antes
+  const trava = () => { const mb = document.querySelector('#trCb'), on = ocupado > 0 || fichaPresa; if (mb) { mb.inert = on; mb.setAttribute('aria-busy', String(on)); } };
+  const acao = async (b) => { mexeu++; ocupado++; trava(); try { return await api('acao', { method: 'POST', body: JSON.stringify(b) }); } finally { ocupado--; mexeu++; trava(); } };
   const qAtual = () => M.db.settings.trelloQuadro || '';
   const fmtPrazo = (d) => { if (!d) return ''; const x = new Date(d); return x.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', ''); };
   const prazoCls = (c) => { if (!c.prazo) return ''; if (c.feito) return 'ok'; const ms = new Date(c.prazo) - Date.now(); return ms < 0 ? 'atr' : ms < 864e5 ? 'logo' : ''; };
@@ -45,39 +48,51 @@
       if (!token) return M.falta($('#trTok'), '🔑 Cole o token (passo 3)');
       try {
         await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ trello: { key, token } }) });
-        eu = await api('eu');
+        M.trelloReset(); eu = await api('eu');
         SFX.play('coin'); M.toast('✅ Trello conectado' + (eu.nome ? ': ' + eu.nome : ''));
         if (M.intStatus) M.intStatus(true).catch(() => {});
-        quadros = null; erro = ''; M.render();
+        M.render();
       } catch (e) { M.toast('⚠️ ' + e.message); }
     };
   }
 
+  let ger = 0; // muda ao trocar de conta: resposta que chega depois disso é da conta anterior e vai fora
   async function carregar(forcar) {
     if (carregando) { deNovo = true; return; } carregando = true; erro = '';
+    const g = ger;
     try {
-      if (!quadros || forcar) quadros = (await api('quadros')).quadros.sort((a, b) => (b.fav - a.fav) || String(b.ult).localeCompare(String(a.ult)));
+      let qs = quadros;
+      if (!qs || forcar) qs = (await api('quadros')).quadros.sort((a, b) => (b.fav - a.fav) || String(b.ult).localeCompare(String(a.ult)));
+      if (g !== ger) throw 0;
+      quadros = qs;
       let q = qAtual();
       if (!quadros.some((b) => b.id === q)) { q = quadros[0] ? quadros[0].id : ''; M.db.settings.trelloQuadro = q; M.save(); }
-      dados = q ? await api('quadro?id=' + encodeURIComponent(q)) : null; sincEm = Date.now();
-    } catch (e) { erro = e.message; }
+      const nd = q ? await api('quadro?id=' + encodeURIComponent(q)) : null;
+      if (g !== ger) throw 0;
+      dados = nd; sincEm = Date.now();
+    } catch (e) { if (e !== 0) erro = e.message; }
     carregando = false;
     if (deNovo) { deNovo = false; return carregar(); } // a pessoa trocou de quadro no meio do caminho
+    if (g !== ger) return;
     if (M.ui.page === 'trello') M.render();
   }
 
   // ----- sincronização: o que mudou no Trello aparece aqui sozinho -----
   const parado = () => M.ui.page === 'trello' && dados && !carregando && !ocupado && !arrastando && !M.modalOpen() && document.visibilityState === 'visible' && !document.querySelector('.tr-novo') && !(document.activeElement && document.activeElement.id === 'trBusca');
+  let lendo = false; // uma leitura por vez (o relógio de 30 s e a volta para a aba não se atropelam)
   async function sincroniza() {
-    if (!parado()) return;
-    const q = dados.quadro.id, m0 = mexeu;
-    let novo; try { novo = await api('quadro?id=' + encodeURIComponent(q)); } catch (_) { return; } // sem internet agora: tenta na próxima
-    if (m0 !== mexeu || !parado() || !dados || dados.quadro.id !== q) return; // a pessoa mexeu enquanto buscava: fica o que ela fez
+    if (!parado() || lendo) return;
+    const q = dados.quadro.id, m0 = mexeu, t0 = Date.now(), g = ger;
+    let novo; lendo = true;
+    try { novo = await api('quadro?id=' + encodeURIComponent(q)); } catch (_) { return; } finally { lendo = false; } // sem internet agora: tenta na próxima
+    if (m0 !== mexeu || g !== ger || sincEm > t0 || !parado() || !dados || dados.quadro.id !== q) return; // a pessoa mexeu (ou atualizou) enquanto buscava: fica o mais novo
     sincEm = Date.now();
     if (JSON.stringify(novo) === JSON.stringify(dados)) return pintaSinc();
     dados = novo; M.render();
   }
   M.trelloSinc = sincroniza;
+  // trocou ou desligou a conta (aqui ou em Configurações): nada da conta anterior fica na tela
+  M.trelloReset = () => { quadros = dados = eu = null; erro = ''; mexeu++; ger++; busca = ''; if (carregando) deNovo = true; }; // busca em andamento da conta antiga: ao terminar, já busca a nova
   const pintaSinc = () => { const b = $('#trAtu'); if (b && sincEm) b.title = 'Sincronizado com o Trello às ' + new Date(sincEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' (atualiza sozinho a cada 30 s)'; };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - sincEm > 10000) sincroniza(); });
 
@@ -109,15 +124,15 @@
       if (!st.trello.temChave) { v.innerHTML = conectarHTML(st.trello); conectarBind(); return; }
       if (!quadros && !carregando && !erro) { v.innerHTML = '<div class="empty"><div class="big">📋</div><h3>Abrindo o seu Trello…</h3></div>'; carregar(); return; }
       desenha(v);
-    }).catch((e) => { v.innerHTML = `<div class="empty"><div class="big">⚠️</div><h3>Não consegui abrir o Trello</h3><p>${esc(e.message)}</p></div>`; });
+    }).catch((e) => { if (M.ui.page === 'trello') v.innerHTML = `<div class="empty"><div class="big">⚠️</div><h3>Não consegui abrir o Trello</h3><p>${esc(e.message)}</p></div>`; });
   };
 
   // filtro sem redesenhar: só esconde os cartões que não batem e acerta os contadores
   function aplicaFiltro() {
-    const qb = M.norm(busca);
+    const qb = M.norm(busca), porId = new Map(dados ? dados.cartoes.map((c) => [c.id, c]) : []);
     document.querySelectorAll('#trCols .tr-col[data-l]').forEach((col) => {
       let n = 0;
-      col.querySelectorAll('.tr-card').forEach((el) => { const c = doCartao(el.dataset.c), ok = !qb || (c && M.norm(c.nome).includes(qb)); el.hidden = !ok; if (ok) n++; });
+      col.querySelectorAll('.tr-card').forEach((el) => { const c = porId.get(el.dataset.c), ok = !qb || (c && M.norm(c.nome).includes(qb)); el.hidden = !ok; if (ok) n++; });
       col.querySelector('.n').textContent = n;
     });
   }
@@ -139,7 +154,7 @@
         <select id="trQ" aria-label="Quadro do Trello">${(quadros || []).map((b) => `<option value="${esc(b.id)}" ${b.id === qAtual() ? 'selected' : ''}>${b.fav ? '⭐ ' : ''}${esc(b.nome)}</option>`).join('')}</select>
         <input class="search" id="trBusca" type="search" placeholder="Filtrar cartões…" value="${esc(busca)}">
         <button class="btn ghost sm" id="trAtu" title="Buscar de novo no Trello">${carregando ? '⏳' : '🔄'} Atualizar</button>
-        ${d ? `<a class="btn ghost sm" href="${esc(d.quadro.url)}" target="_blank" rel="noopener">↗ Abrir no Trello</a>` : ''}
+        ${d && M.urlOk(d.quadro.url) ? `<a class="btn ghost sm" href="${esc(M.urlOk(d.quadro.url))}" target="_blank" rel="noopener">↗ Abrir no Trello</a>` : ''}
         <span class="grow"></span>
         <button class="btn ghost sm" id="trCfg" title="Trocar a conta ou desconectar">⚙️</button>
       </div>
@@ -221,8 +236,11 @@
     const criar = async () => {
       const nome = ta.value.trim(); if (!nome) return ta.focus();
       ta.value = ''; ta.focus();
+      const q = dados.quadro.id;
       try {
         const r = await acao({ op: 'cartaoNovo', lista, nome });
+        if (!dados || dados.quadro.id !== q) return M.toast(`✅ “${nome.slice(0, 40)}” criado no outro quadro`); // trocou de quadro enquanto esperava
+        if (doCartao(r.id)) return SFX.play('pop'); // a sincronização já trouxe o cartão
         const L = daLista(lista);
         dados.cartoes.push({ id: r.id, nome, desc: false, lista, pos: (L.length ? L[L.length - 1].pos : 0) + 65536, prazo: '', feito: false, etiquetas: [], membros: [], url: '', capa: '', capaCheia: false, capaImg: null, ativ: '', check: [0, 0], coment: 0, anexos: 0 });
         SFX.play('pop');
@@ -238,9 +256,10 @@
     box.innerHTML = '<input type="text" placeholder="Nome da lista" aria-label="Nome da lista nova"><div class="row"><button class="btn sm" style="flex:none">＋ Criar lista</button><button class="btn ghost sm" style="flex:none">Cancelar</button></div>';
     btn.replaceWith(box); const i = box.querySelector('input'); i.focus();
     const criar = async () => {
-      const nome = i.value.trim(); if (!nome) return i.focus();
-      try { const r = await acao({ op: 'listaNova', quadro: dados.quadro.id, nome }); dados.listas.push({ id: r.id, nome, pos: (dados.listas.length ? Math.max(...dados.listas.map((x) => x.pos)) : 0) + 65536 }); SFX.play('pop'); M.render(); const c = $('#trCols'); if (c) c.scrollLeft = c.scrollWidth; }
-      catch (e) { M.toast('⚠️ ' + e.message); }
+      const nome = i.value.trim(); if (!nome || box.dataset.indo) return i.focus();
+      const q = dados.quadro.id; box.dataset.indo = '1'; i.disabled = true;
+      try { const r = await acao({ op: 'listaNova', quadro: q, nome }); if (!dados || dados.quadro.id !== q) return M.toast(`✅ Lista “${nome.slice(0, 40)}” criada no outro quadro`); if (!dados.listas.some((x) => x.id === r.id)) dados.listas.push({ id: r.id, nome, pos: (dados.listas.length ? Math.max(...dados.listas.map((x) => x.pos)) : 0) + 65536 }); SFX.play('pop'); M.render(); const c = $('#trCols'); if (c) c.scrollLeft = c.scrollWidth; }
+      catch (e) { M.toast('⚠️ ' + e.message); delete box.dataset.indo; i.disabled = false; i.focus(); }
     };
     i.onkeydown = (e) => { if (e.key === 'Enter') criar(); else if (e.key === 'Escape') M.render(); };
     const [ok, no] = box.querySelectorAll('button'); ok.onclick = criar; no.onclick = () => M.render();
@@ -314,14 +333,18 @@
   }
 
   // o inverso do "Enviar para o Trello": o cartão vira uma nota na Biblioteca, com link para o cartão
-  async function guardarNoMyLoot(id) {
+  // pelo menu do cartão: busca o cartão e guarda. Pela ficha: usa o cartão já aberto (sem esperar nada, então não há corrida
+  // com o que a pessoa faz na ficha) e depois() reabre a ficha como estava se ela não for abrir a nota nova
+  async function guardarNoMyLoot(id, depois, doCartaoAberto) {
     try {
-      const c = await api('cartao?id=' + encodeURIComponent(id));
+      const c = doCartaoAberto || await api('cartao?id=' + encodeURIComponent(id));
       const lista = (dados.listas.find((l) => l.id === c.lista) || {}).nome || '';
       const check = c.checklists.flatMap((k) => k.itens.map((i) => ({ id: M.uid(), t: i.nome, done: i.ok })));
       const it = M.createItem({ cat: '', type: 'nota', title: c.nome, desc: `Do Trello: ${dados.quadro.nome}${lista ? ' → ' + lista : ''}`, content: c.desc, checklist: check, links: c.url ? [{ id: M.uid(), url: c.url, label: 'Cartão no Trello' }] : [], tags: ['trello'] });
       M.save(); SFX.play('coin');
-      if (await M.confirm(`📥 “${c.nome}” foi guardado na Biblioteca, com o link para o cartão. Abrir agora?`, 'Abrir')) { if (M.modalOpen()) M.closeModal(); M.openItem(it.id); }
+      const reabrir = depois ? depois() : null;
+      if (reabrir === 'fechou') return M.toast(`📥 “${c.nome}” foi guardado na Biblioteca`); // a pessoa fechou a ficha durante a busca: sem pergunta por cima de outra janela
+      if (await M.confirm(`📥 “${c.nome}” foi guardado na Biblioteca, com o link para o cartão. Abrir agora?`, 'Abrir')) { if (M.modalOpen()) M.closeModal(); M.openItem(it.id); } else if (reabrir) reabrir();
     } catch (e) { M.toast('⚠️ ' + e.message); }
   }
 
@@ -336,20 +359,22 @@
     const CAMPOS = ['nome', 'desc', 'prazo', 'feito', 'etiquetas', 'membros', 'lista', 'capa', 'capaCheia', 'capaImg'];
     const igual = (a, b) => JSON.stringify(Array.isArray(a) ? a.slice().sort() : a) === JSON.stringify(Array.isArray(b) ? b.slice().sort() : b);
     let c, orig; // orig: como o cartão estava quando abriu. Só o que a pessoa mudar vai para o Trello
-    if (volta && volta.id === id) { c = volta.c; orig = volta.orig; volta = null; }
+    let ex = null; // textos ainda não enviados (comentário, item novo de checklist) que voltam junto com a ficha
+    if (volta && volta.id === id) { c = volta.c; orig = volta.orig; ex = volta.ex; volta = null; if (M.marcarSujo && (CAMPOS.some((k) => !igual(c[k], orig[k])) || (ex && (ex.com || Object.values(ex.ck || {}).some(Boolean))))) setTimeout(M.marcarSujo, 0); } // texto em digitação também conta: sair avisa
     else {
       volta = null;
       try { c = minuto(await api('cartao?id=' + encodeURIComponent(id))); } catch (e) { $('#trCb', m).innerHTML = `<div class="carrega-erro" role="alert">⚠️ ${esc(e.message)}</div>`; return; }
       if (!m.isConnected) return;
       orig = {}; CAMPOS.forEach((k) => { orig[k] = Array.isArray(c[k]) ? c[k].slice() : c[k]; });
     }
-    const reabre = () => { volta = { id, c, orig }; if (M.modalOpen()) M.closeModal(); abrirCartao(id); };
+    const extras = () => ({ com: ($('#tcCom', m) || {}).value || '', ck: Object.fromEntries([...m.querySelectorAll('[data-cknovo]')].map((i) => [i.dataset.cknovo, i.value])) });
+    const reabre = () => { volta = { id, c, orig, ex: extras() }; if (M.modalOpen()) M.closeModal(); abrirCartao(id); };
     const draw = () => {
       const capaSel = c.capaImg ? '_img' : c.capa || '';
       $('#trCb', m).innerHTML = `
         <div class="fld"><label for="tcNome">Nome</label><input type="text" id="tcNome" value="${esc(c.nome)}"></div>
         <div class="row">
-          <div class="fld"><label for="tcLista">Lista</label><select id="tcLista">${dados.listas.map((l) => `<option value="${esc(l.id)}" ${l.id === c.lista ? 'selected' : ''}>${esc(l.nome)}</option>`).join('')}</select></div>
+          <div class="fld"><label for="tcLista">Lista</label><select id="tcLista">${dados.listas.some((l) => l.id === c.lista) ? '' : `<option value="${esc(c.lista)}" selected>📍 Lista atual (fora deste quadro)</option>`}${dados.listas.map((l) => `<option value="${esc(l.id)}" ${l.id === c.lista ? 'selected' : ''}>${esc(l.nome)}</option>`).join('')}</select></div>
           <div class="fld"><label for="tcPrazo">Prazo</label><input type="datetime-local" id="tcPrazo" value="${dt(c.prazo)}"></div>
           <div class="fld" style="flex:none;align-self:flex-end;padding-bottom:6px">${M.sw('tcFeito', c.feito, 'Concluído')}</div>
         </div>
@@ -366,27 +391,41 @@
           ${k.itens.map((i) => `<div class="tr-ckl"><label class="tr-ck"><input type="checkbox" data-ck="${esc(i.id)}" ${i.ok ? 'checked' : ''}> <span>${esc(i.nome)}</span></label><button type="button" class="xbtn" data-ckdel="${esc(i.id)}" title="Apagar este item" aria-label="Apagar o item ${esc(i.nome.slice(0, 40))}">✕</button></div>`).join('')}
           <div class="row" style="margin-top:4px"><input type="text" data-cknovo="${esc(k.id)}" placeholder="＋ Novo item (Enter)" aria-label="Novo item em ${esc(k.nome)}"></div></div>`).join('')}
         <div class="row" style="gap:8px"><button type="button" class="btn ghost sm" id="tcCkNovo" style="flex:none">☑ Novo checklist</button><button type="button" class="btn ghost sm" id="tcAnx" style="flex:none">🔗 Anexar um link</button></div>
-        ${c.anexos.length ? `<div class="fld"><div class="lbl">📎 Anexos</div>${c.anexos.map((a) => `<a class="tr-anx" href="${esc(a.url)}" target="_blank" rel="noopener">${a.upload ? '📄' : '🔗'} ${esc(a.nome || a.url)}</a>`).join('')}<small style="color:var(--faint)">Arquivos enviados ao Trello abrem no próprio Trello (pedem o seu login lá).</small></div>` : ''}
+        ${c.anexos.length ? `<div class="fld"><div class="lbl">📎 Anexos</div>${c.anexos.map((a) => `<a class="tr-anx" href="${esc(M.urlOk(a.url) || '#')}" target="_blank" rel="noopener noreferrer">${a.upload ? '📄' : '🔗'} ${esc(a.nome || a.url)}</a>`).join('')}<small style="color:var(--faint)">Arquivos enviados ao Trello abrem no próprio Trello (pedem o seu login lá).</small></div>` : ''}
         <div class="fld"><div class="lbl">💬 Comentários</div>
           <div class="row"><textarea id="tcCom" rows="2" placeholder="Escreva um comentário…"></textarea><button class="btn sm" id="tcComOk" style="flex:none">Enviar</button></div>
           ${c.comentarios.map((x) => `<div class="tr-com"><b>${esc(x.quem)}</b> <small>${new Date(x.quando).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</small><div>${esc(x.texto)}</div></div>`).join('')}</div>
         <div class="row" style="justify-content:space-between;margin-top:6px">
-          <span class="row" style="flex:none"><button class="btn ghost" id="tcArq" style="flex:none">📦 Arquivar</button><button class="btn ghost" id="tcMy" style="flex:none" title="Cria uma nota na Biblioteca com este cartão">📥 Guardar no MyLoot</button><a class="btn ghost" href="${esc(c.url)}" target="_blank" rel="noopener" style="flex:none">↗ Abrir no Trello</a></span>
+          <span class="row" style="flex:none"><button class="btn ghost" id="tcArq" style="flex:none">📦 Arquivar</button><button class="btn ghost" id="tcMy" style="flex:none" title="Cria uma nota na Biblioteca com este cartão">📥 Guardar no MyLoot</button><a class="btn ghost" href="${esc(M.urlOk(c.url) || '#')}" target="_blank" rel="noopener" style="flex:none">↗ Abrir no Trello</a></span>
           <button class="btn" id="tcSalva" style="flex:none">✔ Salvar e fechar</button></div>`;
       $('#tcComOk', m).onclick = async () => {
         const t = $('#tcCom', m).value.trim(); if (!t) return M.falta($('#tcCom', m), '✍️ Escreva o comentário');
+        const bt = $('#tcComOk', m); if (bt.disabled) return; bt.disabled = true; $('#tcCom', m).readOnly = true; // um envio por vez
         try { await acao({ op: 'comentar', id: c.id, texto: t }); c.comentarios.unshift({ id: '', texto: t, quem: (eu && eu.nome) || 'Você', quando: new Date().toISOString() }); base.coment++; guarda(); draw(); SFX.play('pop'); }
-        catch (er) { M.toast('⚠️ Não deu para comentar: ' + er.message + ' O texto continua aí.'); }
+        catch (er) { M.toast('⚠️ Não deu para comentar: ' + er.message + ' O texto continua aí.'); if (bt.isConnected) { bt.disabled = false; $('#tcCom', m).readOnly = false; } }
       };
-      $('#tcArq', m).onclick = async () => { if (await M.confirm(`Arquivar o cartão “${c.nome}”? Dá para desfazer logo em seguida.`, 'Arquivar')) arquivar(c.id, () => { if (M.modalOpen()) M.closeModal(); }); };
-      $('#tcMy', m).onclick = () => guardarNoMyLoot(c.id);
+      $('#tcArq', m).onclick = async () => {
+        if (espera()) return; guarda(); const v = { id, c, orig, ex: extras() };
+        if (await M.confirm(`Arquivar o cartão “${c.nome}”? Dá para desfazer logo em seguida.`, 'Arquivar')) arquivar(c.id, () => { if (m.isConnected) M.closeModal(); }); // nunca fecha a ficha de outro cartão
+        else { volta = v; abrirCartao(id); } // cancelou: a ficha volta como estava
+      };
+      // estas três trocam a ficha por uma pergunta: esperam terminar o que ainda está indo para o Trello (comentário, item, marcação)
+      const espera = () => (ocupado ? (M.toast('⏳ Espere terminar de enviar para o Trello e tente de novo.'), true) : false);
+      // busca o cartão atualizado no Trello (como antes) com a ficha travada: nada muda nela enquanto isso
+      $('#tcMy', m).onclick = async () => {
+        if (espera()) return; guarda(); const v = { id, c, orig, ex: extras() };
+        fichaPresa = true; trava();
+        try { await guardarNoMyLoot(c.id, () => { fichaPresa = false; if (!m.isConnected) return 'fechou'; return () => { volta = v; abrirCartao(id); }; }); } finally { fichaPresa = false; trava(); }
+      };
       $('#tcSalva', m).onclick = salvar;
       $('#tcCkNovo', m).onclick = async () => {
+        if (espera()) return;
         guarda(); const nome = await pedeNome('☑ Novo checklist', 'Checklist'); if (!nome) return reabre();
         try { const r = await acao({ op: 'checklistNova', id: c.id, nome }); c.checklists.push({ id: r.id, nome, itens: [] }); SFX.play('pop'); } catch (er) { M.toast('⚠️ ' + er.message); }
         reabre();
       };
       $('#tcAnx', m).onclick = async () => {
+        if (espera()) return;
         guarda(); const url = await pedeNome('🔗 Anexar um link', '', 'Endereço (https://…)'); if (!url) return reabre();
         try { const r = await acao({ op: 'anexoLink', id: c.id, url }); c.anexos.push({ id: r.id, nome: url, url, upload: false }); base.anexos++; SFX.play('pop'); } catch (er) { M.toast('⚠️ ' + er.message); }
         reabre();
@@ -399,40 +438,58 @@
       if ((t = b('[data-mb]'))) { const i = c.membros.indexOf(t.dataset.mb); if (i < 0) c.membros.push(t.dataset.mb); else c.membros.splice(i, 1); t.classList.toggle('on', i < 0); t.setAttribute('aria-pressed', i < 0); return SFX.play('click'); }
       if ((t = b('[data-capa]'))) { if (t.dataset.capa === '_img') return; guarda(); c.capa = t.dataset.capa; c.capaImg = false; if (!c.capa) c.capaCheia = false; SFX.play('click'); return draw(); }
       if ((t = b('[data-ckdel]'))) {
+        if (t.disabled) return; t.disabled = true;
         try { await acao({ op: 'checkItemApagar', id: c.id, item: t.dataset.ckdel }); c.checklists.forEach((k) => { k.itens = k.itens.filter((i) => i.id !== t.dataset.ckdel); }); atualizaResumo(); guarda(); draw(); SFX.play('trash'); }
-        catch (er) { M.toast('⚠️ ' + er.message); }
+        catch (er) { t.disabled = false; M.toast('⚠️ ' + er.message); }
       }
     };
     box.onchange = async (e) => {
       const ck = e.target.closest('[data-ck]'); if (!ck) return;
-      try { await acao({ op: 'checkItem', id: c.id, item: ck.dataset.ck, ok: ck.checked }); SFX.play(ck.checked ? 'coin' : 'click'); const it = c.checklists.flatMap((k) => k.itens).find((i) => i.id === ck.dataset.ck); if (it) it.ok = ck.checked; atualizaResumo(); }
-      catch (er) { ck.checked = !ck.checked; M.toast('⚠️ ' + er.message); }
+      // um envio por item: a caixinha fica travada até o Trello responder (marcar e desmarcar rápido não embaralha o estado)
+      const v = ck.checked; ck.disabled = true;
+      try { await acao({ op: 'checkItem', id: c.id, item: ck.dataset.ck, ok: v }); SFX.play(v ? 'coin' : 'click'); const it = c.checklists.flatMap((k) => k.itens).find((i) => i.id === ck.dataset.ck); if (it) it.ok = v; atualizaResumo(); }
+      catch (er) { ck.checked = !v; M.toast('⚠️ ' + er.message); }
+      finally { ck.disabled = false; }
     };
     box.onkeydown = async (e) => {
       const nv = e.target.closest('[data-cknovo]'); if (!nv || e.key !== 'Enter') return; e.preventDefault();
-      const nome = nv.value.trim(); if (!nome) return;
+      const nome = nv.value.trim(); if (!nome || nv.readOnly) return;
+      nv.readOnly = true;
       try { const r = await acao({ op: 'checkNovo', checklist: nv.dataset.cknovo, nome }); const k = c.checklists.find((x) => x.id === nv.dataset.cknovo); k.itens.push({ id: r.id, nome, ok: false }); guarda(); draw(); atualizaResumo(); const n2 = $(`[data-cknovo="${CSS.escape(k.id)}"]`, m); if (n2) n2.focus(); }
-      catch (er) { M.toast('⚠️ ' + er.message); }
+      catch (er) { nv.readOnly = false; M.toast('⚠️ ' + er.message); }
     };
     // o que foi digitado continua lá quando a ficha redesenha (depois de comentar ou criar item)
-    const guarda = () => { const g = (s) => { const x = $(s, m); return x ? x.value : null; }; const n = g('#tcNome'); if (n != null) { c.nome = n; c.desc = g('#tcDesc'); c.lista = g('#tcLista'); const pz = g('#tcPrazo'); c.prazo = pz ? new Date(pz).toISOString() : ''; c.feito = $('#tcFeito', m).checked; c.capaCheia = !!c.capa && $('#tcCheia', m).checked; } };
+    const guarda = () => { const g = (s) => { const x = $(s, m); return x ? x.value : null; }; const n = g('#tcNome'); if (n != null) { c.nome = n; c.desc = g('#tcDesc'); c.lista = g('#tcLista'); const pz = g('#tcPrazo'); c.prazo = pz ? new Date(pz).toISOString() : ''; c.feito = $('#tcFeito', m).checked; if (c.capa) c.capaCheia = $('#tcCheia', m).checked; else if (!c.capaImg) c.capaCheia = false; } }; // capa de imagem: o tamanho dela fica como está
     const atualizaResumo = () => { const its = c.checklists.flatMap((k) => k.itens); base.check = [its.filter((i) => i.ok).length, its.length]; };
     async function salvar() {
+      if (ocupado) return M.toast('⏳ Espere terminar de enviar para o Trello e tente de novo.'); // comentário ou item ainda indo
       guarda();
       if (!c.nome.trim()) return M.falta($('#tcNome', m), '✍️ O cartão precisa de um nome');
       const mud = CAMPOS.filter((k) => !igual(c[k], orig[k]));
       if (!mud.length) { M.closeModal(); M.render(); return; }
       const btn = $('#tcSalva', m); btn.disabled = true; btn.textContent = '⏳ Salvando…';
-      const solta = () => { if (btn.isConnected) { btn.disabled = false; btn.textContent = '✔ Salvar e fechar'; } };
+      fichaPresa = true; trava(); // nada muda na ficha enquanto confere e grava
+      const solta = () => { fichaPresa = false; trava(); if (btn.isConnected) { btn.disabled = false; btn.textContent = '✔ Salvar e fechar'; } };
       try {
         // alguém mexeu no MESMO campo lá no Trello enquanto a ficha estava aberta? pergunta antes de passar por cima
         const agora = minuto(await api('cartao?id=' + encodeURIComponent(c.id)));
         const NOMES = { nome: 'nome', desc: 'descrição', prazo: 'prazo', feito: 'concluído', etiquetas: 'etiquetas', membros: 'membros', lista: 'lista', capa: 'capa', capaCheia: 'capa', capaImg: 'capa' };
-        const bate = [...new Set(mud.filter((k) => !igual(agora[k], orig[k]) && !igual(agora[k], c[k])).map((k) => NOMES[k]))];
+        // a capa vai inteira (cor, tamanho e imagem juntos): mexeu em qualquer parte dela, qualquer mudança de capa lá conta como conflito
+        const grupo = (k) => (k.startsWith('capa') ? ['capa', 'capaCheia', 'capaImg'] : [k]);
+        const bate = [...new Set([...new Set(mud.flatMap(grupo))].filter((k) => !igual(agora[k], orig[k]) && !igual(agora[k], c[k])).map((k) => NOMES[k]))];
         if (bate.length) {
-          volta = { id, c, orig };
+          volta = { id, c, orig, ex: extras() };
           const sim = await M.confirm(`Este cartão mudou no Trello enquanto você editava (${bate.join(', ')}). Salvar a sua versão por cima?`, 'Salvar a minha');
           if (!sim) return reabre();
+          // mudou de novo enquanto a pergunta estava aberta? pergunta outra vez com a versão mais nova
+          const depois = minuto(await api('cartao?id=' + encodeURIComponent(c.id)));
+          if (CAMPOS.some((k) => !igual(depois[k], agora[k]))) { // o que a pessoa não mexeu fica com o valor novo do Trello; o que ela mexeu continua dela
+            M.toast('⚠️ O cartão mudou de novo no Trello. Confira e salve outra vez.');
+            // o que ela mexeu (a capa conta inteira) fica como base antiga: o próximo Salvar pergunta de novo se lá mudou
+            const mg = new Set(mud.flatMap(grupo));
+            CAMPOS.forEach((k) => { if (mg.has(k)) return; c[k] = Array.isArray(depois[k]) ? depois[k].slice() : depois[k]; orig[k] = Array.isArray(depois[k]) ? depois[k].slice() : depois[k]; });
+            return reabre();
+          }
           volta = null;
         }
         const b = { op: 'cartaoSalvar', id: c.id };
@@ -442,18 +499,20 @@
         Object.assign(base, { nome: c.nome, desc: !!c.desc.trim(), prazo: c.prazo, feito: c.feito, etiquetas: c.etiquetas.slice(), membros: c.membros.slice(), capa: c.capa, capaCheia: c.capaCheia });
         if (!c.capaImg) base.capaImg = null;
         if (base.lista !== c.lista) { const L = daLista(c.lista); base.lista = c.lista; base.pos = (L.length ? L[L.length - 1].pos : 0) + 65536; }
-        SFX.play('coin'); if (M.modalOpen()) M.closeModal(); M.render(); M.toast('✅ Cartão salvo no Trello');
+        SFX.play('coin'); if (m.isConnected) M.closeModal(); M.render(); M.toast('✅ Cartão salvo no Trello');
       } catch (e) {
         M.toast('⚠️ Não salvou: ' + e.message + ' O que você escreveu continua na ficha: tente de novo.');
         if (m.isConnected) solta(); else reabre();
-      }
+      } finally { fichaPresa = false; trava(); } // saiu por qualquer caminho (salvou, reabriu, erro): destrava
     }
-    draw();
+    // sem "guardar rascunho" aqui: etiquetas, membros e capa são botões e não caberiam num rascunho; ao sair, a janela avisa (continuar ou descartar)
+    m.dataset.rkOk = '1'; draw(); trava(); // abriu com um envio ainda em andamento: já começa travada
+    if (ex) { const t = $('#tcCom', m); if (t && ex.com) t.value = ex.com; for (const [k, v] of Object.entries(ex.ck || {})) { const i = m.querySelector(`[data-cknovo="${CSS.escape(k)}"]`); if (i && v) i.value = v; } }
   }
 
   async function desconectar() {
     if (!(await M.confirm('Desconectar o Trello deste MyLoot? A chave e o token saem deste computador. Os seus quadros no Trello não mudam.', 'Desconectar'))) return;
-    try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ trello: null }) }); quadros = null; dados = null; erro = ''; if (M.intStatus) await M.intStatus(true); M.render(); M.toast('Trello desconectado'); }
+    try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ trello: null }) }); M.trelloReset(); if (M.intStatus) await M.intStatus(true); M.render(); M.toast('Trello desconectado'); }
     catch (e) { M.toast('⚠️ ' + e.message); }
   }
 })();

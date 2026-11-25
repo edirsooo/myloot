@@ -158,7 +158,7 @@
     $('#fRes').innerHTML = (meu && !base.length
       ? `<div class="empty"><div class="big">🧰</div><h3>Monte a sua caixa de ferramentas</h3><p>Adicione os sites e programas que você usa, ou salve os que gostar nas Recomendadas. Depois dá para editar, duplicar, arquivar e remover.</p>
         <div class="row" style="justify-content:center;gap:8px;margin-top:12px"><button class="btn" data-nova style="flex:none">＋ Adicionar ferramenta</button><button class="btn ghost" data-aba="rec" style="flex:none">💡 Ver as recomendadas</button></div></div>`
-      : L.length ? `<div class="grid">${L.map(cartao).join('')}</div>` : '<div class="empty"><div class="big">🕳️</div><h3>Nada encontrado</h3><p>Tente outra palavra ou escolha “Tudo” nos grupos.</p></div>') + arq;
+      : L.length ? `<div class="grid">${L.map(cartao).join('')}</div>` : `<div class="empty"><div class="big">🕳️</div><h3>Nada encontrado</h3><p>${st.fr ? 'O filtro de preço pode estar escondendo o que você procura.' : 'Tente outra palavra ou escolha “Tudo” nos grupos.'}</p>${st.q || st.g || st.fr ? '<button type="button" class="btn" data-limpaf style="margin-top:12px">✖ Limpar filtros</button>' : ''}</div>`) + arq;
     if ($('#fArq')) $('#fArq summary').onclick = () => { st.arq = !$('#fArq').open; }; // lembra se a pessoa abriu ou recolheu
   }
 
@@ -188,7 +188,7 @@
       if (!novo && d.gr !== (t.gr || '')) d.fr = '';
       if (novo) M.db.tools.unshift(Object.assign({ id: M.uid(), s: '', onde: '', de: 'eu', created: Date.now() }, d)); else Object.assign(t, d, { s: '', onde: '' });
       M.save(); M.closeModal(); SFX.play('done');
-      st.aba = 'minhas'; st.g = ''; st.q = '';
+      st.aba = 'minhas'; st.g = ''; st.q = ''; st.fr = ''; // a ferramenta recém-salva aparece mesmo se for paga
       M.toast(novo ? '🧰 Ferramenta adicionada' : '✔ Ferramenta salva'); M.render();
     };
     $('#x', m).onclick = $('#tfNo', m).onclick = M.closeModal;
@@ -264,6 +264,7 @@
     v.onclick = (e) => {
       const q = (s) => e.target.closest(s);
       const a = q('[data-aba]'); if (a) { st.aba = a.dataset.aba; st.g = ''; st.q = ''; SFX.play('click'); return M.render(); }
+      if (q('[data-limpaf]')) { st.q = ''; st.g = ''; st.fr = ''; SFX.play('click'); return M.render(); }
       if (q('#fNova,[data-nova]')) return form();
       const mb = q('[data-mais]');
       if (mb) { // ⋯ abre o mesmo menu do clique direito, logo abaixo do botão; pelo teclado, o foco vai para a primeira opção

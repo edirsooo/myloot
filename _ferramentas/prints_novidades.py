@@ -72,12 +72,7 @@ async def main():
         # 1) novidades da versão
         await E("M.db.settings.versaoVista = '2.3.0'; await M.mostrarNovidades();" + Z % 1600)
         await foto('01-novidades', '#overlay .modal', 26); await E("M.closeModal()")
-        # 2) usar no celular (endereço de exemplo no print)
-        await E("await M.api('/api/rede', { method: 'POST', body: JSON.stringify({ on: true }) });" + Z % 900 + "M.go('cfg');" + Z % 1200)
-        await E("""const s = document.querySelector('#celSec'); const c = s.querySelector('code'); const real = c.textContent; c.textContent = 'http://192.168.0.10:4321';
-            s.querySelector('.cel-qr').innerHTML = M.qrSvg('http://192.168.0.10:4321/entrar?c=exemplo0123456789abcdef01234567', 200); s.querySelector('.cel-pin').textContent = '482 915';
-            const sm = s.querySelector('.cel + small'); if (sm) sm.innerHTML = sm.innerHTML.replace(/Outros endereços.*$/, ''); s.scrollIntoView({ block: 'center' });""" + Z % 400)
-        await foto('02-celular-qr-code', '#celSec')
+        # 2) "usar no celular" saiu na 2.28 (sem print)
         await E("await M.api('/api/rede', { method: 'POST', body: JSON.stringify({ on: false }) });" + Z % 800)
         # 3) clientes
         await E("M.go('clients');" + Z % 600); await foto('03-clientes')

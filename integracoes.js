@@ -143,19 +143,22 @@ async function trelloQuadro(cfg, id) {
   };
 }
 // capa com imagem: o endereço fica guardado aqui no servidor (o app pede só pelo id do cartão) e o arquivo é buscado com o login do Trello
-const capas = new Map(), capaCache = new Map();
+// o cache das imagens é por conta (troca de chave ou desconectar não entrega a capa antiga) e tem limite de 120 MB no total
+const capas = new Map(), capaCache = new Map(); let capaBytes = 0;
 function capaDe(c) {
   const idA = (c.cover || {}).idAttachment, a = idA && (c.attachments || []).find((x) => x.id === idA);
   const P = ((a && a.previews) || []).filter((p) => p.scaled && p.url), p = P.find((x) => x.width >= 300) || P[P.length - 1];
   if (!p) { capas.delete(c.id); return null; }
-  capas.set(c.id, p.url);
+  capas.delete(c.id); capas.set(c.id, p.url); if (capas.size > 5000) capas.delete(capas.keys().next().value);
   return { v: idA, w: p.width, h: p.height };
 }
 async function trelloCapa(cfg, id) {
+  if (!cfg.key || !cfg.token) throw new Error('Conecte o Trello primeiro.');
   let url = capas.get(tId(id));
   if (!url) { const c = await tr(cfg, 'GET', '/cards/' + id, { fields: 'cover', attachments: 'cover', attachment_fields: 'previews' }); capaDe(c); url = capas.get(id); }
   if (!url) throw new Error('Este cartão não tem capa.');
-  if (capaCache.has(url)) return capaCache.get(url);
+  const ck = cfg.token.slice(-12) + '|' + url;
+  if (capaCache.has(ck)) return capaCache.get(ck);
   const u = new URL(url); if (!/(^|\.)trello\.com$/.test(u.hostname)) throw new Error('Capa fora do Trello.');
   const r = await new Promise((ok, no) => {
     const rq = https.get({ hostname: u.hostname, path: u.pathname + u.search, timeout: 20000, headers: { Authorization: `OAuth oauth_consumer_key="${cfg.key}", oauth_token="${cfg.token}"` } }, (rs) => {
@@ -165,15 +168,15 @@ async function trelloCapa(cfg, id) {
     });
     rq.on('timeout', () => rq.destroy(new Error('Demorou demais.'))); rq.on('error', no);
   });
-  if (!/^image\//.test(r.tipo)) throw new Error('A capa não é uma imagem.');
-  if (capaCache.size > 300) capaCache.delete(capaCache.keys().next().value);
-  capaCache.set(url, r);
+  if (!/^image\/(jpeg|png|gif|webp|avif)\s*(;|$)/i.test(r.tipo)) throw new Error('A capa não é uma imagem comum (JPG, PNG, GIF ou WebP).');
+  while (capaCache.size && (capaCache.size >= 300 || capaBytes + r.buf.length > 120e6)) { const k = capaCache.keys().next().value; capaBytes -= capaCache.get(k).buf.length; capaCache.delete(k); }
+  capaCache.set(ck, r); capaBytes += r.buf.length;
   return r;
 }
 async function trelloCartao(cfg, id) {
   const j = await tr(cfg, 'GET', '/cards/' + tId(id), { fields: 'name,desc,due,dueComplete,idList,idLabels,idMembers,shortUrl,idBoard,cover,dateLastActivity', checklists: 'all', attachments: 'true', attachment_fields: 'name,url,isUpload,date', actions: 'commentCard', actions_limit: '40' });
   return {
-    capa: (j.cover || {}).color || '', capaCheia: (j.cover || {}).size === 'full', capaImg: !!(j.cover || {}).idAttachment, ativ: j.dateLastActivity || '',
+    capa: (j.cover || {}).color || '', capaCheia: (j.cover || {}).size === 'full', capaImg: (j.cover || {}).idAttachment || false, ativ: j.dateLastActivity || '',
     id: j.id, nome: j.name, desc: j.desc || '', prazo: j.due || '', feito: !!j.dueComplete, lista: j.idList, quadro: j.idBoard, etiquetas: j.idLabels || [], membros: j.idMembers || [], url: j.shortUrl,
     checklists: (j.checklists || []).map((c) => ({ id: c.id, nome: c.name, itens: (c.checkItems || []).sort((a, b) => a.pos - b.pos).map((i) => ({ id: i.id, nome: i.name, ok: i.state === 'complete' })) })),
     anexos: (j.attachments || []).map((a) => ({ id: a.id, nome: a.name, url: a.url, upload: !!a.isUpload })),
@@ -194,13 +197,14 @@ async function trelloAcao(cfg, b) {
     if (b.lista) p.idList = tId(b.lista);
     if (b.pos === 'top' || b.pos === 'bottom') p.pos = b.pos;
     if (Array.isArray(b.membros)) p.idMembers = b.membros.map(tId).join(',');
+    let corpo; // capa e demais campos num pedido só: ou muda tudo, ou nada
     if (b.capa !== undefined) { // '' tira a capa; cor do Trello põe a faixa ou o cartão inteiro
       const CORES = ['green', 'yellow', 'orange', 'red', 'purple', 'blue', 'sky', 'lime', 'pink', 'black'];
       if (b.capa && !CORES.includes(b.capa)) throw new Error('Cor de capa inválida.');
-      await tr(cfg, 'PUT', '/cards/' + tId(b.id), {}, { cover: b.capa ? { color: b.capa, size: b.capaCheia ? 'full' : 'normal' } : { color: null, idAttachment: null, idUploadedBackground: null } });
+      corpo = { cover: b.capa ? { color: b.capa, size: b.capaCheia ? 'full' : 'normal' } : { color: null, idAttachment: null, idUploadedBackground: null } };
     }
-    if (!Object.keys(p).length) return { id: b.id }; // trocou de lista pela ficha: vai para o fim da lista nova
-    return tr(cfg, 'PUT', '/cards/' + tId(b.id), p);
+    if (!Object.keys(p).length && !corpo) return { id: b.id };
+    return tr(cfg, 'PUT', '/cards/' + tId(b.id), p, corpo);
   }
   if (op === 'cartaoArquivar') return tr(cfg, 'PUT', '/cards/' + tId(b.id), { closed: 'true' });
   if (op === 'cartaoRestaurar') return tr(cfg, 'PUT', '/cards/' + tId(b.id), { closed: 'false' });
@@ -269,6 +273,7 @@ async function notionLista(tok) {
       if (o.object === 'database') out.bases.push(x);
       else if (!o.parent || o.parent.type !== 'database_id') out.paginas.push(x);
     });
+    out.mais = !!j.has_more; // passou de 300 resultados: a tela avisa que pode faltar coisa
     if (!j.has_more) break; cursor = j.next_cursor;
   }
   return out;
@@ -276,13 +281,13 @@ async function notionLista(tok) {
 async function notionBase(tok, id) {
   const db = await nt(tok, 'GET', '/databases/' + nId(id));
   const props = Object.entries(db.properties || {}).map(([nome, p]) => ({ nome, tipo: p.type, opcoes: ((p[p.type] || {}).options || []).map((o) => ({ nome: o.name, cor: o.color })) }));
-  const linhas = []; let cursor;
+  const linhas = []; let cursor, mais = false;
   for (let i = 0; i < 5; i++) { // até 500 linhas
     const j = await nt(tok, 'POST', '/databases/' + id + '/query', Object.assign({ page_size: 100 }, cursor ? { start_cursor: cursor } : {}));
     j.results.forEach((pg) => { if (!pg.archived && !pg.in_trash) linhas.push(linha(pg)); });
-    if (!j.has_more) break; cursor = j.next_cursor;
+    mais = !!j.has_more; if (!j.has_more) break; cursor = j.next_cursor;
   }
-  return { base: { id: db.id, nome: plano(db.title) || 'Sem título', icone: icone(db), url: db.url }, props, linhas, mais: linhas.length >= 500 };
+  return { base: { id: db.id, nome: plano(db.title) || 'Sem título', icone: icone(db), url: db.url }, props, linhas, mais };
 }
 function bloco(b) {
   const t = b.type, d = b[t] || {};
@@ -297,14 +302,14 @@ function bloco(b) {
 }
 async function notionPagina(tok, id) {
   const pg = await nt(tok, 'GET', '/pages/' + nId(id));
-  const blocos = []; let cursor;
-  for (let i = 0; i < 3; i++) {
+  const blocos = []; let cursor, mais = false;
+  for (let i = 0; i < 10; i++) { // até 1.000 blocos; passou disso, a tela avisa
     const j = await nt(tok, 'GET', '/blocks/' + id + '/children?page_size=100' + (cursor ? '&start_cursor=' + encodeURIComponent(cursor) : ''));
     j.results.forEach((b) => blocos.push(bloco(b)));
-    if (!j.has_more) break; cursor = j.next_cursor;
+    mais = !!j.has_more; if (!j.has_more) break; cursor = j.next_cursor;
   }
   const tipos = {}; for (const [k, v] of Object.entries(pg.properties || {})) tipos[k] = v.type;
-  return Object.assign(linha(pg), { base: pg.parent && pg.parent.type === 'database_id' ? pg.parent.database_id : '', tipos, blocos });
+  return Object.assign(linha(pg), { base: pg.parent && pg.parent.type === 'database_id' ? pg.parent.database_id : '', tipos, blocos, mais });
 }
 // valor do app → formato do Notion, só para os tipos que dá para editar
 function propNotion(tipo, v) {
@@ -326,7 +331,7 @@ function propNotion(tipo, v) {
 }
 async function notionAcao(tok, b) {
   const op = String(b.op || '');
-  const props = (P) => { const o = {}; (Array.isArray(P) ? P : []).slice(0, 30).forEach((p) => { o[String(p.nome).slice(0, 200)] = propNotion(String(p.tipo), p.v); }); return o; };
+  const props = (P) => { const o = {}; (Array.isArray(P) ? P : (P = [])).length > 100 ? (() => { throw new Error('São campos demais de uma vez (máximo 100).'); })() : P.forEach((p) => { o[String(p.nome).slice(0, 200)] = propNotion(String(p.tipo), p.v); }); return o; };
   if (op === 'linhaNova') {
     if (!String(b.titulo || '').trim()) throw new Error('Escreva o título.');
     const P = props(b.props); P[String(b.campoTitulo || 'Name')] = propNotion('title', b.titulo);
@@ -348,4 +353,7 @@ async function notionAcao(tok, b) {
   throw new Error('Ação desconhecida.');
 }
 
-module.exports = { notionPaginas, notionEnviar, trelloListas, trelloEnviar, trelloEu, trelloQuadros, trelloQuadro, trelloCartao, trelloAcao, trelloCapa, notionEu, notionLista, notionBase, notionPagina, notionAcao };
+// o destino escolhido existe para esta conta? (lista do Trello ou página do Notion)
+const trelloListaOk = (cfg, id) => tr(cfg, 'GET', '/lists/' + tId(id), { fields: 'id' });
+const notionPaginaOk = (tok, id) => nt(tok, 'GET', '/pages/' + nId(id));
+module.exports = { trelloListaOk, notionPaginaOk, notionPaginas, notionEnviar, trelloListas, trelloEnviar, trelloEu, trelloQuadros, trelloQuadro, trelloCartao, trelloAcao, trelloCapa, notionEu, notionLista, notionBase, notionPagina, notionAcao };

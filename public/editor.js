@@ -298,7 +298,7 @@
     function drawAtt() {
       const box = $('#eAtt', m);
       // renomear (✏️) muda só o nome mostrado: a extensão fica e o arquivo no disco (a.file) não é tocado
-      box.innerHTML = it.attachments.map((a) => `<div class="attach" data-id="${a.id}"><span class="ic">${M.fileIcon(a)}</span>${a.id === attEd
+      box.innerHTML = it.attachments.map((a) => `<div class="attach" data-id="${esc(a.id)}"><span class="ic">${M.fileIcon(a)}</span>${a.id === attEd
         ? `<span class="nm-ed"><input type="text" id="eAttNome" value="${esc(nomeExt(a.name)[0])}" maxlength="120" aria-label="Nome do anexo"><small>${esc(nomeExt(a.name)[1])}</small></span><button type="button" class="btn sm" data-a="renok" title="Concluir a troca de nome">✔ OK</button>`
         : `<span class="nm" title="${esc(a.name)}">${esc(a.name)}</span><small>${M.size(a.size)}</small>${prevBtn(a)}<button class="btn sm ghost" data-a="open" title="Abrir no programa do computador">${M.ic('abrir')} Abrir</button><button class="btn sm ghost" data-a="show" title="Mostrar na pasta">${M.ic('pasta')} Pasta</button><button type="button" class="xbtn" data-a="ren" title="Renomear (muda só o nome mostrado aqui)" aria-label="Renomear anexo">✏️</button>${lixo('anexo')}`}</div>`).join('<div style="height:6px"></div>') +
         `<div class="dz" id="eDz" role="button" tabindex="0" aria-label="Escolher arquivos para anexar" style="margin-top:8px">${M.ic('clipe')} Arraste arquivos aqui ou clique para escolher</div><input type="file" id="eFile" multiple hidden>`;

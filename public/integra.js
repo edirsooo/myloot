@@ -60,9 +60,9 @@
     };
     $('#nSave').onclick = async () => {
       const sel = $('#nPage'); if (!sel.value) return M.toast('Escolha a página primeiro (Buscar páginas).');
-      try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ notion: { token: $('#nTok').value.trim(), alvo: sel.value, alvoNome: sel.selectedOptions[0].textContent } }) }); SFX.play('coin'); M.toast('✅ Notion conectado'); M.intBind(); } catch (e) { err(e); }
+      try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ notion: { token: $('#nTok').value.trim(), alvo: sel.value, alvoNome: sel.selectedOptions[0].textContent } }) }); SFX.play('coin'); M.toast('✅ Notion conectado'); if (M.notionReset) M.notionReset(); M.intBind(); } catch (e) { err(e); }
     };
-    $('#nDel').onclick = async () => { try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ notion: null }) }); M.toast('Notion desconectado'); M.intBind(); } catch (e) { err(e); } };
+    $('#nDel').onclick = async () => { try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ notion: null }) }); M.toast('Notion desconectado'); if (M.notionReset) M.notionReset(); M.intBind(); } catch (e) { err(e); } };
     $('#tLoad').onclick = async () => {
       try {
         const r = await M.api('/api/int/trello/listas', { method: 'POST', body: JSON.stringify({ key: $('#tKey').value.trim(), token: $('#tTok').value.trim() }) });
@@ -73,10 +73,10 @@
     };
     $('#tSave').onclick = async () => {
       const sel = $('#tList'); if (!sel.value) return M.toast('Escolha a lista primeiro (Buscar listas).');
-      try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ trello: { key: $('#tKey').value.trim(), token: $('#tTok').value.trim(), alvo: sel.value, alvoNome: sel.selectedOptions[0].textContent } }) }); SFX.play('coin'); M.toast('✅ Trello conectado'); M.intBind(); } catch (e) { err(e); }
+      try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ trello: { key: $('#tKey').value.trim(), token: $('#tTok').value.trim(), alvo: sel.value, alvoNome: sel.selectedOptions[0].textContent } }) }); SFX.play('coin'); M.toast('✅ Trello conectado'); if (M.trelloReset) M.trelloReset(); M.intBind(); } catch (e) { err(e); }
     };
     $('#tTela').onclick = () => M.go('trello');
     $('#nTela').onclick = () => M.go('notion');
-    $('#tDel').onclick = async () => { try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ trello: null }) }); M.toast('Trello desconectado'); M.intBind(); } catch (e) { err(e); } };
+    $('#tDel').onclick = async () => { try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ trello: null }) }); M.toast('Trello desconectado'); if (M.trelloReset) M.trelloReset(); M.intBind(); } catch (e) { err(e); } };
   };
 })();

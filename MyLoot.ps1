@@ -56,7 +56,8 @@ function Pedir($caminho, $metodo = 'GET', $espera = 800) {
     return $txt
   } catch { return $null }
 }
-function Vivo { return [bool](Pedir 'api/ping') }
+# só conta como ligado se quem responde na porta é o MyLoot (outro programa na mesma porta não engana o atalho)
+function Vivo { $t = Pedir 'api/ping'; return [bool]($t -and $t -match '"app":\s*"myloot"') }
 
 # navegador para o modo app: Edge (vem em todo Windows), depois Chrome
 function AcharNavegador {

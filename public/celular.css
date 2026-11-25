@@ -623,7 +623,9 @@ a.btn{text-decoration:none}
 #side{padding-top:calc(12px + env(safe-area-inset-top));padding-left:calc(12px + env(safe-area-inset-left))}
 #overlay{padding-top:calc(4vh + env(safe-area-inset-top));padding-bottom:calc(4vh + env(safe-area-inset-bottom))}
 #view{padding-left:calc(22px + env(safe-area-inset-left));padding-right:calc(22px + env(safe-area-inset-right))}
+#filtBt{display:none}
 @media (max-width:700px){
+  #filtBt{display:inline-flex}
   #hud{padding-top:calc(8px + env(safe-area-inset-top));padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right))}
   #view{padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right));padding-bottom:calc(110px + env(safe-area-inset-bottom))}
   #bnav{padding-left:calc(6px + env(safe-area-inset-left));padding-right:calc(6px + env(safe-area-inset-right))}
@@ -631,6 +633,9 @@ a.btn{text-decoration:none}
   /* filtros da Biblioteca: os três seletores dividem uma linha inteira (não viram só setinhas) */
   .toolbar.barra select{flex:1 1 calc(33% - 8px);min-width:0;padding-right:22px;text-overflow:ellipsis}
   .toolbar.barra .grow{display:none}
+  /* filtros recolhidos: só a busca, o botão Filtros e a contagem; o resto abre no botão */
+  .toolbar.barra #fq{flex:1 1 60%;min-width:0}
+  .toolbar.barra.fechado>:not(#fq):not(#filtBt):not(#libcount){display:none}
   .toolbar.barra #libcount{margin-left:auto}
 }
 /* aberto pela tela inicial do iPhone (modo app): o iOS mede a altura sem a barra de status e sobra uma faixa preta embaixo;
@@ -1166,6 +1171,7 @@ body.light .qc-copy h2 b{text-shadow:0 3px 0 #cfc6ee}
 .rasc-aviso{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:6px;border:2px solid var(--accent);border-radius:12px;background:var(--accent-soft);font-size:13.5px;font-weight:600}
 .rasc-aviso .sa-b,.sair-aviso .sa-b{display:flex;gap:6px;flex-wrap:wrap}
 @media (max-width:700px){.ver-row{flex-wrap:wrap}.tl-barra .seg{width:100%}}
+@media (max-width:700px){#tOpPr{flex:1 1 52%}} /* prioridade mais larga que a hora: "Média" não fica cortado */
 #tOpPr{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:6px;align-items:center}#tOpPr .lbl{grid-column:1/-1}
 
 @media (max-width:700px){#dock{bottom:calc(84px + env(safe-area-inset-bottom));left:8px;max-width:calc(100vw - 16px)}body:has(#overlay.on) #dock{bottom:calc(98px + env(safe-area-inset-bottom))}.modal.wide{width:100%}}

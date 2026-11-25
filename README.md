@@ -4,7 +4,7 @@
 
 **Seu inventário pessoal.** Um app que roda no seu próprio computador para guardar e achar rápido PDFs, prompts, comandos, links, notas, tarefas, clientes e o seu financeiro — com cara de joguinho: XP, níveis, missões, sons e confete.
 
-Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona no **Windows, Mac e Linux**, e dá para usar **no celular** pela rede de casa.
+Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona no **Windows, Mac e Linux** e abre só no seu computador.
 
 🌐 **Site:** https://myloot.prestesdesign.com.br
 
@@ -64,7 +64,7 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 - **Ficha do item:** links e passos do checklist podem ser editados e mudar de ordem, anexos podem ser renomeados e o que ficou digitado entra ao salvar.
 - **Backup completo:** um arquivo `.zip` com os registros e os anexos, que restaura tudo em outro computador. A tela também lista as cópias automáticas de cada dia, com "Restaurar esta cópia".
 - **Google Drive:** arquivo que você editou direto na pasta do Drive não é mais sobrescrito nem apagado: vai para a pasta `_substituidos`.
-- **Não perder nada:** se a gravação falhar, aparece uma faixa que não some, o app tenta de novo sozinho e guarda as mudanças no navegador. PC e celular mudando campos diferentes da mesma ficha ficam com as duas mudanças. O aviso de "você não salvou" cobre mais janelas.
+- **Não perder nada:** se a gravação falhar, aparece uma faixa que não some, o app tenta de novo sozinho e guarda as mudanças no navegador. Dois computadores mudando campos diferentes da mesma ficha ficam com as duas mudanças. O aviso de "você não salvou" cobre mais janelas.
 - **Teclado e toque:** as janelas seguram o foco do teclado, cartões abrem com Enter, o mapa tem botões de zoom e os botões pequenos ganharam área de toque maior. O texto da página não é mais selecionado ao arrastar o mouse.
 
 ## Novidades da versão 2.14
@@ -80,7 +80,7 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 - **Repetir a música:** botão 🔁 no player para ficar na mesma faixa.
 
 ## Novidades da versão 2.12
-- **Tutoriais em vídeo:** em Configurações → Tutorial há 5 vídeos de 30 a 40 segundos: MyLoot no celular em casa, fora de casa com o Tailscale, backup, IA e contas fixas e parcelas. No celular eles abrem na versão vertical.
+- **Tutoriais em vídeo:** em Configurações → Tutorial há 3 vídeos de 30 a 40 segundos: backup, IA e contas fixas e parcelas.
 - **iPhone:** o topo respeita a área do relógio e da ilha, e o app ocupa a altura toda quando aberto pela tela inicial.
 
 ## Novidades da versão 2.11
@@ -127,16 +127,15 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 
 - 🎙️ **Crie falando**: aperte o microfone (ou a tecla `V`), fale, e o que você disse vira nota, tarefa ou conta. Também aceita áudio do WhatsApp. A transcrição roda no seu computador (Whisper no navegador); na primeira vez ele baixa o motor de voz, uns 80 MB.
 - ✨ **A IA organiza a fala**: “ligar pro Rafael amanhã às 10, paguei 120 de internet e anotar a ideia do post” vira uma tarefa com data e hora, uma conta paga e uma nota. Usa o Claude Code, o Codex ou a chave da API que você já ligou.
-- 🔄 **Celular e PC juntos**: com os dois abertos, o que muda em um aparece no outro sem apagar nada. Áudio gravado no celular é transcrito pelo PC.
 - 🐞 **Reportar um problema**: no menu e nas Configurações. Abre um formulário já preenchido com o que você escreveu, a versão e os últimos erros.
 - 🎓 **Rever o tutorial**: o botão ao lado do nome de cada tela mostra de novo o passo a passo daquela tela.
 - 🔌 **Conexões**: em Configurações, gere um código para outro programa do seu computador mandar itens para o MyLoot. Ele só acrescenta itens; não lê nem apaga o que você guardou.
 
 ## Novidades da versão 2.4
 
-| No celular, por QR Code | Clientes |
-|---|---|
-| ![Usar no celular](docs/img/novidades/02-celular-qr-code.png) | ![Clientes](docs/img/novidades/03-clientes.png) |
+| Clientes |
+|---|
+| ![Clientes](docs/img/novidades/03-clientes.png) |
 
 | Financeiro | Kit do negócio |
 |---|---|
@@ -150,7 +149,6 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 - **Busca em tudo** com `Ctrl+K` — títulos, textos, etiquetas e nome dos anexos.
 - **Anexos:** arraste um arquivo para a janela e ele vira um item. Dá para pré-visualizar e abrir no programa do computador.
 - **Clientes (mini CRM):** contato, WhatsApp, e-mail, Instagram, funil com colunas que você cria e organiza (começa com prospect, ativo, pausado, encerrado), link do quadro do Trello e a pasta do cliente com um clique. As tarefas e os itens de cada cliente ficam juntos na ficha dele. Ótimo para social media e freelancer.
-- **No celular:** ligue "Usar no celular" nas Configurações, aponte a câmera para o QR Code e pronto. Protegido por um código, só na sua rede. Dá para adicionar à tela inicial como um app.
 - **Financeiro:** fluxo de caixa do mês com entradas e saídas, o que já foi pago/recebido e o que falta, contas que repetem todo mês, parcelas, pagamentos por cliente, gráfico dos últimos 6 meses, calculadora de valor da hora e planilha em CSV. O computador avisa das contas do dia.
 - **Kit do negócio e Kit de lançamento:** 23 materiais prontos, cada um com texto editável e um PDF: briefings (social media, posts, identidade visual, site), contratos, proposta comercial, roteiro de call de vendas, mensagens de WhatsApp, onboarding, debriefing, relatório mensal, planejamento de conteúdo, avatar, objeções, oferta, cronograma e roteiro de lançamento. São **exemplos de referência** (os PDFs levam a identidade da Prestes Design): adapte para a sua marca, e cada material traz uma dica de como fazer isso com IA.
 - **Tutorial guiado:** na primeira vez em cada tela, o MyLoot destaca os pontos principais passo a passo. Dá para pular e rever depois nas Configurações.
@@ -189,9 +187,9 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 |---|---|
 | ![Mascotes](docs/site/telas/mascote.webp) | ![Conquistas](docs/site/telas/conquistas.webp) |
 
-| Backup | Usar no celular |
-|---|---|
-| ![Backup](docs/site/telas/backup.webp) | ![Celular](docs/site/telas/celular.webp) |
+| Backup |
+|---|
+| ![Backup](docs/site/telas/backup.webp) |
 
 ## Como instalar (Windows)
 
@@ -228,14 +226,6 @@ Ele cria o app **MyLoot** na Mesa, com o ícone do baú, e já abre.
 3. No terminal, dentro da pasta: `sh instalar.sh`
 
 Ele coloca o MyLoot no menu de aplicativos e na área de trabalho.
-
-## Usar no celular
-
-1. No computador: **Configurações → Usar no celular** → ligue a chave.
-2. No celular (no mesmo Wi-Fi): aponte a câmera para o QR Code, ou digite o endereço que aparece e o código de 6 números.
-3. Para virar app: no menu do navegador, **Adicionar à tela inicial**.
-
-O computador precisa estar ligado com o MyLoot aberto. No Windows, se aparecer o aviso do firewall, permita em **redes privadas**. Para usar fora de casa, instale o [Tailscale](https://tailscale.com) (grátis) no PC e no celular. Algumas coisas ficam só no computador: desligar, atualizar, trocar chaves e abrir arquivos no PC.
 
 > Antes se chamava **Mochila**. Se você já usava, é só copiar a versão nova por cima: seus dados continuam iguais.
 
@@ -274,7 +264,7 @@ Se você tem uma versão mais antiga (ou ainda a Mochila), baixe o ZIP novo uma 
 
 ## Por dentro
 
-- Servidor: Node.js puro (`server.js`, `atualizar.js`, `celular.js`, `conexoes.js`, `exportar.js`, `integracoes.js`, `nuvem.js`), sem dependências. Só em `127.0.0.1:4321`, a não ser que você ligue "Usar no celular".
+- Servidor: Node.js puro (`server.js`, `atualizar.js`, `celular.js`, `conexoes.js`, `exportar.js`, `integracoes.js`, `nuvem.js`), sem dependências. Só em `127.0.0.1:4321`: nenhum outro aparelho da rede alcança o MyLoot.
 - Interface: HTML, CSS e JavaScript puros em `public/`.
 - Conteúdo inicial: arquivos em `exemplos/` (cada `.json` é um pacote que entra uma vez só).
 

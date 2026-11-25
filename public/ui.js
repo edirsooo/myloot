@@ -176,7 +176,7 @@
   if (document.readyState !== 'loading') ['#view', '#overlay', '#hud', '#side'].forEach((q) => { const e = document.querySelector(q); if (e) acObs.observe(e, { childList: true, subtree: true }); });
   // Enter ou Espaço num cartão ou linha que funciona como botão (role="button") faz o mesmo que clicar
   document.addEventListener('keydown', (e) => {
-    if ((e.key !== 'Enter' && e.key !== ' ') || e.target !== document.activeElement) return;
+    if ((e.key !== 'Enter' && e.key !== ' ') || e.target !== document.activeElement || e.defaultPrevented) return; // a tela já tratou: não abre duas vezes
     const t = e.target; if (!t.matches || !t.matches('[role="button"][tabindex]') || /^(BUTTON|A|INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
     e.preventDefault(); t.click();
   });
@@ -215,6 +215,7 @@
   // Fichas de item e de cliente guardam rascunho sozinhas. As janelas pequenas com botão de salvar (tarefa, lançamento, hábito, meta)
   // não têm rascunho: se a pessoa mudou algo e tenta sair pelo ✕, Esc ou clicando fora, a janela pergunta antes de fechar.
   let sujo = false, foto0 = null;
+  M.marcarSujo = () => { sujo = true; }; // ficha que reabriu com edição ainda não salva (Trello, Notion)
   const temSalvar = (m) => !m.querySelector('#eX,#cX') && [...m.querySelectorAll('button')].some((b) => /Salvar|Lançar|Adicionar|Criar|Guardar/.test(b.textContent));
   // além dos campos digitados, conta o que não dispara "input": botões de escolha (dias, frequência, tipo) e texto que entrou ditado.
   // Na primeira vez que a pessoa mexe na janela, guarda como ela estava; ao sair, compara.
@@ -229,7 +230,7 @@
   const avisaSujo = (m) => {
     if (m.querySelector('.sair-aviso')) return M.falta(m.querySelector('.sair-aviso'), '✍️ Salve ou escolha “Sair sem salvar”');
     const d = document.createElement('div'); d.className = 'sair-aviso';
-    d.innerHTML = '<span>✍️ Você mudou algo aqui e ainda não salvou.</span><span class="sa-b"><button type="button" class="btn ghost sm" data-sa="fica">Continuar editando</button><button type="button" class="btn sm" data-sa="rasc" title="Fecha e guarda o que você escreveu: ao abrir esta janela de novo, dá para recuperar">📝 Sair e guardar rascunho</button><button type="button" class="btn danger sm" data-sa="sai">Descartar</button></span>';
+    d.innerHTML = `<span>✍️ Você mudou algo aqui e ainda não salvou.</span><span class="sa-b"><button type="button" class="btn ghost sm" data-sa="fica">Continuar editando</button>${chaveJ(m) ? '<button type="button" class="btn sm" data-sa="rasc" title="Fecha e guarda o que você escreveu: ao abrir esta janela de novo, dá para recuperar">📝 Sair e guardar rascunho</button>' : ''}<button type="button" class="btn danger sm" data-sa="sai">Descartar</button></span>`;
     m.prepend(d); d.scrollIntoView({ block: 'nearest' });
     d.onclick = (e) => { const a = e.target.dataset.sa; if (a === 'fica') d.remove(); if (a === 'sai' || a === 'rasc') { if (a === 'rasc') rascGuarda(m); else rascTira(m); sujo = false; foto0 = fotoJanela(m); const x = m.querySelector('.modal-h #x'); if (x) x.click(); else M.closeModal(); } };
   };
@@ -239,24 +240,32 @@
   const hash = (s) => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
   const rascLe = () => { try { const o = JSON.parse(localStorage.getItem(RK) || '{}') || {}, lim = Date.now() - 14 * 864e5; for (const k of Object.keys(o)) if (!(o[k].at > lim)) delete o[k]; return o; } catch (_) { return {}; } };
   const rascGrava = (o) => { const ks = Object.keys(o).sort((a, b) => o[b].at - o[a].at); ks.slice(30).forEach((k) => delete o[k]); try { localStorage.setItem(RK, JSON.stringify(o)); } catch (_) {} };
-  const campos = (m) => [...m.querySelectorAll('input,textarea,select')].filter((e) => e.type !== 'search' && e.type !== 'file');
+  // campos que já gravam na hora (checklist e blocos do Trello/Notion) não entram no rascunho: recuperar não pode disparar gravação
+  const campos = (m) => [...m.querySelectorAll('input,textarea,select')].filter((e) => e.type !== 'search' && e.type !== 'file' && !e.closest('.tr-ckl,.nt-blocos,.nt-novo') && !e.matches('[data-cknovo]'));
   const chaveJ = (m) => m.dataset.rk || '';
-  const rascGuarda = (m) => { const k = chaveJ(m); if (!k) return; const o = rascLe(); o[k] = { at: Date.now(), tit: (m.querySelector('.modal-h h2') || {}).textContent || '', v: campos(m).map((e) => (e.type === 'checkbox' || e.type === 'radio' ? !!e.checked : e.value)) }; rascGrava(o); };
+  const valCampos = (m) => campos(m).map((e) => (e.type === 'checkbox' || e.type === 'radio' ? !!e.checked : e.value));
+  // b: como os campos estavam ao abrir; na recuperação só volta o que a pessoa mudou (o resto fica com o valor novo)
+  const rascGuarda = (m) => { const k = chaveJ(m); if (!k) return; const o = rascLe(); o[k] = { at: Date.now(), tit: (m.querySelector('.modal-h h2') || {}).textContent || '', v: valCampos(m), b: m._base || null }; rascGrava(o); };
   const rascTira = (m) => { const k = chaveJ(m); if (!k) return; const o = rascLe(); if (o[k]) { delete o[k]; rascGrava(o); } };
   // janela nova com botão de salvar: marca a chave e, se tem rascunho dela, oferece recuperar
-  new MutationObserver(() => {
-    const m = $('#overlay.on .modal'); if (!m || m.dataset.rk || !temSalvar(m)) return;
-    const h = m.querySelector('.modal-h h2'); m.dataset.rk = hash(((h && h.textContent) || '') + SEP + fotoJanela(m));
+  // fichas que montam o formulário depois de buscar na internet (Trello, Notion) chamam M.rascVer() quando ele fica pronto
+  const rascVer = () => {
+    const m = $('#overlay.on .modal'); if (!m || m.dataset.rkOk || !temSalvar(m)) return;
+    m.dataset.rkOk = '1'; m._base = valCampos(m);
+    // a ficha pode trazer a própria chave (ex.: trello:<id>); as outras janelas usam o título + como abriram
+    const h = m.querySelector('.modal-h h2'); if (!m.dataset.rk) m.dataset.rk = hash(((h && h.textContent) || '') + SEP + fotoJanela(m));
     const r = rascLe()[m.dataset.rk]; if (!r || r.v.length !== campos(m).length) return;
     const d = document.createElement('div'); d.className = 'rasc-aviso';
     d.innerHTML = `<span>📝 Você saiu daqui sem salvar em ${new Date(r.at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${new Date(r.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.</span><span class="sa-b"><button type="button" class="btn sm" data-ra="sim">Recuperar o que escrevi</button><button type="button" class="btn ghost sm" data-ra="nao">Descartar</button></span>`;
     m.querySelector('.modal-b') ? m.querySelector('.modal-b').prepend(d) : m.prepend(d);
     d.onclick = (e) => {
       const a = e.target.dataset.ra; if (!a) return;
-      if (a === 'sim') campos(m).forEach((el, i) => { const v = r.v[i]; if (el.type === 'checkbox' || el.type === 'radio') { if (el.checked !== !!v) { el.checked = !!v; el.dispatchEvent(new Event('change', { bubbles: true })); } } else if (el.value !== v) { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } });
+      if (a === 'sim') campos(m).forEach((el, i) => { const v = r.v[i]; if (Array.isArray(r.b) && r.b.length === r.v.length && r.b[i] === v) return; if (el.type === 'checkbox' || el.type === 'radio') { if (el.checked !== !!v) { el.checked = !!v; el.dispatchEvent(new Event('change', { bubbles: true })); } } else if (el.value !== v) { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } });
       const o = rascLe(); delete o[m.dataset.rk]; rascGrava(o); d.remove(); if (a === 'sim') M.toast('📝 Rascunho recuperado. Confira e salve.');
     };
-  }).observe($('#overlay'), { childList: true });
+  };
+  M.rascVer = rascVer;
+  new MutationObserver(rascVer).observe($('#overlay'), { childList: true });
   M.fecharPeloUsuario = () => { const m = $('#overlay.on .modal'); if (m && temSalvar(m) && mudou(m)) return avisaSujo(m); const x = m && m.querySelector('.modal-h #x,.modal-h #eX,.modal-h #cX'); if (x) x.click(); else M.closeModal(); };
   document.addEventListener('click', (e) => { const x = e.target.closest && e.target.closest('#overlay.on .modal-h #x'); if (!x) return; const m = x.closest('.modal'); if (!temSalvar(m) || !mudou(m)) return; e.stopPropagation(); e.preventDefault(); avisaSujo(m); }, true);
   M.closeModal = () => {
@@ -344,7 +353,6 @@
         M.go('home'); setTimeout(() => { const e = document.getElementById('qcIn'); if (e) { e.value = /^https?:\/\//i.test(u) ? u : ''; e.focus(); } }, 60);
       }],
       ['💾', 'Fazer backup', '', () => vaiCfg('💾 Dados e backup')],
-      ['📱', 'Usar no celular', '', () => vaiCfg('📱 Usar no celular')],
       ['🤖', 'Configurar a IA', '', () => vaiCfg('🤖 IA (Claude, Codex e Gemini)')],
       ['🧮', 'Calcular preço (valor da hora)', '', () => M.calcPreco()],
       ['👤', 'Novo cliente', '', () => { M.go('clients'); M.novoCliente(); }],

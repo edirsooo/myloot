@@ -1,12 +1,23 @@
 {
-  "versao": "2.27.0",
-  "data": "2026-11-23",
+  "versao": "2.28.0",
+  "data": "2026-11-24",
   "novidades": [
-    "🎬 Videoaulas nos Guias de IA: cada um dos 5 guias agora tem a sua aula em vídeo (2 a 3 minutos), anexada ao lado do PDF. Abra o guia na Biblioteca e toque no vídeo",
-    "📚 As aulas explicam o guia com exemplos e comparações simples: custos do estúdio de Reels, qual IA usar, editar vídeo com o Claude Code, IAs de imagem e vídeo grátis e segundo cérebro com Obsidian",
-    "🧹 Se você apagar um vídeo ou PDF dos guias, ele não volta nas próximas atualizações"
+    "🛡️ Revisão geral de segurança e confiabilidade: backup de fora não consegue mais pôr código no menu nem nos anexos, e o título de links nunca consulta a sua rede de casa",
+    "🔒 Mais privacidade: a opção \"Usar no celular\" saiu. O MyLoot agora abre só no computador onde está instalado, e nenhum outro aparelho da rede consegue entrar",
+    "📋 Trello mais confiável: salvar só a descrição não move mais o cartão, clique duplo não duplica comentário, criar cartão e trocar de quadro ao mesmo tempo não confunde a tela, a capa salva junto com o resto e a ficha fica travada enquanto algo está sendo enviado (nada de envio duplicado)",
+    "📓 Notion mais confiável: renomear uma linha não mexe mais na data, o filtro não perde o cursor, cancelar a lixeira devolve a ficha como estava e sair sem salvar sempre avisa antes",
+    "🔑 Trocar a chave do Trello ou do Notion: a chave nova só é guardada se funcionar (a antiga continua ligada) e nada da conta anterior fica na tela",
+    "🗒️ Bloco de notas do Início não desfaz mais uma edição feita em outro aparelho",
+    "📕 Guias atualizados chegam certinho: quando um PDF ou vídeo dos guias muda, o seu MyLoot recebe a versão nova (antes, um arquivo do mesmo tamanho passava batido)",
+    "📱 Tela estreita: filtros da Biblioteca recolhidos num botão (os itens aparecem logo), prioridade da tarefa sem corte, e o Organizar Início mostra também os widgets de outro aparelho",
+    "🧰 Ferramentas: a ferramenta recém-salva aparece mesmo com o filtro de preço ligado, e o \"Nada encontrado\" tem botão para limpar os filtros"
   ],
   "historico": {
+    "2.27.0": [
+      "🎬 Videoaulas nos Guias de IA: cada um dos 5 guias agora tem a sua aula em vídeo (2 a 3 minutos), anexada ao lado do PDF. Abra o guia na Biblioteca e toque no vídeo",
+      "📚 As aulas explicam o guia com exemplos e comparações simples: custos do estúdio de Reels, qual IA usar, editar vídeo com o Claude Code, IAs de imagem e vídeo grátis e segundo cérebro com Obsidian",
+      "🧹 Se você apagar um vídeo ou PDF dos guias, ele não volta nas próximas atualizações"
+    ],
     "2.26.0": [
       "🧰 Ferramentas: o banco passou de 42 para 80 recomendadas, com Higgsfield, Magnific, Artlist, Meta AI, HappyHorse, FLUX, Pika, PixVerse, HeyGen, CapCut e outras",
       "🎙️ Dois grupos novos: Voz e música (ElevenLabs, Suno, Whisper) e Assistentes de IA (ChatGPT, Claude, Gemini, NotebookLM, Perplexity e mais)",

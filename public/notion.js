@@ -3,11 +3,16 @@
 (function () {
   const { esc, $ } = M;
   let lista = null, base = null, pagina = null, carregando = false, deNovo = false, erro = '', busca = '';
+  let ger = 0; // muda ao trocar de conta: resposta atrasada da conta anterior vai fora
+  M.notionReset = () => { lista = base = pagina = null; erro = ''; ger++; pilha.length = 0; aberto = ''; busca = ''; if (M.db) delete M.db.settings.notionAlvo; if (carregando) deNovo = true; }; // trocou ou desligou a conta: nada da anterior fica na tela
   const pilha = []; // páginas abertas antes (para o ← dentro das subpáginas)
   const COR = { default: '#9b9a97', gray: '#9b9a97', brown: '#ba856f', orange: '#ffa344', yellow: '#ffdc49', green: '#4dab9a', blue: '#529cca', purple: '#9a6dd7', pink: '#e255a1', red: '#ff7369' };
   const cor = (c) => COR[c] || COR.default;
   const api = (p, o) => M.api('/api/notion/' + p, o);
-  const acao = (b) => api('acao', { method: 'POST', body: JSON.stringify(b) });
+  // enquanto algo vai para o Notion, a ficha aberta fica travada (inert): nada de envios cruzados nem texto sumindo
+  let ocup = 0;
+  const trava = () => { const mb = document.querySelector('#ntFb'); if (mb) { mb.inert = ocup > 0; mb.setAttribute('aria-busy', String(ocup > 0)); } };
+  const acao = async (b) => { ocup++; trava(); try { return await api('acao', { method: 'POST', body: JSON.stringify(b) }); } finally { ocup--; trava(); } };
   const alvo = () => M.db.settings.notionAlvo || ''; // "b:<id>" (base) ou "p:<id>" (página)
   const EDITA = ['title', 'rich_text', 'select', 'status', 'multi_select', 'date', 'checkbox', 'number', 'url', 'email', 'phone_number'];
   const GRUPO = ['status', 'select']; // dá para montar o quadro por estes tipos
@@ -47,7 +52,7 @@
       if (!token) return M.falta($('#ntTok'), '🔑 Cole o segredo (passo 2)');
       try {
         await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ notion: { token } }) });
-        const eu = await api('eu');
+        M.notionReset(); const eu = await api('eu');
         SFX.play('coin'); M.toast('✅ Notion conectado' + (eu.espaco ? ': ' + eu.espaco : ''));
         if (M.intStatus) await M.intStatus(true).catch(() => {});
         lista = null; erro = ''; M.render();
@@ -57,18 +62,20 @@
 
   async function carregar(forcar) {
     if (carregando) { deNovo = true; return; } carregando = true; erro = '';
+    const g = ger;
     try {
-      if (!lista || forcar) lista = await api('lista');
+      if (!lista || forcar) { const l = await api('lista'); if (g !== ger) throw 0; lista = l; }
       let a = alvo();
       // subpágina ou base aberta por dentro de uma página não aparece na busca do Notion: vale porque a pessoa clicou nela
       const existe = (x) => x === aberto || (x.startsWith('b:') ? lista.bases : lista.paginas).some((o) => o.id === x.slice(2)) || pilha.some((p) => 'p:' + p.id === x);
       if (!a || !existe(a)) { a = lista.bases[0] ? 'b:' + lista.bases[0].id : lista.paginas[0] ? 'p:' + lista.paginas[0].id : ''; M.db.settings.notionAlvo = a; M.save(); }
-      if (a.startsWith('b:')) { base = await api('base?id=' + encodeURIComponent(a.slice(2))); pagina = null; }
-      else if (a) { pagina = await api('pagina?id=' + encodeURIComponent(a.slice(2))); base = null; }
+      if (a.startsWith('b:')) { const x = await api('base?id=' + encodeURIComponent(a.slice(2))); if (g !== ger) throw 0; base = x; pagina = null; }
+      else if (a) { const x = await api('pagina?id=' + encodeURIComponent(a.slice(2))); if (g !== ger) throw 0; pagina = x; base = null; }
       else { base = pagina = null; }
-    } catch (e) { erro = e.message; }
+    } catch (e) { if (e !== 0) erro = e.message; }
     carregando = false;
     if (deNovo) { deNovo = false; return carregar(); }
+    if (g !== ger) return;
     if (M.ui.page === 'notion') M.render();
   }
   let aberto = ''; // o que a pessoa abriu por último clicando (subpágina ou base de dentro de uma página)
@@ -79,9 +86,10 @@
     M.intStatus().then((st) => {
       if (M.ui.page !== 'notion') return;
       if (!st.notion.temToken) { v.innerHTML = conectarHTML(st.notion); conectarBind(); return; }
+      if (!lista && carregando) { v.innerHTML = '<div class="empty"><div class="big">📓</div><h3>Abrindo o seu Notion…</h3></div>'; return; } // segundo desenho no meio da primeira busca
       if (!lista && !carregando && !erro) { v.innerHTML = '<div class="empty"><div class="big">📓</div><h3>Abrindo o seu Notion…</h3></div>'; carregar(); return; }
       desenha(v);
-    }).catch((e) => { v.innerHTML = `<div class="empty"><div class="big">⚠️</div><h3>Não consegui abrir o Notion</h3><p>${esc(e.message)}</p></div>`; });
+    }).catch((e) => { if (M.ui.page === 'notion') v.innerHTML = `<div class="empty"><div class="big">⚠️</div><h3>Não consegui abrir o Notion</h3><p>${esc(e.message)}</p></div>`; });
   };
 
   function desenha(v) {
@@ -101,16 +109,17 @@
         <select id="ntQ" aria-label="Base ou página do Notion">${lista.bases.length ? `<optgroup label="🗃️ Bases">${lista.bases.map((o) => opt('b', o)).join('')}</optgroup>` : ''}${lista.paginas.length || extra ? `<optgroup label="📄 Páginas">${extra}${lista.paginas.map((o) => opt('p', o)).join('')}</optgroup>` : ''}</select>
         ${base ? `<input class="search" id="ntBusca" type="search" placeholder="Filtrar…" value="${esc(busca)}">` : ''}
         <button class="btn ghost sm" id="ntAtu" title="Buscar de novo no Notion">${carregando ? '⏳' : '🔄'} Atualizar</button>
-        ${url ? `<a class="btn ghost sm" href="${esc(url)}" target="_blank" rel="noopener">↗ Abrir no Notion</a>` : ''}
+        ${M.urlOk(url) ? `<a class="btn ghost sm" href="${esc(M.urlOk(url))}" target="_blank" rel="noopener">↗ Abrir no Notion</a>` : ''}
         <span class="grow"></span>
         <button class="btn ghost sm" id="ntCfg" title="Trocar o segredo ou desconectar">⚙️</button>
       </div>
       ${erro ? `<div class="carrega-erro" role="alert">⚠️ ${esc(erro)}</div>` : ''}
+      ${lista.mais ? '<small style="color:var(--faint);display:block;margin:-4px 0 8px">A lista mostra as páginas e bases mais recentes (até 300). Se faltar alguma, abra-a pelo link de uma página que aparece aqui.</small>' : ''}
       <div id="ntCorpo">${vazio ? `<div class="empty"><div class="big">🔌</div><h3>O MyLoot ainda não enxerga nada no seu Notion</h3><p>No Notion, abra a página ou a base → <b>•••</b> → <b>Conexões</b> → adicione <i>MyLoot</i>. Depois clique em Atualizar.</p></div>`
         : carregando && !base && !pagina ? '<div class="empty"><div class="big">⏳</div><h3>Abrindo…</h3></div>'
         : base ? baseHTML() : pagina ? paginaHTML() : ''}</div>`;
     $('#ntQ').onchange = (e) => { busca = ''; abrirAlvo(e.target.value, false); };
-    if ($('#ntBusca')) $('#ntBusca').oninput = (e) => { busca = e.target.value; const pos = e.target.selectionStart; M.render(); const i = $('#ntBusca'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } };
+    if ($('#ntBusca')) $('#ntBusca').oninput = (e) => { busca = e.target.value; const c = $('#ntCorpo'); if (c && base) { c.innerHTML = baseHTML(); ligaBase(); } }; // só a lista muda: o campo de busca não perde o cursor
     $('#ntAtu').onclick = () => { SFX.play('click'); carregar(true); M.render(); };
     $('#ntCfg').onclick = (e) => M.ctxMenu(e, [
       { em: '🔄', t: 'Atualizar a lista do Notion', fn: () => carregar(true) },
@@ -224,8 +233,8 @@
         case 'callout': return `<div class="nt-call">${esc(b.icone || '💡')}<span>${t}${mais}</span></div>`;
         case 'code': return `<pre class="nt-code">${t}</pre>`;
         case 'divider': return '<hr class="nt-hr">';
-        case 'image': return b.url ? `<img class="nt-img" src="${esc(b.url)}" alt="${t}" loading="lazy">` : '';
-        case 'bookmark': case 'link_preview': case 'embed': case 'video': case 'file': case 'pdf': return b.url ? `<a class="tr-anx" href="${esc(b.url)}" target="_blank" rel="noopener">🔗 ${t || esc(b.url)}</a>` : '';
+        case 'image': return M.urlOk(b.url) ? `<img class="nt-img" src="${esc(M.urlOk(b.url))}" alt="${t}" loading="lazy">` : '';
+        case 'bookmark': case 'link_preview': case 'embed': case 'video': case 'file': case 'pdf': return M.urlOk(b.url) ? `<a class="tr-anx" href="${esc(M.urlOk(b.url))}" target="_blank" rel="noopener noreferrer">🔗 ${t || esc(b.url)}</a>` : '';
         case 'child_page': return `<button type="button" class="nt-sub" data-sub="p:${esc(b.id)}">📄 ${t || 'Sem título'}</button>`;
         case 'child_database': return `<button type="button" class="nt-sub" data-sub="b:${esc(b.id)}">🗃️ ${t || 'Base sem título'}</button>`;
         default: return `<small class="nt-outro">[${esc(b.tipo.replace(/_/g, ' '))}: abra no Notion para ver]</small>`;
@@ -238,6 +247,7 @@
       ${pilha.length ? `<button type="button" class="btn ghost sm" id="ntVolta" style="margin-bottom:8px">← ${esc(pilha[pilha.length - 1].titulo)}</button>` : ''}
       <h2 class="nt-tit">${esc((pagina.icone ? pagina.icone + ' ' : '') + pagina.titulo)}</h2>
       <div class="nt-blocos">${blocosHTML(pagina.blocos) || '<p style="color:var(--faint)">Página vazia.</p>'}</div>
+      ${pagina.mais ? '<small style="color:var(--amber);display:block;margin-top:8px">⚠️ Página muito longa: aparecem só os primeiros 1.000 blocos. O resto continua no Notion.</small>' : ''}
       ${novoBlocoHTML()}
       <div class="row" style="margin-top:12px;gap:8px"><button type="button" class="btn ghost sm" id="ntSubNova" style="flex:none">＋ Subpágina</button><button type="button" class="btn ghost sm" id="ntPgMy" style="flex:none">📥 Guardar no MyLoot</button></div>
     </div>`;
@@ -250,10 +260,10 @@
     });
     box.addEventListener('keydown', async (e) => {
       const i = e.target.closest('[data-nbloco]'); if (!i || e.key !== 'Enter') return; e.preventDefault();
-      const texto = i.value.trim(); if (!texto) return;
-      const tipo = box.querySelector('[data-ntipo]').value;
+      const texto = i.value.trim(); if (!texto || i.readOnly) return;
+      const tipo = box.querySelector('[data-ntipo]').value; i.readOnly = true; // um envio por vez
       try { const r = await acao({ op: 'blocoNovo', pagina: pg.id, tipo, texto }); pg.blocos.push({ id: r.id, tipo, texto, ok: false }); SFX.play('pop'); redesenha(); const n = box.querySelector('[data-nbloco]'); if (n) n.focus(); }
-      catch (er) { M.toast('⚠️ ' + er.message); }
+      catch (er) { i.readOnly = false; M.toast('⚠️ ' + er.message); }
     });
   }
   function ligaPagina() {
@@ -270,13 +280,13 @@
   }
 
   // ----- ficha de uma linha da base -----
-  async function abrirLinha(id) {
+  async function abrirLinha(id, volta) { // volta: ficha que reabre com o que já estava digitado (depois de cancelar uma pergunta)
     const m = M.modal(`<div class="modal-h"><h2>📓 Notion</h2><button class="icon-btn" id="x" aria-label="Fechar">✕</button></div><div class="modal-b" id="ntFb"><div class="empty"><div class="big">⏳</div><h3>Abrindo…</h3></div></div>`);
     $('#x', m).onclick = M.closeModal;
-    let pg; try { pg = await api('pagina?id=' + encodeURIComponent(id)); } catch (e) { $('#ntFb', m).innerHTML = `<div class="carrega-erro" role="alert">⚠️ ${esc(e.message)}</div>`; return; }
+    let pg; if (volta) pg = volta.pg; else { try { pg = await api('pagina?id=' + encodeURIComponent(id)); } catch (e) { $('#ntFb', m).innerHTML = `<div class="carrega-erro" role="alert">⚠️ ${esc(e.message)}</div>`; return; } }
     if (!m.isConnected) return;
     const schema = base ? base.props : [], ops = (nome) => (schema.find((p) => p.nome === nome) || { opcoes: [] }).opcoes;
-    const novo = JSON.parse(JSON.stringify(pg.props)), tipos = pg.tipos;
+    const novo = JSON.parse(JSON.stringify(volta ? volta.novo : pg.props)), tipos = pg.tipos;
     const tit = Object.keys(tipos).find((k) => tipos[k] === 'title');
     const ed = Object.keys(tipos).filter((k) => k !== tit);
     const campo = (k, i) => {
@@ -284,7 +294,7 @@
       const lab = `<label for="${idc}">${esc(k)}</label>`;
       if (t === 'select' || t === 'status') return `<div class="fld">${lab}<select id="${idc}" data-p="${esc(k)}">${t === 'select' ? '<option value="">—</option>' : ''}${ops(k).map((o) => `<option ${v && v.nome === o.nome ? 'selected' : ''}>${esc(o.nome)}</option>`).join('')}</select></div>`;
       if (t === 'multi_select') return `<div class="fld"><div class="lbl">${esc(k)}</div><div class="tr-ets-ed">${ops(k).map((o) => `<button type="button" class="nt-chip nt-opc ${(v || []).some((x) => x.nome === o.nome) ? 'on' : ''}" data-ms="${esc(k)}" data-o="${esc(o.nome)}" style="--c:${cor(o.cor)}">${esc(o.nome)}</button>`).join('') || '<small style="color:var(--faint)">Sem opções nesta base.</small>'}</div></div>`;
-      if (t === 'date') { const ini = (v && v.ini) || '', hora = ini.length > 10; return `<div class="fld">${lab}<input type="${hora ? 'datetime-local' : 'date'}" id="${idc}" data-p="${esc(k)}" value="${esc(hora ? ini.slice(0, 16) : ini)}"></div>`; }
+      if (t === 'date') { const ini = (v && v.ini) || '', hora = ini.length > 10 || /T/.test(ini); return `<div class="fld">${lab}<input type="${hora ? 'datetime-local' : 'date'}" id="${idc}" data-p="${esc(k)}" value="${esc(hora ? ini.slice(0, 16) : ini)}"></div>`; }
       if (t === 'checkbox') return `<div class="fld" style="flex:none;align-self:flex-end;padding-bottom:6px"><label class="sw"><input type="checkbox" id="${idc}" data-p="${esc(k)}" ${v ? 'checked' : ''}><span class="t"></span><span>${esc(k)}</span></label></div>`;
       if (t === 'number') return `<div class="fld">${lab}<input type="number" id="${idc}" data-p="${esc(k)}" value="${v == null ? '' : esc(v)}"></div>`;
       if (['rich_text', 'url', 'email', 'phone_number'].includes(t)) return `<div class="fld">${lab}<input type="text" id="${idc}" data-p="${esc(k)}" value="${esc(v || '')}"></div>`;
@@ -292,26 +302,31 @@
     };
     const draw = () => {
       $('#ntFb', m).innerHTML = `
-        <div class="fld"><label for="ntTit">${esc(tit || 'Título')}</label><input type="text" id="ntTit" value="${esc(pg.titulo === 'Sem título' ? '' : pg.titulo)}" placeholder="Sem título"></div>
+        <div class="fld"><label for="ntTit">${esc(tit || 'Título')}</label><input type="text" id="ntTit" value="${esc(tit && typeof novo[tit] === 'string' ? novo[tit] : pg.titulo === 'Sem título' ? '' : pg.titulo)}" placeholder="Sem título"></div>
         <div class="row nt-props" style="flex-wrap:wrap">${ed.map(campo).join('')}</div>
-        <div class="fld"><div class="lbl">Conteúdo</div><div class="nt-blocos">${blocosHTML(pg.blocos) || '<small style="color:var(--faint)">Sem conteúdo ainda.</small>'}</div>${novoBlocoHTML()}</div>
+        <div class="fld"><div class="lbl">Conteúdo</div><div class="nt-blocos">${blocosHTML(pg.blocos) || '<small style="color:var(--faint)">Sem conteúdo ainda.</small>'}</div>${pg.mais ? '<small style="color:var(--amber);display:block;margin-top:6px">⚠️ Página muito longa: aparecem só os primeiros 1.000 blocos.</small>' : ''}${novoBlocoHTML()}</div>
         <div class="row" style="justify-content:space-between;margin-top:6px">
-          <span class="row" style="flex:none"><button class="btn ghost" id="ntLix" style="flex:none">🗑️ Lixeira do Notion</button><button class="btn ghost" id="ntMy" style="flex:none">📥 Guardar no MyLoot</button><a class="btn ghost" href="${esc(pg.url)}" target="_blank" rel="noopener" style="flex:none">↗ Abrir no Notion</a></span>
+          <span class="row" style="flex:none"><button class="btn ghost" id="ntLix" style="flex:none">🗑️ Lixeira do Notion</button><button class="btn ghost" id="ntMy" style="flex:none">📥 Guardar no MyLoot</button><a class="btn ghost" href="${esc(M.urlOk(pg.url) || '#')}" target="_blank" rel="noopener" style="flex:none">↗ Abrir no Notion</a></span>
           <button class="btn" id="ntSalva" style="flex:none">✔ Salvar e fechar</button></div>`;
     };
     const le = () => { // o que está na tela vai para "novo"
       $$('[data-p]', m).forEach((el) => {
         const k = el.dataset.p, t = tipos[k];
         if (t === 'select' || t === 'status') { const o = ops(k).find((x) => x.nome === el.value); novo[k] = el.value ? { nome: el.value, cor: o ? o.cor : 'default' } : null; }
-        else if (t === 'date') novo[k] = el.value ? { ini: el.value, fim: (pg.props[k] || {}).fim || '' } : null;
+        else if (t === 'date') { // campo mostra só até o minuto: se a pessoa não mexeu, a data do Notion (segundos, fuso, intervalo) fica igual
+          const o = pg.props[k], ini = (o && o.ini) || '', tela = ini.length > 10 ? ini.slice(0, 16) : ini;
+          novo[k] = el.value === tela ? (o ? JSON.parse(JSON.stringify(o)) : null) : el.value ? { ini: el.value, fim: (o || {}).fim || '' } : null;
+        }
         else if (t === 'checkbox') novo[k] = el.checked;
         else if (t === 'number') novo[k] = el.value === '' ? null : Number(el.value);
         else novo[k] = el.value;
       });
       const ti = $('#ntTit', m); if (ti) novo[tit] = ti.value;
     };
-    draw();
+    m.dataset.rkOk = '1'; draw(); trava(); if (volta && M.marcarSujo) M.marcarSujo();
+    if (volta && volta.ex) { const i = m.querySelector('[data-nbloco]'), t = m.querySelector('[data-ntipo]'); if (i) i.value = volta.ex.bloco || ''; if (t && volta.ex.tipo) t.value = volta.ex.tipo; } // bloco que estava sendo escrito // sem rascunho (as opções de várias escolhas são botões): ao sair, a janela avisa
     const box = $('#ntFb', m);
+    const extras = () => ({ bloco: (m.querySelector('[data-nbloco]') || {}).value || '', tipo: (m.querySelector('[data-ntipo]') || {}).value || '' });
     ligaBlocos(box, pg, () => { le(); draw(); });
     box.addEventListener('click', (e) => {
       const ms = e.target.closest('[data-ms]'); if (!ms) return;
@@ -322,34 +337,39 @@
     box.addEventListener('click', async (e) => {
       const b = e.target.closest('button'); if (!b) return;
       if (b.id === 'ntLix') {
-        if (!(await M.confirm(`Mandar “${pg.titulo}” para a lixeira do Notion? Lá dá para restaurar por 30 dias.`, 'Mandar para a lixeira'))) return;
-        try { await acao({ op: 'lixeira', id: pg.id }); if (base) base.linhas = base.linhas.filter((x) => x.id !== pg.id); SFX.play('trash'); M.closeModal(); M.render(); M.toast('🗑️ Na lixeira do Notion'); } catch (er) { M.toast('⚠️ ' + er.message); }
+        le(); const guardado = JSON.parse(JSON.stringify(novo)), ex0 = extras();
+        if (!(await M.confirm(`Mandar “${pg.titulo}” para a lixeira do Notion? Lá dá para restaurar por 30 dias.`, 'Mandar para a lixeira'))) return abrirLinha(id, { pg, novo: guardado, ex: ex0 });
+        try { await acao({ op: 'lixeira', id: pg.id }); if (base) base.linhas = base.linhas.filter((x) => x.id !== pg.id); SFX.play('trash'); if (m.isConnected) M.closeModal(); M.render(); M.toast('🗑️ Na lixeira do Notion'); } catch (er) { M.toast('⚠️ ' + er.message); }
       }
-      if (b.id === 'ntMy') guardarNoMyLoot(pg);
+      if (b.id === 'ntMy') { le(); const guardado = JSON.parse(JSON.stringify(novo)); const ex = extras(); guardarNoMyLoot(pg, () => abrirLinha(id, { pg, novo: guardado, ex })); }
       if (b.id === 'ntSalva') {
         le();
         if (tit && !String(novo[tit] || '').trim()) return M.falta($('#ntTit', m), '✍️ Escreva o título');
         const mud = Object.keys(novo).filter((k) => EDITA.includes(tipos[k]) && JSON.stringify(novo[k]) !== JSON.stringify(pg.props[k]))
           .map((k) => ({ nome: k, tipo: tipos[k], v: tipos[k] === 'select' || tipos[k] === 'status' ? (novo[k] ? novo[k].nome : '') : tipos[k] === 'multi_select' ? (novo[k] || []).map((x) => x.nome) : novo[k] }));
         if (!mud.length) { M.closeModal(); return; }
+        if (mud.length > 100) return M.toast('⚠️ São ' + mud.length + ' campos mudados de uma vez; o limite é 100. Salve em partes.');
+        if (b.disabled) return; b.disabled = true; b.textContent = '⏳ Salvando…'; // um envio por vez
         try {
           await acao({ op: 'props', id: pg.id, props: mud });
           const r = base && base.linhas.find((x) => x.id === pg.id); if (r) { Object.assign(r.props, novo); r.titulo = (tit && novo[tit]) || r.titulo; }
-          SFX.play('coin'); M.closeModal(); M.render(); M.toast('✅ Salvo no Notion');
-        } catch (er) { M.toast('⚠️ ' + er.message); }
+          SFX.play('coin'); if (m.isConnected) M.closeModal(); M.render(); M.toast('✅ Salvo no Notion'); // só fecha a própria ficha
+        } catch (er) { M.toast('⚠️ ' + er.message); if (b.isConnected) { b.disabled = false; b.textContent = '✔ Salvar e fechar'; } }
       }
     });
   }
   const $$ = (s, el) => [...(el || document).querySelectorAll(s)];
 
   // a página do Notion vira uma nota na Biblioteca, com link para ela
-  function guardarNoMyLoot(pg) {
+  // depois: reabre a ficha de onde veio (com o que estava digitado) se a pessoa não for abrir a nota nova
+  async function guardarNoMyLoot(pg, depois) {
+    if (pg.mais && !(await M.confirm('Esta página é muito longa: só os primeiros 1.000 blocos vão para a nota (o link para a página inteira vai junto). Guardar assim mesmo?', 'Guardar'))) return depois && depois();
     const txt = pg.blocos.filter((b) => !['to_do', 'child_page', 'child_database', 'divider'].includes(b.tipo)).map((b) => (b.tipo.startsWith('heading') ? '## ' : b.tipo.endsWith('list_item') ? '- ' : '') + (b.texto || (b.url || ''))).filter((s) => s.trim()).join('\n\n');
     const check = pg.blocos.filter((b) => b.tipo === 'to_do').map((b) => ({ id: M.uid(), t: b.texto, done: !!b.ok }));
     const de = base ? base.base.nome : 'página';
     const it = M.createItem({ cat: '', type: 'nota', title: pg.titulo, desc: 'Do Notion: ' + de, content: txt, checklist: check, links: pg.url ? [{ id: M.uid(), url: pg.url, label: 'Página no Notion' }] : [], tags: ['notion'] });
     M.save(); SFX.play('coin');
-    M.confirm(`📥 “${pg.titulo}” foi guardado na Biblioteca, com o link para o Notion. Abrir agora?`, 'Abrir').then((ok) => { if (ok) { if (M.modalOpen()) M.closeModal(); M.openItem(it.id); } });
+    M.confirm(`📥 “${pg.titulo}” foi guardado na Biblioteca, com o link para o Notion. Abrir agora?`, 'Abrir').then((ok) => { if (ok) { if (M.modalOpen()) M.closeModal(); M.openItem(it.id); } else if (depois) depois(); });
   }
 
   const pedeTexto = (titulo, valor, rot) => new Promise((ok) => {
@@ -363,7 +383,7 @@
 
   async function desconectar() {
     if (!(await M.confirm('Desconectar o Notion deste MyLoot? O segredo sai deste computador. Suas páginas no Notion não mudam.', 'Desconectar'))) return;
-    try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ notion: null }) }); lista = base = pagina = null; erro = ''; if (M.intStatus) await M.intStatus(true); M.render(); M.toast('Notion desconectado'); }
+    try { await M.api('/api/int/salvar', { method: 'POST', body: JSON.stringify({ notion: null }) }); M.notionReset(); if (M.intStatus) await M.intStatus(true); M.render(); M.toast('Notion desconectado'); }
     catch (e) { M.toast('⚠️ ' + e.message); }
   }
 })();

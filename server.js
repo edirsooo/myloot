@@ -159,6 +159,8 @@ function migrate(raw) {
   const out = Object.assign({}, d, raw);
   out.settings = Object.assign({}, d.settings, raw.settings || {});
   out.settings.drive = Object.assign({}, d.settings.drive, (raw.settings || {}).drive || {});
+  // menus da pessoa (ordem, ocultos e os 3 atalhos do celular): só ids de página, para nenhum backup de fora pôr HTML na barra
+  for (const k of ['bnav', 'navOrdem', 'navOculto']) if (k in out.settings) { const L = Array.isArray(out.settings[k]) ? out.settings[k].filter((x) => typeof x === 'string' && /^[a-z]{1,12}$/.test(x)).slice(0, 40) : []; if (k === 'bnav' && L.length !== 3) delete out.settings[k]; else out.settings[k] = L; }
   out.game = Object.assign({}, d.game, raw.game || {});
   out.game.streak = Object.assign({}, d.game.streak, out.game.streak || {});
   for (const k of ['categories', 'items', 'tasks', 'trash', 'clients', 'fin', 'habits', 'goals', 'tools', 'cliCols', 'pastas', 'homeWidgets', ...OPCS]) out[k] = Array.isArray(out[k]) ? out[k].filter((o) => o && typeof o === 'object' && !Array.isArray(o)) : [];
@@ -185,8 +187,15 @@ function migrate(raw) {
     c.status = String(c.status).slice(0, 100); // o id da coluna passa por sid() em limparIds
   });
   // pastas da Biblioteca (em níveis): parent aponta para outra pasta; pasta que sumiu ou laço vira raiz
+  { const vistos = new Set(); out.pastas = out.pastas.filter((o) => { const id = sid(String(o.id || '')); if (!id || !vistos.has(id)) { if (id) vistos.add(id); return true; } return false; }); } // id repetido: fica a primeira
   out.pastas = out.pastas.slice(0, 2000).map((o, i) => ({ id: sid(o.id || uid()), name: String(o.name || 'Pasta').replace(/[<>"'&]/g, '').slice(0, 60) || 'Pasta', parent: o.parent ? sid(String(o.parent).slice(0, 100)) : '', ord: Number.isFinite(+o.ord) ? +o.ord : i, fechada: !!o.fechada, updated: o.updated || 0 }));
-  { const ids = new Set(out.pastas.map((o) => o.id)); const sobe = (o) => { const v = new Set([o.id]); let p = o.parent; while (p) { if (!ids.has(p) || v.has(p)) return false; v.add(p); p = (out.pastas.find((x) => x.id === p) || {}).parent; } return true; }; out.pastas.forEach((o) => { if (!sobe(o)) o.parent = ''; }); }
+  { // índice por id e resultado guardado: árvore funda (ou de backup de fora) não deixa a leitura lenta
+    const por = new Map(out.pastas.map((o) => [o.id, o])), bom = new Map();
+    // só a pasta que fecha o laço (ou que aponta para pasta que sumiu) vira raiz; as de baixo continuam dentro dela
+    // devolve '' se o caminho chega à raiz; senão, a pasta cujo elo está errado (fecha o laço ou aponta para pasta que sumiu)
+    const sobe = (o) => { const cam = []; let x = o; while (x) { if (bom.has(x.id)) { cam.forEach((c) => bom.set(c, true)); return ''; } if (cam.includes(x.id)) return cam[cam.length - 1]; cam.push(x.id); if (!x.parent) { cam.forEach((c) => bom.set(c, true)); return ''; } const y = por.get(x.parent); if (!y) return x.id; x = y; } return ''; };
+    out.pastas.forEach((o) => { let corta; while ((corta = sobe(o))) por.get(corta).parent = ''; });
+  }
   // colunas do funil de clientes: a pessoa cria, renomeia, reordena e apaga (quadro estilo Trello)
   if (!out.cliCols.length) out.cliCols = CLI_COLS.map((o) => Object.assign({}, o));
   out.cliCols = out.cliCols.slice(0, 40).map((o, i) => ({
@@ -201,7 +210,8 @@ function migrate(raw) {
     it.content = it.content || '';
     it.checklist = Array.isArray(it.checklist) ? it.checklist : [];
     it.links = Array.isArray(it.links) ? it.links : [];
-    it.attachments = Array.isArray(it.attachments) ? it.attachments : [];
+    it.attachments = Array.isArray(it.attachments) ? it.attachments.filter((a) => a && typeof a === 'object') : [];
+    it.attachments.forEach((a) => { a.id = sid(String(a.id || uid()).slice(0, 100)); }); // o id do anexo vai para data-id na ficha
     it.tags = Array.isArray(it.tags) ? it.tags : [];
     it.status = String(it.status || 'ver').slice(0, 100); // id de db.itemStatus (passa por sid() em limparIds)
     it.type = umDe(it.type, TIPOS, 'nota');
@@ -515,7 +525,7 @@ const https = require('https');
 const INT = require('./integracoes');
 const UPD = require('./atualizar');
 const EXP = require('./exportar');
-const REDE = require('./celular')(DATA);
+const REDE = require('./celular')(); // só o próprio computador (o acesso pelo celular saiu na 2.28)
 const CNX = require('./conexoes')(DATA);
 const SECRETS = path.join(DATA, 'segredos.json');
 const AI_MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'];
@@ -773,7 +783,15 @@ async function callOpenAiApi(key, system, user) {
 // ---------- título de um link (a captura rápida guardava só o domínio) ----------
 // Só endereços públicos (nada de 127.0.0.1, rede de casa ou roteador), lê no máximo 96 KB e desiste em 5 s.
 const dns = require('dns');
-const ipPrivado = (ip) => /^(127\.|10\.|192\.168\.|169\.254\.|0\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)/.test(ip) || /^(::1|::|f[cd]|fe80|::ffff:(127|10|192\.168)\.)/i.test(ip);
+// IPv4 escrito dentro de IPv6 (::ffff:7f00:1, ::7f00:1) vira o formato com pontos antes de conferir
+const ipNormal = (ip) => { ip = String(ip).replace(/^\[|\]$/g, '').toLowerCase(); const m = /^(?:0{0,4}:){0,5}(?:ffff:)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(ip); if (m && ip.includes('::')) { const a = parseInt(m[1], 16), b = parseInt(m[2], 16); return [a >> 8, a & 255, b >> 8, b & 255].join('.'); } return ip.replace(/^(?:0{0,4}:){0,5}(?:ffff:)?(?=\d+\.\d+\.\d+\.\d+$)/, '').replace(/^::(?=\d+\.)/, ''); };
+const ipPrivado = (ip) => { ip = ipNormal(ip); return /^(127\.|10\.|192\.168\.|169\.254\.|0\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|2(2[4-9]|[3-5]\d)\.)/.test(ip) || /^(::1?$|f[cd]|fe[89ab])/i.test(ip); };
+// a conexão usa exatamente o endereço que passou na checagem (sem uma segunda consulta ao DNS que poderia apontar para a rede de casa)
+const lookupPublico = (host, opts, cb) => dns.lookup(host, { all: true }, (e, ends) => {
+  if (e) return cb(e);
+  if (!ends.length || ends.some((x) => ipPrivado(x.address))) return cb(Object.assign(new Error('endereço interno'), { code: 'EPRIVADO' }));
+  return opts && opts.all ? cb(null, ends) : cb(null, ends[0].address, ends[0].family);
+});
 const entidades = (t) => t.replace(/&(#x?[0-9a-f]+|amp|lt|gt|quot|apos|nbsp);/gi, (m, c) => {
   const k = c.toLowerCase(); if (k === 'amp') return '&'; if (k === 'lt') return '<'; if (k === 'gt') return '>'; if (k === 'quot') return '"'; if (k === 'apos') return "'"; if (k === 'nbsp') return ' ';
   const n = k[1] === 'x' ? parseInt(k.slice(2), 16) : parseInt(k.slice(1), 10); return n > 0 && n < 0x110000 ? String.fromCodePoint(n) : m;
@@ -782,10 +800,10 @@ function tituloDe(url, voltas = 0) {
   return new Promise((ok) => {
     let u; try { u = new URL(url); } catch (_) { return ok(''); }
     if (!/^https?:$/.test(u.protocol) || voltas > 4) return ok('');
-    dns.lookup(u.hostname, { all: true }, (e, ends) => {
-      if (e || !ends.length || ends.some((x) => ipPrivado(x.address))) return ok('');
+    if (require('net').isIP(u.hostname.replace(/^\[|\]$/g, '')) && ipPrivado(u.hostname)) return ok(''); // endereço numérico: confere aqui (não passa pelo DNS)
+    {
       const mod = u.protocol === 'https:' ? https : http;
-      const rq = mod.get(u, { headers: { 'User-Agent': 'Mozilla/5.0 (MyLoot; título do link)', Accept: 'text/html', 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.5' }, timeout: 5000 }, (rs) => {
+      const rq = mod.get(u, { lookup: lookupPublico, headers: { 'User-Agent': 'Mozilla/5.0 (MyLoot; título do link)', Accept: 'text/html', 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.5' }, timeout: 5000 }, (rs) => {
         if ([301, 302, 303, 307, 308].includes(rs.statusCode) && rs.headers.location) { rs.resume(); return ok(tituloDe(new URL(rs.headers.location, u).href, voltas + 1)); }
         if (rs.statusCode !== 200 || !/html/i.test(rs.headers['content-type'] || '')) { rs.resume(); return ok(''); }
         const parts = []; let n = 0;
@@ -799,7 +817,7 @@ function tituloDe(url, voltas = 0) {
         rs.on('end', fim); rs.on('error', () => ok(''));
       });
       rq.on('timeout', () => rq.destroy()); rq.on('error', () => ok(''));
-    });
+    }
   });
 }
 
@@ -911,6 +929,15 @@ setTimeout(lembretesSeguro, 5000);
 // Arquivo novo num item do pacote (ex.: a videoaula ao lado do PDF) entra uma vez só: db.packFiles guarda o que já foi
 // oferecido, então se a pessoa apagar o anexo ele não volta. Quem instalou antes dessa lista existir começa com os anexos
 // que já tem e os PDFs (o que vinha no pacote até então).
+// impressão digital rápida de um arquivo (tamanho + 64 KB do começo, do meio e do fim): não lê vídeos inteiros a cada abertura
+function digital(f) {
+  const fd = fs.openSync(f, 'r');
+  try {
+    const n = fs.fstatSync(fd).size, h = crypto.createHash('sha1').update(String(n)), b = Buffer.alloc(65536);
+    for (const o of [0, Math.max(0, Math.floor(n / 2) - 32768), Math.max(0, n - 65536)]) h.update(b.subarray(0, fs.readSync(fd, b, 0, 65536, o)));
+    return h.digest('hex').slice(0, 20);
+  } finally { fs.closeSync(fd); }
+}
 function atualizarArquivosDoPacote(db, p, dir) {
   let mudou = false;
   db.packFiles = Array.isArray(db.packFiles) ? db.packFiles : [];
@@ -919,7 +946,7 @@ function atualizarArquivosDoPacote(db, p, dir) {
     if (!item) return;
     item.attachments = Array.isArray(item.attachments) ? item.attachments : [];
     const chave = (a) => p.id + '-' + i + '|' + a;
-    if (!db.packFiles.some((k) => k.startsWith(p.id + '-' + i + '|'))) {
+    if (!db.packFilesIni && !db.packFiles.some((k) => k.startsWith(p.id + '-' + i + '|'))) { // só na primeira abertura depois de existir a lista
       for (const a of it.arquivos || []) if (/\.pdf$/i.test(a) || item.attachments.some((x) => x.name === a)) db.packFiles.push(chave(a));
       mudou = true;
     }
@@ -929,19 +956,28 @@ function atualizarArquivosDoPacote(db, p, dir) {
       const file = uid() + '-' + safeName(a);
       try {
         fs.copyFileSync(src, path.join(ANX, file));
-        item.attachments.push({ id: uid(), name: a, file, size: fs.statSync(src).size, mime: MIME[path.extname(a).toLowerCase()] || '' });
+        item.attachments.push({ id: uid(), name: a, file, size: fs.statSync(src).size, mime: MIME[path.extname(a).toLowerCase()] || '', pack: chave(a), packH: digital(src) });
         db.packFiles.push(chave(a)); item.updated = Date.now(); mudou = true;
       } catch (_) {}
     }
     for (const a of it.arquivos || []) {
       const src = path.join(dir, path.basename(p.pasta || ''), path.basename(a));
-      const anexo = item.attachments.find((x) => x.name === a);
+      // só o anexo que veio do pacote (marcado com a chave; os antigos, pelo nome e sem marca de outro lugar)
+      const anexo = item.attachments.find((x) => x.pack === chave(a)) || item.attachments.find((x) => x.name === a && !x.pack); // sem marca (instalado antes da 2.28 ou estava na Lixeira na migração): pelo nome, como na 2.27
       if (!anexo || !fs.existsSync(src)) continue;
       const dst = path.join(ANX, path.basename(anexo.file || ''));
       try {
-        const novo = fs.statSync(src).size;
-        if (fs.existsSync(dst) && fs.statSync(dst).size === novo) continue;
-        fs.copyFileSync(src, dst); anexo.size = novo; mudou = true;
+        const hs = digital(src);
+        const igual = anexo.packH ? anexo.packH === hs : fs.existsSync(dst) && digital(dst) === hs;
+        if (igual) {
+          if (!fs.existsSync(dst) || fs.statSync(dst).size !== fs.statSync(src).size) fs.copyFileSync(src, dst); // sumiu ou ficou cortado no disco: volta do pacote com o mesmo nome
+          if (anexo.packH !== hs || anexo.pack !== chave(a)) { anexo.pack = chave(a); anexo.packH = hs; mudou = true; }
+          continue;
+        }
+        // versão nova do arquivo: vai com outro nome (a miniatura e os outros computadores percebem a troca); a cópia antiga fica
+        const file = uid() + '-' + safeName(a);
+        fs.copyFileSync(src, path.join(ANX, file));
+        Object.assign(anexo, { file, size: fs.statSync(src).size, pack: chave(a), packH: hs }); item.updated = Date.now(); mudou = true;
       } catch (_) {}
     }
   });
@@ -965,11 +1001,11 @@ function applyPacks(db) {
     (p.itens || []).forEach((it, i) => {
       const attachments = [];
       for (const a of it.arquivos || []) {
-        db.packFiles.push(p.id + '-' + i + '|' + a);
+        const k = p.id + '-' + i + '|' + a; // marca como entregue só depois de copiar: se falhar, a próxima abertura tenta de novo
         const src = path.join(dir, path.basename(p.pasta || ''), path.basename(a));
         if (!fs.existsSync(src)) continue;
         const file = uid() + '-' + safeName(a);
-        try { fs.copyFileSync(src, path.join(ANX, file)); attachments.push({ id: uid(), name: a, file, size: fs.statSync(src).size, mime: MIME[path.extname(a).toLowerCase()] || '' }); } catch (_) {}
+        try { fs.copyFileSync(src, path.join(ANX, file)); attachments.push({ id: uid(), name: a, file, size: fs.statSync(src).size, mime: MIME[path.extname(a).toLowerCase()] || '', pack: k, packH: digital(src) }); db.packFiles.push(k); } catch (_) {}
       }
       db.items.push({ id: p.id + '-' + i, type: it.tipo || 'estudo', title: it.titulo || '', desc: it.descricao || '', content: it.conteudo || '', links: it.links || [], attachments,
         checklist: (it.checklist || []).map((t, k) => ({ id: p.id + '-' + i + '-' + k, t, done: false })), modelo: !!it.modelo, client: '',
@@ -978,13 +1014,14 @@ function applyPacks(db) {
     db.packs.push(p.id);
     changed = true;
   }
+  if (!db.packFilesIni) { db.packFilesIni = true; changed = true; }
   return changed;
 }
 
 // ---------- rotas ----------
 // o que só o próprio computador pode fazer (o celular usa e mexe nos dados, mas não desliga, não troca chaves nem abre coisas no PC)
 const EXECUTAVEL = /\.(bat|cmd|com|exe|msi|msp|scr|pif|lnk|url|hta|js|jse|vbs|vbe|wsf|wsh|ps1|psm1|reg|cpl|jar|appref-ms|sh|command|app|desktop|run|bin)$/i;
-const SO_PC = ['/api/shutdown', '/api/open', '/api/reveal', '/api/abrir-pasta', '/api/atualizacao/aplicar', '/api/rede', '/api/rede/trocar', '/api/ai/key', '/api/int/salvar', '/api/restore', '/api/restore/completo', '/api/backups', '/api/backups/restaurar', '/api/drive/sync', '/api/nuvem', '/api/nuvem/sync', '/api/notify-test', '/api/conexoes', '/api/conexoes/mudar', '/api/conexoes/apagar', '/api/int/notion/paginas', '/api/int/trello/listas', '/api/drive/find'];
+const SO_PC = ['/api/shutdown', '/api/open', '/api/reveal', '/api/abrir-pasta', '/api/atualizacao/aplicar', '/api/rede', '/api/rede/trocar', '/api/ai/key', '/api/int/salvar', '/api/restore', '/api/restore/completo', '/api/backups', '/api/backups/restaurar', '/api/drive/sync', '/api/nuvem', '/api/nuvem/sync', '/api/notify-test', '/api/conexoes', '/api/conexoes/mudar', '/api/conexoes/apagar', '/api/int/notion/paginas', '/api/int/trello/listas', '/api/drive/find', '/api/exportar-md'];
 
 async function app(req, res) {
   try {
@@ -994,25 +1031,8 @@ async function app(req, res) {
     const p = decodeURIComponent(u.pathname);
     const pc = REDE.loopback(req);
 
-    // ----- entrada do celular (QR Code ou código de 6 números) -----
-    if (p === '/entrar') {
-      if (pc || REDE.autorizado(req)) { res.writeHead(302, { Location: '/' }); return res.end(); }
-      const c = u.searchParams.get('c');
-      if (req.method === 'GET' && c && REDE.tokenOk(c)) { res.writeHead(302, { Location: '/', 'Set-Cookie': REDE.setCookie() }); return res.end(); }
-      if (req.method === 'POST') {
-        const pin = new URLSearchParams((await readBody(req, 4096)).toString('utf8')).get('pin');
-        const r = REDE.tentar(req, pin);
-        if (r === 'ok') { res.writeHead(302, { Location: '/', 'Set-Cookie': REDE.setCookie() }); return res.end(); }
-        return send(res, 200, REDE.paginaEntrar(r === 'travado' ? 'Muitas tentativas. Espere 15 minutos.' : 'Código errado. Confira no computador.'), 'text/html; charset=utf-8');
-      }
-      return send(res, 200, REDE.paginaEntrar(c ? 'Esse QR Code é antigo. Digite o código atual.' : ''), 'text/html; charset=utf-8');
-    }
-    if (!REDE.autorizado(req)) {
-      // arquivos do visual podem carregar (ícone, manifesto); o resto pede o código
-      if (/^\/(icon\.png|bau\.png|manifest\.json|icon-\d+\.png)$/.test(p)) return serveFile(req, res, path.join(PUB, p));
-      if (p.startsWith('/api/')) return send(res, 401, { erro: 'Entre com o código do MyLoot.' });
-      res.writeHead(302, { Location: '/entrar' }); return res.end();
-    }
+    // só o próprio computador usa o MyLoot (nem outro aparelho da rede, nem atrás de proxy)
+    if (!REDE.autorizado(req)) return send(res, 401, { erro: 'O MyLoot só abre no computador onde está instalado.' });
 
     // ----- Conexões: outro programa deste computador manda itens (só acrescenta; exige o código da conexão) -----
     if (p === '/api/entrada' || p === '/api/entrada/ping') {
@@ -1045,13 +1065,6 @@ async function app(req, res) {
       if (p === '/api/conexoes' && req.method === 'POST') { const b = JSON.parse((await readBody(req, 4096)).toString('utf8') || '{}'); return send(res, 200, CNX.criar(b.nome)); }
       if (p === '/api/conexoes/mudar' && req.method === 'POST') { const b = JSON.parse((await readBody(req, 4096)).toString('utf8') || '{}'); return send(res, 200, CNX.mudar(b.id, b) || { erro: 'não achei' }); }
       if (p === '/api/conexoes/apagar' && req.method === 'POST') { const b = JSON.parse((await readBody(req, 4096)).toString('utf8') || '{}'); CNX.apagar(b.id); return send(res, 200, { ok: true }); }
-      // ----- celular / rede -----
-      if (p === '/api/rede' && req.method === 'GET') return send(res, 200, REDE.status(PORT));
-      if (p === '/api/rede' && req.method === 'POST') {
-        const b = JSON.parse((await readBody(req)).toString('utf8') || '{}');
-        REDE.ligar(b.on); send(res, 200, REDE.status(PORT)); setTimeout(ouvir, 200); return;
-      }
-      if (p === '/api/rede/trocar' && req.method === 'POST') { REDE.trocar(); return send(res, 200, REDE.status(PORT)); }
       // ----- exportar, backup com senha, pasta do cliente -----
       if (p === '/api/exportar-md') {
         const { db } = readDB();
@@ -1091,7 +1104,7 @@ async function app(req, res) {
         if (!L.length || JSON.stringify(L[0].dados) !== j) { L.unshift({ em: Date.now(), dados: b.dados }); L = L.slice(0, 10); fs.mkdirSync(dir, { recursive: true }); gravarArquivo(f, JSON.stringify(L)); }
         return send(res, 200, { ok: true, n: L.length });
       }
-      if (p === '/api/recuperado') { const r = RECUPERADO; if (req.method === 'POST') RECUPERADO = null; return send(res, 200, { recuperado: r }); }
+      if (p === '/api/recuperado') { const r = RECUPERADO; if (req.method === 'POST' && !pc) return send(res, 403, { erro: 'Só no computador.' }); if (req.method === 'POST') RECUPERADO = null; return send(res, 200, { recuperado: r }); }
       if (p === '/api/db' && req.method === 'PUT') {
         // quem salva manda a REV que leu; se outro aparelho salvou no meio, devolve 409 e o app junta as mudanças
         const rv = req.headers['x-rev'];
@@ -1286,7 +1299,7 @@ async function app(req, res) {
           if (p === '/api/trello/eu' && req.method === 'GET') return send(res, 200, await INT.trelloEu(cfg));
           if (p === '/api/trello/quadros' && req.method === 'GET') return send(res, 200, { quadros: await INT.trelloQuadros(cfg) });
           if (p === '/api/trello/quadro' && req.method === 'GET') return send(res, 200, await INT.trelloQuadro(cfg, u.searchParams.get('id')));
-          if (p === '/api/trello/capa' && req.method === 'GET') { const r = await INT.trelloCapa(cfg, u.searchParams.get('id')); res.writeHead(200, { 'Content-Type': r.tipo, 'Content-Length': r.buf.length, 'Cache-Control': 'private, max-age=604800', 'X-Content-Type-Options': 'nosniff' }); return res.end(r.buf); }
+          if (p === '/api/trello/capa' && req.method === 'GET') { const r = await INT.trelloCapa(cfg, u.searchParams.get('id')); res.writeHead(200, { 'Content-Type': r.tipo, 'Content-Length': r.buf.length, 'Cache-Control': 'private, no-cache', 'X-Content-Type-Options': 'nosniff' }); return res.end(r.buf); } // o navegador sempre confere: depois de trocar de conta, nada fica guardado nele
           if (p === '/api/trello/cartao' && req.method === 'GET') return send(res, 200, await INT.trelloCartao(cfg, u.searchParams.get('id')));
           if (p === '/api/trello/acao' && req.method === 'POST') { const b = JSON.parse((await readBody(req, 2e5)).toString('utf8') || '{}'); const r = await INT.trelloAcao(cfg, b); return send(res, 200, { ok: true, id: (r && r.id) || '' }); }
           return send(res, 404, { erro: 'rota' });
@@ -1307,15 +1320,36 @@ async function app(req, res) {
             return send(res, 200, { listas: await INT.trelloListas(b.key || o.key || '', b.token || o.token || '') });
           }
           if (p === '/api/int/salvar') {
-            Object.assign(x, readSecrets(true));
+            const muda = {}, antes = readSecrets(true);
             for (const k of ['notion', 'trello']) {
               if (!(k in b)) continue;
-              if (b[k] === null) { delete x[k]; continue; }
-              const novo = Object.assign({}, x[k] || {});
-              for (const [kk, v] of Object.entries(b[k])) if (v) novo[kk] = String(v);
-              x[k] = novo;
+              if (b[k] === null) { muda[k] = { velho: antes[k] || {}, novo: null }; continue; }
+              const velho = antes[k] || {}, novo = Object.assign({}, velho);
+              for (const [kk, v] of Object.entries(b[k] || {})) if (v) novo[kk] = String(v);
+              // chave nova só é guardada se funcionar (uma chave errada não derruba a que já estava ligada);
+              // trocou de conta: o destino antigo (lista ou página da outra conta) sai, a menos que venha um novo junto
+              const trocou = k === 'trello' ? (novo.key !== velho.key || novo.token !== velho.token) : novo.token !== velho.token;
+              if (trocou) {
+                try {
+                  if (k === 'trello') { await INT.trelloEu(novo); if ((b[k] || {}).alvo) await INT.trelloListaOk(novo, b[k].alvo); }
+                  else { await INT.notionEu(novo.token); if ((b[k] || {}).alvo) await INT.notionPaginaOk(novo.token, b[k].alvo); }
+                }
+                catch (e) { return send(res, 400, { erro: (k === 'trello' ? 'O Trello' : 'O Notion') + ' recusou a chave nova (nada foi trocado): ' + e.message }); }
+                // sem destino novo: o antigo fica se a credencial nova também enxerga ele (mesma conta renovada); senão sai
+                if (!(b[k] || {}).alvo && novo.alvo) {
+                  try { if (k === 'trello') await INT.trelloListaOk(novo, novo.alvo); else await INT.notionPaginaOk(novo.token, novo.alvo); }
+                  catch (e) { if (/Não achei|not.?found|object_not_found|unauthorized|restricted|\b40[134]\b|sem acesso|não tem acesso/i.test(e.message || '')) { delete novo.alvo; delete novo.alvoNome; } } // só tira se a conta nova de fato não enxerga (falha de rede mantém)
+                }
+              }
+              muda[k] = { velho, novo };
             }
-            writeSecrets(x);
+            // a validação leva alguns segundos: grava em cima do arquivo lido AGORA, e só se a conta não mudou nesse meio tempo
+            const atual = readSecrets(true);
+            for (const [k, v] of Object.entries(muda)) {
+              if (JSON.stringify(atual[k] || {}) !== JSON.stringify(v.velho)) return send(res, 409, { erro: 'As chaves mudaram enquanto eu conferia. Tente de novo.' });
+              if (v.novo === null) delete atual[k]; else atual[k] = v.novo;
+            }
+            writeSecrets(atual);
             return send(res, 200, { ok: true });
           }
           const m = p.match(/^\/api\/int\/(notion|trello)\/enviar$/);
@@ -1379,7 +1413,7 @@ async function app(req, res) {
   }
 }
 
-// escuta só no próprio PC ou, com "Usar no celular" ligado, na rede de casa (troca sem reiniciar)
+// escuta só no próprio PC (127.0.0.1): ninguém da rede alcança o MyLoot
 process.on('uncaughtException', (e) => { logErro('uncaughtException: ' + (e && e.stack || e)); });
 process.on('unhandledRejection', (e) => { logErro('unhandledRejection: ' + (e && e.stack || e)); });
 let server = null, primeira = true;
@@ -1395,10 +1429,9 @@ function ouvir() {
     console.error(e); process.exit(1);
   });
   const ligar = () => server.listen(PORT, host, () => {
-    if (!primeira) return console.log(host === '0.0.0.0' ? 'Celular liberado na rede de casa.' : 'Só este computador acessa agora.');
+    if (!primeira) return;
     primeira = false;
     console.log(`MyLoot rodando em http://127.0.0.1:${PORT}  (feche esta janela para desligar)`);
-    if (host === '0.0.0.0') console.log('Celular: ' + REDE.ips().map((i) => `http://${i}:${PORT}`).join('  '));
     const { db, fresh } = readDB();
     const novos = applyPacks(db);
     if (fresh || novos) writeDB(db); else dailyBackup();

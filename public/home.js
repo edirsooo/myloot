@@ -207,11 +207,13 @@
     const c = { today, hi, date, sum, sumFin, sumBk, open, late, now, dayXp, pct };
 
     const cel = celular(), todos = lista();
-    const L = todos.filter((w) => (org || !w.oculto) && !(cel ? w.soPc : w.soCel));
+    // no Organizar aparecem todos (inclusive os "só no celular" quando se está no PC, e vice-versa), apagadinhos, para dar para voltar atrás
+    const foraAqui = (w) => (cel ? w.soPc : w.soCel);
+    const L = todos.filter((w) => org || (!w.oculto && !foraAqui(w)));
     const corpo = L.map((w, i) => {
       const d = W[w.tipo];
       let html; try { html = d.html(w, c); } catch (e) { html = `<div class="panel">${vazio('⚠️ Este widget não abriu: ' + esc(e.message))}</div>`; }
-      return `<section class="wdg t-${w.tipo} tam-${w.tam}${w.alto === 'duplo' ? ' duplo' : ''}${d.topo ? ' home-topo' : ''}${w.oculto ? ' oculto' : ''}" data-w="${esc(w.id)}">${org ? barra(w, i, L.length) : ''}${html}</section>`;
+      return `<section class="wdg t-${w.tipo} tam-${w.tam}${w.alto === 'duplo' ? ' duplo' : ''}${d.topo ? ' home-topo' : ''}${w.oculto || foraAqui(w) ? ' oculto' : ''}" data-w="${esc(w.id)}">${org ? barra(w, i, L.length) : ''}${html}</section>`;
     }).join('');
     v.innerHTML = `<div class="home-acoes${org ? ' on' : ''}">${org
       ? `<span class="home-org-t">🧩 Organizando o Início ${M.hint('Arraste pelo ⠿ (ou use ↑ ↓) para mudar a ordem. P, M, G e ▭ mudam o tamanho. ⚙️ tem os ajustes de cada um, 🙈 oculta sem perder e ✕ tira do Início (dá para pôr de volta em ＋ Adicionar). Tudo tem Desfazer.')}</span><span class="grow"></span><button class="btn ghost sm" id="hPad">↺ Voltar ao padrão</button><button class="btn ghost sm" id="hAdd">＋ Adicionar widget</button><button class="btn sm" id="hOrg">✔ Pronto</button>`
@@ -249,8 +251,9 @@
     // ----- bloco de notas: salva sozinho (espera a pessoa parar de digitar) -----
     $$('[data-nota]', v).forEach((ta) => {
       let t = 0;
-      const grava = () => { clearTimeout(t); const w = M.db.homeWidgets.find((x) => x.id === ta.dataset.nota); if (!w || (w.cfg.texto || '') === ta.value) return; w.cfg = Object.assign({}, w.cfg, { texto: ta.value.slice(0, 4000) }); w.updated = Date.now(); M.save(); };
-      ta.oninput = () => { clearTimeout(t); t = setTimeout(grava, 900); };
+      // só grava o que a pessoa digitou aqui (focar e sair não manda um texto velho por cima da edição de outro aparelho)
+      const grava = () => { clearTimeout(t); if (!ta.dataset.sujo) return; delete ta.dataset.sujo; const w = M.db.homeWidgets.find((x) => x.id === ta.dataset.nota); if (!w || (w.cfg.texto || '') === ta.value) return; w.cfg = Object.assign({}, w.cfg, { texto: ta.value.slice(0, 4000) }); w.updated = Date.now(); M.save(); };
+      ta.oninput = () => { ta.dataset.sujo = '1'; clearTimeout(t); t = setTimeout(grava, 900); };
       ta.onblur = grava;
     });
 
@@ -302,7 +305,7 @@
     if (a === 'rm') return tirar(w);
   }
   function move(w, d) {
-    const cel = celular(), L = lista().filter((x) => (org || !x.oculto) && !(cel ? x.soPc : x.soCel)), i = L.indexOf(w), j = i + d;
+    const cel = celular(), L = lista().filter((x) => org || (!x.oculto && !(cel ? x.soPc : x.soCel))), i = L.indexOf(w), j = i + d; // a mesma lista que aparece na tela
     if (i < 0 || j < 0 || j >= L.length) return;
     const T = lista(), a = T.indexOf(L[i]), b = T.indexOf(L[j]); [T[a], T[b]] = [T[b], T[a]]; reordena(T);
     M.save(); SFX.play('drop'); M.render();
@@ -373,7 +376,7 @@
         ${(d.aj || []).map(campo).join('')}
         <div class="row"><div class="fld"><label for="ajTam">Tamanho</label><select id="ajTam">${TAMS.map(([k, , t]) => `<option value="${k}" ${w.tam === k ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
           <div class="fld"><label for="ajAl">Altura</label><select id="ajAl"><option value="">Normal</option><option value="duplo" ${w.alto === 'duplo' ? 'selected' : ''}>Dupla</option></select></div></div>
-        <div class="fld"><label for="ajOnde">Onde aparece</label><select id="ajOnde"><option value="">No computador e no celular</option><option value="pc" ${w.soPc ? 'selected' : ''}>Só no computador</option><option value="cel" ${w.soCel ? 'selected' : ''}>Só no celular</option></select></div>
+        <div class="fld"><label for="ajOnde">Onde aparece</label><select id="ajOnde"><option value="">Em qualquer tamanho de janela</option><option value="pc" ${w.soPc ? 'selected' : ''}>Só com a janela larga</option><option value="cel" ${w.soCel ? 'selected' : ''}>Só com a janela estreita</option></select></div>
         <div class="row" style="justify-content:flex-end"><button class="btn ghost" id="ajCn" style="flex:none">Cancelar</button><button class="btn" id="ajOk" style="flex:none">✔ Salvar</button></div>
       </div>`, { small: true });
     $('#x', m).onclick = M.closeModal; $('#ajCn', m).onclick = M.closeModal;
