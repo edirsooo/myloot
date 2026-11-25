@@ -152,9 +152,12 @@
     if (sec.id === 'baixar') return { cor: '#ff7e00', parte: 'GRÁTIS · SEM CONTA · CÓDIGO ABERTO', nome: 'Baixar', sub: 'Windows · Mac · Linux', ks: ['claude', 'gpt', 'gemini', 'pinguim', 'coruja', 'slime'] };
     return null;
   }
+  // cada seção anima uma vez só por visita: voltando ou descendo de novo, só troca a música (pedido de 25/11/2026)
+  const jaAnimou = new Set();
   function transicao(sec) {
+    if (jaAnimou.has(sec)) return false;
     const cfg = !quieto() && cfgDe(sec); if (!cfg) return false;
-    anima(cfg); return true;
+    jaAnimou.add(sec); anima(cfg); return true;
   }
 
   // música: uma faixa do app por personagem, como no vídeo; troca com crossfade quando a seção muda
@@ -214,12 +217,20 @@
     if (!dest || !secoes.includes(dest) || dest === ativa) return;
     e.preventDefault();
     const cfg = !quieto() && cfgDe(dest);
-    pulo = { dest, anim: !!cfg };
+    pulo = { dest, anim: !!cfg }; jaAnimou.add(dest); // pelo menu a animação cobre o pulo; depois disso a seção conta como vista
     const vai = () => { scrollTo({ top: dest.getBoundingClientRect().top + scrollY, behavior: 'instant' }); history.replaceState(null, '', '#' + dest.id); confere(); setTimeout(() => { pulo = null; }, 400); };
     if (cfg) { anima(cfg); setTimeout(vai, 260); } else vai();
   });
   addEventListener('resize', () => { if (!rTick) rTick = requestAnimationFrame(confere); });
   confere();
+
+  // número da versão: vem sozinho do versao.json do app no GitHub (sem precisar mexer na página a cada versão)
+  const ver = q('#versao');
+  if (ver) fetch('https://raw.githubusercontent.com/edirsooo/myloot/main/versao.json', { cache: 'no-cache' })
+    .then((r) => (r.ok ? r.json() : null)).then((d) => {
+      const v = d && String(d.versao || '').match(/^(\d+)\.(\d+)/); if (!v) return;
+      ver.textContent = 'v' + v[1] + '.' + v[2]; ver.hidden = false;
+    }).catch(() => {});
 
   // topo com fundo depois de rolar
   const topo = q('#topo'), rola = () => topo.classList.toggle('cheio', scrollY > 20);
