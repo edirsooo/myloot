@@ -6,7 +6,7 @@
 
 Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona no **Windows, Mac e Linux** e abre só no seu computador.
 
-🌐 **Site:** https://myloot.prestesdesign.com.br
+🌐 **Site:** https://myloot.prestesdesign.com.br · ![Versão atual](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fedirsooo%2Fmyloot%2Fmain%2Fversao.json&query=%24.versao&label=vers%C3%A3o&color=ff7e00)
 
 [![Veja o MyLoot 2.15 apresentado pelos mascotes](docs/site/video/apresentacao-2-15.jpg)](docs/site/video/apresentacao-2-15.mp4)
 
@@ -15,6 +15,112 @@ Sem conta, sem nuvem, sem mensalidade. Seus dados ficam numa pasta sua. Funciona
 ⭐ Curtiu? Deixe uma estrela no repositório: ajuda outras pessoas a encontrarem o projeto.
 
 ![Tela inicial](docs/site/telas/inicio.webp)
+
+## Novidades da versão 2.29
+
+- 📘 Guia 06 novo nos Guias de IA: todas as ferramentas da aba Ferramentas com os créditos do plano grátis de cada uma e a conta de quanto rende com várias contas (ex.: 5 Gmails + 10 e-mails)
+- 🧰 Ferramentas com os limites grátis de hoje: Veo 3.1 agora aponta para o Flow (50 créditos por dia), Grok Imagine, Pika, Luma e Udio passaram para Pago, e os cartões mostram quanto rende e o que mudou (ex.: o Suno grátis não baixa mais as músicas)
+- ⚖️ Os cartões também avisam quando o grátis não permite uso comercial (ElevenLabs, Suno, Krea, PixVerse, Recraft)
+
+## Novidades da versão 2.28
+
+- 🛡️ Revisão geral de segurança e confiabilidade: backup de fora não consegue mais pôr código no menu nem nos anexos, e o título de links nunca consulta a sua rede de casa
+- 🔒 Mais privacidade: a opção "Usar no celular" saiu. O MyLoot agora abre só no computador onde está instalado, e nenhum outro aparelho da rede consegue entrar
+- 📋 Trello mais confiável: salvar só a descrição não move mais o cartão, clique duplo não duplica comentário, criar cartão e trocar de quadro ao mesmo tempo não confunde a tela, a capa salva junto com o resto e a ficha fica travada enquanto algo está sendo enviado (nada de envio duplicado)
+- 📓 Notion mais confiável: renomear uma linha não mexe mais na data, o filtro não perde o cursor, cancelar a lixeira devolve a ficha como estava e sair sem salvar sempre avisa antes
+- 🔑 Trocar a chave do Trello ou do Notion: a chave nova só é guardada se funcionar (a antiga continua ligada) e nada da conta anterior fica na tela
+- 🗒️ Bloco de notas do Início não desfaz mais uma edição feita em outro aparelho
+- 📕 Guias atualizados chegam certinho: quando um PDF ou vídeo dos guias muda, o seu MyLoot recebe a versão nova (antes, um arquivo do mesmo tamanho passava batido)
+- 📱 Tela estreita: filtros da Biblioteca recolhidos num botão (os itens aparecem logo), prioridade da tarefa sem corte, e o Organizar Início mostra também os widgets de outro aparelho
+- 🧰 Ferramentas: a ferramenta recém-salva aparece mesmo com o filtro de preço ligado, e o "Nada encontrado" tem botão para limpar os filtros
+
+## Novidades da versão 2.27
+
+- 🎬 Videoaulas nos Guias de IA: cada um dos 5 guias agora tem a sua aula em vídeo (2 a 3 minutos), anexada ao lado do PDF. Abra o guia na Biblioteca e toque no vídeo
+- 📚 As aulas explicam o guia com exemplos e comparações simples: custos do estúdio de Reels, qual IA usar, editar vídeo com o Claude Code, IAs de imagem e vídeo grátis e segundo cérebro com Obsidian
+- 🧹 Se você apagar um vídeo ou PDF dos guias, ele não volta nas próximas atualizações
+
+## Novidades da versão 2.26
+
+- 🧰 Ferramentas: o banco passou de 42 para 80 recomendadas, com Higgsfield, Magnific, Artlist, Meta AI, HappyHorse, FLUX, Pika, PixVerse, HeyGen, CapCut e outras
+- 🎙️ Dois grupos novos: Voz e música (ElevenLabs, Suno, Whisper) e Assistentes de IA (ChatGPT, Claude, Gemini, NotebookLM, Perplexity e mais)
+- 🟢 Etiqueta “é grátis?” em destaque em cada cartão: Grátis, Grátis no PC, Grátis limitado ou Pago, com o detalhe ao lado
+- 🆓 Filtro novo: veja só o que dá para usar sem pagar, ou só o que é grátis de verdade
+- 🧲 Hubs como Higgsfield e Magnific aparecem tanto em vídeo quanto em imagem. Nos Extras entrou o MarkItDown, da Microsoft
+- 📕 Guia 04 (PDF de ferramentas) atualizado com a lista nova
+
+## Novidades da versão 2.25
+
+- 📋 Trello no padrão do Trello: listas com a mesma largura (o título quebra em linhas), cartões compactos e capas com imagem aparecendo, como no quadro original
+- 🔄 Sincronização sozinha: o que muda no Trello aparece no MyLoot a cada 30 segundos, sem a tela pular. O que você muda aqui vai na hora para o Trello
+- 🛠️ Mais controle: mudar a ordem das listas, mandar o cartão para o começo ou o fim, marcar como concluído pelo menu e desfazer um arquivamento
+- 🗂️ Ficha do cartão mais completa: membros, cor da capa, novo checklist, apagar item e anexar link. Só o que você mudou é enviado, e o MyLoot avisa se o cartão mudou no Trello enquanto você editava
+- ⚡ Filtro instantâneo e, se a internet cair ao salvar, o que você escreveu continua na ficha
+
+## Novidades da versão 2.24
+
+- 📓 Notion dentro do MyLoot: nova tela Notion no menu. Veja as suas bases como quadro (arraste entre os status) ou tabela, abra as páginas, marque tarefas, acrescente texto e crie linhas e subpáginas
+- 🗂️ Abra uma linha do Notion para mudar título, status, etiquetas, data, caixinhas e links, sem sair do MyLoot. “Guardar no MyLoot” traz a página para a Biblioteca
+- 🔑 Passo a passo para cada pessoa conectar o próprio Notion. O segredo fica só no seu computador. Use o Trello, o Notion ou os dois
+- 📋 Trello arrumado: os cartões não ficam mais espremidos nas listas longas, capas coloridas aparecem como no Trello e o quadro abre mais leve (sem os cartões de listas arquivadas)
+- 🗂️ Ficha do cartão do Trello: checklist legível, campo de prazo no tema escuro e, ao trocar de lista, o cartão vai para o fim da lista nova
+
+## Novidades da versão 2.23.1
+
+- 🧭 Novo quadro no Início: “Para que serve cada tela”, com Biblioteca, Tarefas, Rotina, Calendário e Clientes explicados em uma linha. Toque para ir; “Entendi” esconde
+- 📱 Celular: o botão ← do topo agora sempre leva a algum lugar (sem tela anterior, volta ao Início) e some quando não há para onde voltar
+- 📱 Celular: o ? do tutorial ficou mais limpo, sem o círculo grande, e o contorno laranja não fica mais preso depois de tocar num botão
+- ⌨️ Celular: ao entrar em Tarefas o teclado não abre mais sozinho cobrindo a tela
+- 📕 Biblioteca: a prévia dos PDFs mostra o título da capa (antes as capas escuras pareciam todas iguais) e nunca mais aparece imagem quebrada enquanto a prévia é feita
+- 🕸️ Mapa de conexões: não fica mais em branco no iPhone depois de usar o app por um tempo
+
+## Novidades da versão 2.23
+
+- 📋 Trello dentro do MyLoot: nova tela Trello no menu com os seus quadros, listas e cartões do jeitinho do app. Arraste cartões entre listas, crie cartões e listas, renomeie e arquive
+- 🗂️ Abra um cartão para mudar nome, lista, prazo, etiquetas e descrição, marcar itens do checklist e comentar, sem sair do MyLoot
+- 📥 “Guardar no MyLoot”: o cartão do Trello vira uma nota na Biblioteca, com checklist e link para o cartão
+- 🔑 Passo a passo para cada pessoa conectar o próprio Trello, com o botão “Gerar token”. A chave fica só no seu computador
+
+## Novidades da versão 2.22.2
+
+- 📕 PDF no cartão agora é uma miniatura da 1ª página, criada uma vez só e guardada: a Biblioteca fica leve mesmo com muitos PDFs
+- 👁️ O botão Ver dos anexos abre e fecha: clique de novo (ou em “Fechar prévia”) e a prévia volta a ficar pequena
+
+## Novidades da versão 2.22.1
+
+- 🖼️ Prévia dos anexos no cartão da Biblioteca: imagem, vídeo, a primeira página do PDF ou o começo do texto (.txt e .md) aparecem antes de abrir a ficha. Na Lista e em Pastas vira uma miniatura. Dá para desligar no botão “🖼️ Prévias”
+- ⤢ Ficha minimizada que volta agora segue a sua escolha atual de Expandir
+
+## Novidades da versão 2.22
+
+- 📁 Pastas na Biblioteca: crie pastas dentro de pastas, em quantos níveis quiser, recolha e expanda cada uma (ou todas de uma vez) e arraste itens e pastas para organizar. A Categoria continua igual
+- 🕸️ Mapa na Biblioteca: veja os itens como no grafo do Obsidian, ligados por etiqueta, categoria, pasta ou quando um cita o título do outro (escreva [[Nome do item]]). Respeita os filtros
+- ⤢ Expandir a caixa de Conteúdo: para quem escreve muito, a ficha fica larga e a caixa de escrita alta. O MyLoot lembra da sua escolha
+- ➖ Várias fichas abertas: minimize uma ficha e ela fica na barra de baixo, do jeitinho que estava. Abra outra, copie de uma para a outra e volte com um clique
+
+## Novidades da versão 2.21
+
+- 🧱 Tipos de item do seu jeito: mude nome, emoji, cor e ordem, ou esconda os que não usa (⚙️ nas abas da Biblioteca)
+- ✋ “Minha ordem” na Biblioteca: escolha a ordem e arraste os cartões para onde quiser (no celular, pelo ⋯)
+- 🗂️ Listas de tarefas (Casa, Trabalho, Cliente X…): filtre por lista, agrupe por lista e escolha a lista de cada tarefa
+- 🪪 Campos seus na ficha do cliente (CNPJ, aniversário, link do contrato…) e esconda os campos prontos que não usa
+- 🗓️ Calendário: escolha o que aparece nos dias (tarefas, compromissos, concluídas, contas, hábitos, itens)
+- 🎯 Missões do dia escolhidas por você, com os números que quiser
+- 🧭 Menu do seu jeito: mude a ordem, esconda telas e escolha os atalhos da barra do celular
+- 🕘 Versões das fichas: item e cliente guardam as últimas versões salvas, e dá para voltar a qualquer uma
+- 📝 Rascunho também nas janelas de tarefa, lançamento, hábito e meta: saia sem salvar e recupere depois
+- ↩ O histórico de ações agora fica guardado por 30 dias (antes sumia ao fechar a aba)
+- 😀 Rotina: qualquer emoji e qualquer unidade nos hábitos
+
+## Novidades da versão 2.20
+
+- 🧩 Monte o seu Início como quiser: em “✏️ Organizar Início” você arrasta os quadros (com o mouse ou o dedo), muda o tamanho, oculta, tira e põe de volta. Dá para desfazer e voltar ao padrão
+- ＋ Quadros novos para o Início: contas a pagar e receber, próximos compromissos, bloco de notas, atalhos para telas e links, metas, funil de clientes, hábitos de hoje e modo foco
+- 🏷️ Status dos itens do seu jeito: crie (ex.: Ideia, Gravando, Publicado), renomeie, mude a cor, a ordem ou apague, no ⚙️ ao lado do filtro da Biblioteca
+- 🚦 Prioridades das tarefas personalizáveis: crie a sua (ex.: Urgente), mude nome, cor e ordem
+- 💰 Financeiro: categorias e formas de pagamento suas (ex.: Cartão Nubank). Renomear muda também os lançamentos que já usam
+- 🧰 Grupos próprios para organizar “Minhas ferramentas”
+- ⚙️ Tudo isso também em Configurações → Personalizar, e sincroniza entre os seus computadores
 
 ## Novidades da versão 2.19
 
@@ -159,12 +265,12 @@ Esta versão aplica uma revisão completa das funções do app (o que dá para c
 - **Modo foco:** timer que continua contando com o navegador fechado e avisa na área de trabalho.
 - **Joguinho:** XP, níveis, meta do dia, missões, sequência de dias e conquistas. Tudo pode ser desligado.
 - **IA (opcional): Claude, Codex ou Gemini.** Peça para melhorar, corrigir ou resumir qualquer texto. O MyLoot acha sozinho o [Claude Code](https://claude.com/claude-code), o [Codex](https://developers.openai.com/codex) e o [Gemini CLI](https://github.com/google-gemini/gemini-cli) instalados no seu PC e usa a sua própria assinatura, sem chave e sem custo extra. Na primeira vez, ele pergunta quais você quer usar. Sem nenhum deles, dá para colar uma chave de API do Claude, do Gemini ou do ChatGPT.
-- **Notion e Trello (opcional):** envie qualquer item para uma página do Notion ou para uma lista do Trello com um clique.
+- **Notion e Trello (opcional):** veja e mexa nos seus quadros do Trello e nas bases do Notion dentro do MyLoot, e envie qualquer item para eles com um clique.
 - **Google Drive (opcional):** copia tudo como arquivos `.md` para a sua pasta do Drive. O que você editar direto no Drive não é apagado: vai para a pasta `_substituidos`.
 - **Sincronizar entre computadores (opcional):** quem usa o MyLoot em dois ou mais PCs liga em Configurações → Google Drive → *Sincronizar entre computadores*. Cada PC grava só o próprio arquivo na pasta `MyLoot-sync` do Drive e lê o dos outros ao abrir, a cada minuto e logo depois de salvar. Mudança no mesmo item: fica a mais nova, campo a campo; apagado vai para a Lixeira dos outros; antes da primeira junção o app guarda uma cópia automática. Precisa do **Google Drive para computador** (ou OneDrive, Dropbox) instalado e aberto em todos os PCs, com a mesma conta, e do relógio dos PCs certo. Configurações, XP e chaves (`data/segredos.json`) não vão para a nuvem.
 - **Exportar para o Obsidian:** baixa um ZIP com tudo em Markdown (itens, anexos, clientes e tarefas), pronto para abrir como cofre.
 - **Backup:** completo (`.zip` com os registros e os anexos, restaurável em outro computador), só dos registros (`.json` ou `.myloot` com senha, AES-256) e cópias automáticas de cada dia, restauráveis pela tela.
-- **Central de ferramentas:** 42 links de IAs de imagem e vídeo e de programas de código aberto, com busca e botão para guardar na sua Biblioteca.
+- **Central de ferramentas:** 80 recomendadas (IAs de vídeo, imagem, voz e música, assistentes, código aberto e o pacote ArtCraft), cada uma com o que dá para usar de graça, mais as suas próprias ferramentas, com busca e filtro de preço.
 - **Já vem com 6 guias em PDF** sobre IA, edição de vídeo, organização e quanto dá para usar de graça em cada ferramenta.
 
 | Biblioteca | Ficha do item |
@@ -240,7 +346,7 @@ Ele coloca o MyLoot no menu de aplicativos e na área de trabalho.
 | `V` | Criar por voz |
 | `H` `B` `T` `R` `C` `L` `M` | Início, Biblioteca, Tarefas, Rotina, Calendário, Clientes, Financeiro |
 | `F` | Começar ou parar o foco |
-| Clique direito no cartão (no celular: segurar o dedo) | Abrir, copiar, favoritar, enviar ao Notion/Trello, mover, duplicar, lixeira |
+| Clique direito no cartão | Abrir, copiar, favoritar, enviar ao Notion/Trello, mover, duplicar, lixeira |
 
 Para desligar: **Configurações → Desligar**.
 
