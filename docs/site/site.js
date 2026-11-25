@@ -2,6 +2,7 @@
 (function () {
   const q = (s, r) => (r || document).querySelector(s), qa = (s, r) => [...(r || document).querySelectorAll(s)];
   const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TELAS_V = '20261125c'; // trocar quando os prints de site/telas mudarem (o CDN da Hostinger guarda imagem por dias)
   const ALT = {
     inicio: 'Tela Início do MyLoot com o bloco “O que você quer guardar?” e o mapa de conexões',
     biblioteca: 'Biblioteca com cartões de prompts, notas e links, com etiquetas e filtros',
@@ -11,7 +12,7 @@
     calendario: 'Calendário de novembro com compromissos e tarefas nos dias',
     rotina: 'Rotina com hábitos do dia, metas com barra de progresso e o mapa do mês',
     foco: 'Janela do Modo foco com o timer de 25 minutos',
-    cliente: 'Ficha da cliente Ana Souza com status, contato e anotações',
+    cliente: 'Ficha do cliente Loja Verde Vivo com status, contato e anotações',
     financeiro: 'Financeiro de novembro com saldo do mês, lançamentos e gráfico',
     ia: 'Ficha de prompt com o painel da IA para melhorar, resumir e traduzir',
     ferramentas_rec: 'Ferramentas recomendadas em cartões, com Abrir e Salvar',
@@ -24,7 +25,7 @@
     historico: 'Histórico de ações com Desfazer em cada linha',
     lixeira: 'Lixeira com itens e tarefas apagados e o botão Restaurar',
     backup: 'Dados e backup: backup completo, cópias automáticas e restaurar',
-    novidades: 'Janela de novidades da versão 2.15',
+    novidades: 'Janela de novidades de uma versão nova do MyLoot',
   };
 
   // abas das seções: trocam a imagem da janela
@@ -33,7 +34,7 @@
     const pre = new Set();
     const ativa = (b, foco) => {
       abas.forEach((x) => { const on = x === b; x.setAttribute('aria-selected', on); x.tabIndex = on ? 0 : -1; });
-      const t = b.dataset.tela, src = 'site/telas/' + t + '.webp';
+      const t = b.dataset.tela, src = 'site/telas/' + t + '.webp?v=' + TELAS_V;
       if (img.getAttribute('src') !== src) {
         img.classList.remove('troca'); void img.offsetWidth;
         img.src = src; img.alt = ALT[t] || ''; if (!calmo) img.classList.add('troca');
@@ -43,7 +44,7 @@
     abas.forEach((b, i) => {
       b.id = b.id || sec.id + '-aba-' + i; b.setAttribute('aria-controls', sec.id + '-tela'); b.tabIndex = i ? -1 : 0;
       b.addEventListener('click', () => ativa(b));
-      b.addEventListener('pointerenter', () => { if (!pre.has(b)) { pre.add(b); new Image().src = 'site/telas/' + b.dataset.tela + '.webp'; } });
+      b.addEventListener('pointerenter', () => { if (!pre.has(b)) { pre.add(b); new Image().src = 'site/telas/' + b.dataset.tela + '.webp?v=' + TELAS_V; } });
       b.addEventListener('keydown', (e) => {
         const d = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key]; if (!d) return;
         e.preventDefault(); ativa(abas[(i + d + abas.length) % abas.length], true);
